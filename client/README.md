@@ -1,115 +1,142 @@
-# [Horizon UI ⚡️](https://horizon-ui.com/horizon-ui-chakra) [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&logo=twitter)](https://twitter.com/intent/tweet?url=https://horizon-ui.com/&text=Check%20Horizon%20UI,%20the%20trendiest%20open-source%20admin%20template%20for%20Chakra%20UI%20&%20React!)
+# Mantis Free React Material UI Dashboard Template [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Download%20Mantis%20React%20-%20The%20professional%20Material%20designed%20React%20Admin%20Dashboard%20Template%20&url=https://mantisdashboard.io&via=codedthemes&hashtags=reactjs,webdev,developers,javascript)
 
-![version](https://img.shields.io/badge/version-1.3.0-brightgreen.svg)
-![license](https://img.shields.io/badge/license-MIT-blue.svg)
-[![GitHub issues open](https://img.shields.io/github/issues/horizon-ui/horizon-ui-chakra.svg?maxAge=2592000)](https://github.com/horizon-ui/horizon-ui-chakra/issues?q=is%3Aopen+is%3Aissue)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Price](https://img.shields.io/badge/price-FREE-0098f7.svg)](https://github.com/codedthemes/mantis-free-react-admin-template/blob/main/LICENSE)
+[![GitHub package version](https://img.shields.io/github/package-json/v/codedthemes/mantis-free-react-admin-template)](https://github.com/codedthemes/mantis-free-react-admin-template/)
 
-<p>&nbsp;</p>
+Mantis is a free and open source React redux dashboard template made using the Material UI React component library with aim of flexibility and better customizability.
 
-[<img alt="Horizon UI" src="https://i.ibb.co/fdyTwz1/introduction-image-2.png" /> ](https://github.com/horizon-ui/horizon-ui-chakra)
+### Name Derived From Nature
 
-<p>&nbsp;</p>
+Mantis Logo is inspired from the insect name - 'Mantises' as they have triangular heads with flexible Necks. Also, the name is derived from two popular UI frameworks, Material UI and Ant Design (M-Ant-is).
 
+Mantis has Ant Design principal on top of the MAterial UI React component library.
 
-Get started and build your dream web app with Horizon UI, the most trendiest &
-innovative Open Source Admin Template for Chakra UI & React!
+:star: :star: :star: Support us by giving star (Top right of this page) if you like the theme :star: :star: :star:
 
----
+![mantis-free-react-dashboard-template.jpg](https://mantisdashboard.io/adv-banner-images/og-social-v1.1.0.png)
 
-### Introduction
+The [Pro version](https://mantisdashboard.io) of Mantis react template includes features such as TypeScript, apps, authentication methods (i.e. JWT, Auth0, Firebase), advance components, form plugins, layouts, widgets, and more.
 
-Designed for those who like modern UI elements and beautiful websites. Made of
-hundred of elements, designed blocks and fully coded pages, Horizon UI is ready
-to help you create stunning websites and webapps.
+| [Mantis Free](https://mantisdashboard.io/free) | [Mantis Pro](https://mantisdashboard.io)                                         |
+| ---------------------------------------------- | :------------------------------------------------------------------------------- |
+| **7** Demo pages                               | **85+** Demo pages                                                               |
+| -                                              | ✓ Multi-language                                                                 |
+| -                                              | ✓ Dark/Light Mode 🌓                                                             |
+| -                                              | ✓ TypeScript version                                                             |
+| -                                              | ✓ Design files (Figma)                                                           |
+| -                                              | ✓ Multiple color options                                                         |
+| -                                              | ✓ RTL                                                                            |
+| -                                              | ✓ JWT, Firebase, Auth0, AWS authentication                                       |
+| -                                              | ✓ [More components](https://mantisdashboard.io/components-overview/autocomplete) |
+| ✓ MIT License                                  | ✓ [Pro License](https://mui.com/store/license/)                                  |
 
-Save hundreds of hours trying to create and develop a dashboard from scratch.
-The fastest, most responsive & trendiest dashboard is here. Seriously.
+## Why Mantis?
 
-With Horizon UI you will find many examples for pages like NFTs Pages,
-Authentication Pages, Profile and so on. Just choose between a Basic Design or a
-cover and you are good to go!
+Mantis offers everything needed to build an advanced dashboard application. In the initial release, we included following high-end features,
 
-### 🎉 [NEW] Horizon UI Components
-All the main components from both versions, this will help you to see and interact with all & the latest added components of Horizon (also, new components are on the way, stay tuned)! ⚡️
-<a href="https://horizon-ui.com/components/?ref=readme-horizon" target="_blank">See all components</a>
+- Support React18.
+- Professional user interface.
+- Material UI React components.
+- Fully responsive, all modern browser supported.
+- Easy to use code structure
+- Flexible & high-Performance code
+- Simple documentation
 
+## Free Mantis React version
 
-### Documentation
+#### Preview
 
-Each element is well presented in a very complex documentation. You can read
-more about the <a href="https://horizon-ui.com/documentation/docs/introduction?ref=readme-horizon" target="_blank">documentation
-here.</a>
+- [Demo](https://mantisdashboard.io/free)
 
-### Quick Start
+#### Download
 
-Install Horizon UI by running either of the following:
+- [Download from GitHub](https://github.com/codedthemes/mantis-free-react-admin-template)
 
-- Install NodeJS LTS from
-  [NodeJs Official Page](https://nodejs.org/en/?ref=horizon-documentation)
-  (NOTE: Product only works with LTS version)
+## Mantis Pro version
 
-Clone the repository with the following command:
+#### Preview
 
-```bash
-git clone https://github.com/horizon-ui/horizon-ui-chakra.git
+- [Demo](https://mantisdashboard.io)
+
+#### Purchase
+
+- [Buy now](https://mui.com/store/items/mantis-react-admin-dashboard-template/)
+
+## Table of contents
+
+- [Getting started](#getting-started)
+- [Documentation](#documentation)
+- [Technology stack](#technology-stack)
+- [Author](#author)
+- [Issues?](#issues)
+- [License](#license)
+- [More Free React Templates](#more-free-react-material-admin-dashboard-templates)
+- [More Pro React Templates](#more-premium-react-material-admin-dashboard-templates)
+- [Follow us](#follow-us)
+
+## Getting Started
+
+1. Clone from Github
+
+```
+git clone https://github.com/codedthemes/mantis-free-react-admin-template.git
 ```
 
-Run in terminal this command:
+2. Install packages
 
-```bash
-npm install
+```
+yarn
 ```
 
-Then run this command to start your local server
+3. Run project
 
-```bash
-npm start
+```
+yarn start
 ```
 
-### Example Pages
+## Documentation
 
-If you want to get inspiration or just show something directly to your clients,
-you can jump start your development with our pre-built example pages. You will
-be able to quickly set up the basic structure for your web project. View
-<a href="https://horizon-ui.com/horizon-ui-chakra/?ref=readme-horizon" target="_blank">example
-pages here.</a>
+[Mantis documentation](https://codedthemes.gitbook.io/mantis/) helps you out in all aspects from Installation to deployment.
 
-### Versions
+## Technology stack
 
-| Free Version                                                                                                       | PRO Version                                                                                                               |
-| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| [![Horizon UI](https://i.ibb.co/fdyTwz1/introduction-image-2.png)](https://www.horizon-ui.com/?ref=readme-horizon) | [![Horizon UI PRO](https://i.ibb.co/R6jFKRM/introduction-image-1.png)](https://www.horizon-ui.com/pro?ref=readme-horizon) |
+- [Material UI V5](https://mui.com/core/)
+- Built with React Hooks API.
+- Redux & React context API for state management.
+- Redux toolkit.
+- React Router for navigation routing.
+- Support for react-script.
+- Code splitting.
+- CSS-in-JS.
 
-### Figma Version
+## Author
 
-Horizon UI is available in Figma format as well! Check it out on Figma
-Community! 🎨
-[See the Horizon UI Figma design files](https://bit.ly/horizon-figma)
+Mantis is managed by team [CodedThemes](https://codedthemes.com).
 
-### Reporting Issues
+## Issues
 
-We use GitHub Issues as the official bug tracker for the Horizon UI. Here are
-some advices for our users that want to report an issue:
+Please generate a [GitHub issue](https://github.com/codedthemes/mantis-free-react-admin-template/issues) if you found a bug in any version. We are try our best to resolve the issue.
 
-1. Make sure that you are using the latest version of the Horizon UI Dashbaord.
-   Check the CHANGELOG from your dashboard on our
-   [CHANGE LOG File](https://github.com/horizon-ui/horizon-ui-chakra/blob/main/CHANGELOG.md?ref=readme-horizon).
-2. Providing us reproducible steps for the issue will shorten the time it takes
-   for it to be fixed.
-3. Some issues may be browser specific, so specifying in what browser you
-   encountered the issue might help.
+## License
 
----
+- Licensed under [MIT](https://github.com/codedthemes/datta-able-bootstrap-dashboard/blob/master/LICENSE)
 
-### Community
+## More Free React Material Admin Dashboard Templates
 
-Connect with the community! Feel free to ask questions, report issues, and meet
-new people that already use Horizon UI!
+- [Free Materially](https://codedthemes.com/item/materially-free-reactjs-admin-template/)
+- [Free Berry](https://mui.com/store/items/berry-react-material-admin-free/)
 
-💬 [Join the #HorizonUI Discord Community!](https://discord.gg/f6tEKFBd4m)
+## More premium React Material Admin Dashboard Templates
 
-### Copyright and license
+- [Materially](https://codedthemes.com/item/materially-reactjs-admin-dashboard/)
+- [Berry](https://mui.com/store/items/berry-react-material-admin/)
 
-⭐️ [Copyright 2023 Simmmple ](https://www.simmmple.com/?ref=readme-horizon)
+## Follow us
 
-📄 [Horizon UI License](https://www.simmmple.com/licenses?ref=readme-horizon)
+- Website [https://mantisdashboard.io](https://mantisdashboard.io)
+- Blog [https://blog.mantisdashboard.io](https://blog.mantisdashboard.io)
+- CodedThemes [https://codedthemes.com](https://codedthemes.com)
+- Dribbble [https://dribbble.com/codedthemes](https://dribbble.com/codedthemes)
+- Facebook [https://www.facebook.com/codedthemes](https://www.facebook.com/codedthemes)
+- Twitter [https://twitter.com/codedthemes](https://twitter.com/codedthemes)
