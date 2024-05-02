@@ -26,8 +26,8 @@ import ProfileTab from './ProfileTab';
 import SettingTab from './SettingTab';
 
 // assets
-import avatar1 from 'assets/images/users/avatar-1.png';
-import { LogoutOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
+import avatar6 from 'assets/images/users/avatar-6.jpg';
+import { LogoutOutlined } from '@ant-design/icons';
 
 // tab panel wrapper
 function TabPanel({ children, value, index, ...other }) {
@@ -97,7 +97,7 @@ const Profile = () => {
         onClick={handleToggle}
       >
         <Stack direction="row" spacing={2} alignItems="center" sx={{ p: 0.5 }}>
-          <Avatar alt="profile user" src={avatar1} sx={{ width: 32, height: 32 }} />
+          <Avatar alt="profile user" src={avatar6} sx={{ width: 32, height: 32 }} />
           <Typography variant="subtitle1">John Doe</Typography>
         </Stack>
       </ButtonBase>
@@ -139,11 +139,11 @@ const Profile = () => {
                       <Grid container justifyContent="space-between" alignItems="center">
                         <Grid item>
                           <Stack direction="row" spacing={1.25} alignItems="center">
-                            <Avatar alt="profile user" src={avatar1} sx={{ width: 32, height: 32 }} />
+                            <Avatar alt="profile user" src={avatar6} sx={{ width: 32, height: 32 }} />
                             <Stack>
                               <Typography variant="h6">John Doe</Typography>
                               <Typography variant="body2" color="textSecondary">
-                                UI/UX Designer
+                                Admin
                               </Typography>
                             </Stack>
                           </Stack>
@@ -167,11 +167,11 @@ const Profile = () => {
                                 alignItems: 'center',
                                 textTransform: 'capitalize'
                               }}
-                              icon={<UserOutlined style={{ marginBottom: 0, marginRight: '10px' }} />}
-                              label="Profile"
+                              // icon={<UserOutlined style={{ marginBottom: 0, marginRight: '10px' }} />}
+                              // label="Profile"
                               {...a11yProps(0)}
                             />
-                            <Tab
+                            {/* <Tab
                               sx={{
                                 display: 'flex',
                                 flexDirection: 'row',
@@ -182,7 +182,7 @@ const Profile = () => {
                               icon={<SettingOutlined style={{ marginBottom: 0, marginRight: '10px' }} />}
                               label="Setting"
                               {...a11yProps(1)}
-                            />
+                            /> */}
                           </Tabs>
                         </Box>
                         <TabPanel value={value} index={0} dir={theme.direction}>

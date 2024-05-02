@@ -1,34 +1,41 @@
 // assets
-import { LoginOutlined, ProfileOutlined } from '@ant-design/icons';
+import { LoginOutlined, ProfileOutlined, UsergroupDeleteOutlined } from '@ant-design/icons';
 
 // icons
 const icons = {
   LoginOutlined,
-  ProfileOutlined
+  ProfileOutlined,
+  UsergroupDeleteOutlined
 };
 
 // ==============================|| MENU ITEMS - EXTRA PAGES ||============================== //
 
 const pages = {
-  id: 'authentication',
-  title: 'Authentication',
+  id: 'pages',
+  title: 'Pages',
+  caption: '',
   type: 'group',
   children: [
     {
-      id: 'login1',
-      title: 'Login',
+      id: 'students',
+      title: 'Students',
       type: 'item',
-      url: '/login',
-      icon: icons.LoginOutlined,
-      target: true
+      url: '/app/students',
+      icon: icons.UsergroupDeleteOutlined
     },
     {
-      id: 'register1',
-      title: 'Register',
+      id: 'courses',
+      title: 'Courses',
       type: 'item',
-      url: '/register',
-      icon: icons.ProfileOutlined,
-      target: true
+      url: '/app/courses',
+      icon: icons.UsergroupDeleteOutlined
+    },
+    {
+      id: 'batches',
+      title: 'Batches',
+      type: 'item',
+      url: '/app/batches',
+      icon: icons.UsergroupDeleteOutlined
     }
   ]
 };

@@ -29,28 +29,28 @@ const utilities = {
       id: 'util-typography',
       title: 'Typography',
       type: 'item',
-      url: '/typography',
+      url: '/app/typography',
       icon: icons.FontSizeOutlined
     },
     {
       id: 'util-color',
       title: 'Color',
       type: 'item',
-      url: '/color',
+      url: '/app/color',
       icon: icons.BgColorsOutlined
     },
     {
       id: 'util-shadow',
       title: 'Shadow',
       type: 'item',
-      url: '/shadow',
+      url: '/app/shadow',
       icon: icons.BarcodeOutlined
     },
     {
       id: 'ant-icons',
       title: 'Ant Icons',
       type: 'item',
-      url: '/icons/ant',
+      url: '/app/icons/ant',
       icon: icons.AntDesignOutlined,
       breadcrumbs: false
     }
