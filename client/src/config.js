@@ -10,6 +10,7 @@ const config = {
   presetColor: 'default',
   themeDirection: 'ltr',
   basename: '/',
+  apiUrl: 'http://localhost:5000/',
 };
 
 export default config;

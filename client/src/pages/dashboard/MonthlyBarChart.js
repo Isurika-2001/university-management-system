@@ -10,7 +10,7 @@ import ReactApexChart from 'react-apexcharts';
 const barChartOptions = {
   chart: {
     type: 'bar',
-    height: 365,
+    height: 400,
     toolbar: {
       show: false
     }
@@ -25,7 +25,7 @@ const barChartOptions = {
     enabled: false
   },
   xaxis: {
-    categories: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+    categories: ['MERN', 'DPE', 'English'],
     axisBorder: {
       show: false
     },
@@ -47,11 +47,11 @@ const MonthlyBarChart = () => {
   const theme = useTheme();
 
   const { primary, secondary } = theme.palette.text;
-  const info = theme.palette.info.light;
+  const primaryMain = theme.palette.primary.light;
 
   const [series] = useState([
     {
-      data: [80, 95, 70, 42, 65, 55, 78]
+      data: [80, 95, 70]
     }
   ]);
 
@@ -60,7 +60,7 @@ const MonthlyBarChart = () => {
   useEffect(() => {
     setOptions((prevState) => ({
       ...prevState,
-      colors: [info],
+      colors: [primaryMain],
       xaxis: {
         labels: {
           style: {
@@ -73,7 +73,7 @@ const MonthlyBarChart = () => {
       }
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [primary, info, secondary]);
+  }, [primary, primaryMain, secondary]);
 
   return (
     <div id="chart">

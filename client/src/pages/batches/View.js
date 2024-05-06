@@ -15,11 +15,11 @@ import {
   LinearProgress,
   TextField // Import TextField for input field
 } from '@mui/material';
-import { DownloadOutlined, FileAddOutlined, EditOutlined } from '@ant-design/icons'; // Remove SearchOutlined
+import { DownloadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 
-const Students = () => {
+const View = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selected, setSelected] = useState([]);
@@ -37,7 +37,7 @@ const Students = () => {
   const fetchData = () => {
     // Fetch data from API
 
-    // Dummy student data
+    // Dummy batch data
     setTimeout(() => {
       const data = [
         { id: 1, name: 'John Doe', age: 20, grade: 'A' },
@@ -97,7 +97,7 @@ const Students = () => {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = data.map((student) => student.id);
+      const newSelecteds = data.map((batch) => batch.id);
       setSelected(newSelecteds);
     } else {
       setSelected([]);
@@ -125,17 +125,17 @@ const Students = () => {
   const handleSearch = (event) => {
     const term = event.target.value.toLowerCase();
     // Filter the data based on the search term
-    const filteredValues = data.filter((student) => student.name.toLowerCase().includes(term));
+    const filteredValues = data.filter((batch) => batch.name.toLowerCase().includes(term));
     setFilteredData(filteredValues);
   };
 
   const handleClickAddNew = () => {
-    navigate('/app/students/add');
+    navigate('/app/batches/add');
   };
 
   const handleViewRow = (id) => {
     // Navigate to detailed view of the row with provided id
-    navigate('/app/students/update?id=' + id);
+    navigate('/app/batches/update?id=' + id);
   };
 
   const exportToCSV = () => {
@@ -144,11 +144,11 @@ const Students = () => {
     if (filteredData.length > 0) {
       exportData = filteredData;
     } else {
-      exportData = data.filter((student) => selected.includes(student.id));
+      exportData = data.filter((batch) => selected.includes(batch.id));
     }
 
     const csvHeader = ['ID', 'Name', 'Age', 'Grade'].join(','); // Header row
-    const csvData = exportData.map((student) => [student.id, student.name, student.age, student.grade].join(','));
+    const csvData = exportData.map((batch) => [batch.id, batch.name, batch.age, batch.grade].join(','));
     // Combine header and data rows
     const csvContent = csvHeader + '\n' + csvData.join('\n');
     // Create a Blob object with CSV content
@@ -156,7 +156,7 @@ const Students = () => {
     // Create a temporary anchor element to initiate the download
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
-    link.download = 'student_data.csv';
+    link.download = 'batch_data.csv';
     // Trigger the download
     document.body.appendChild(link);
     link.click();
@@ -165,7 +165,7 @@ const Students = () => {
   };
 
   return (
-    <MainCard title="Student List">
+    <MainCard title="Batch List">
       <Box
         sx={{
           display: 'flex',
@@ -179,7 +179,11 @@ const Students = () => {
         <div>
           <Button
             variant="contained"
-            style={{ marginRight: '8px' }}
+            style={{
+              marginRight: '8px'
+            }}
+            color="success"
+            text="white"
             disabled={selected.length === 0}
             onClick={exportToCSV}
             startIcon={<DownloadOutlined />}
@@ -237,25 +241,31 @@ const Students = () => {
           <TableBody>
             {stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy))
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((student) => (
-                <TableRow key={student.id} selected={isSelected(student.id)}>
+              .map((batch) => (
+                <TableRow key={batch.id} selected={isSelected(batch.id)}>
                   <TableCell padding="checkbox">
-                    <Checkbox checked={isSelected(student.id)} onChange={(event) => handleCheckboxClick(event, student.id)} />
+                    <Checkbox checked={isSelected(batch.id)} onChange={(event) => handleCheckboxClick(event, batch.id)} />
                   </TableCell>
-                  <TableCell>{student.id}</TableCell>
-                  <TableCell>{student.name}</TableCell>
-                  <TableCell>{student.age}</TableCell>
-                  <TableCell>{student.grade}</TableCell>
+                  <TableCell>{batch.id}</TableCell>
+                  <TableCell>{batch.name}</TableCell>
+                  <TableCell>{batch.age}</TableCell>
+                  <TableCell>{batch.grade}</TableCell>
                   <TableCell>
                     <Button
                       variant="outlined"
+                      style={{
+                        marginRight: '8px'
+                      }}
                       color="primary"
                       startIcon={<EditOutlined />}
                       onClick={() => handleViewRow(student.id)}
                     >
                       Edit
                     </Button>
-                  </TableCell> {/* Add button to view row */}
+                    <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={() => handleViewRow(student.id)}>
+                      Delete
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
           </TableBody>
@@ -274,4 +284,4 @@ const Students = () => {
   );
 };
 
-export default Students;
+export default View;

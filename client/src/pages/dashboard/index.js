@@ -1,77 +1,116 @@
-import { useState } from 'react';
-
+// import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // material-ui
 import {
-  Avatar,
-  AvatarGroup,
+  // Avatar,
+  // AvatarGroup,
   Box,
-  Button,
+  // Button,
   Grid,
   List,
-  ListItemAvatar,
+  // ListItemAvatar,
   ListItemButton,
-  ListItemSecondaryAction,
+  // ListItemSecondaryAction,
   ListItemText,
-  MenuItem,
+  // MenuItem,
   Stack,
-  TextField,
+  // TextField,
   Typography
 } from '@mui/material';
 
 // project import
-import OrdersTable from './OrdersTable';
-import IncomeAreaChart from './IncomeAreaChart';
+// import EnglishTable from './EnglishTable';
+// import IncomeAreaChart from './IncomeAreaChart';
 import MonthlyBarChart from './MonthlyBarChart';
 import ReportAreaChart from './ReportAreaChart';
-import SalesColumnChart from './SalesColumnChart';
+// import SalesColumnChart from './SalesColumnChart';
 import MainCard from 'components/MainCard';
 import AnalyticEcommerce from 'components/cards/statistics/AnalyticEcommerce';
 
 // assets
-import { GiftOutlined, MessageOutlined, SettingOutlined } from '@ant-design/icons';
-import avatar1 from 'assets/images/users/avatar-1.png';
-import avatar2 from 'assets/images/users/avatar-2.png';
-import avatar3 from 'assets/images/users/avatar-3.png';
-import avatar4 from 'assets/images/users/avatar-4.png';
+// import { GiftOutlined, MessageOutlined, SettingOutlined } from '@ant-design/icons';
+// import avatar1 from 'assets/images/DPE/avatar-1.png';
+// import avatar2 from 'assets/images/DPE/avatar-2.png';
+// import avatar3 from 'assets/images/DPE/avatar-3.png';
+// import avatar4 from 'assets/images/DPE/avatar-4.png';
 
 // avatar style
-const avatarSX = {
-  width: 36,
-  height: 36,
-  fontSize: '1rem'
-};
+// const avatarSX = {
+//   width: 36,
+//   height: 36,
+//   fontSize: '1rem'
+// };
 
 // action style
-const actionSX = {
-  mt: 0.75,
-  ml: 1,
-  top: 'auto',
-  right: 'auto',
-  alignSelf: 'flex-start',
-  transform: 'none'
-};
+// const actionSX = {
+//   mt: 0.75,
+//   ml: 1,
+//   top: 'auto',
+//   right: 'auto',
+//   alignSelf: 'flex-start',
+//   transform: 'none'
+// };
 
 // sales report status
-const status = [
-  {
-    value: 'today',
-    label: 'Today'
-  },
-  {
-    value: 'month',
-    label: 'This Month'
-  },
-  {
-    value: 'year',
-    label: 'This Year'
-  }
-];
+// const status = [
+//   {
+//     value: 'today',
+//     label: 'Today'
+//   },
+//   {
+//     value: 'month',
+//     label: 'This Month'
+//   },
+//   {
+//     value: 'year',
+//     label: 'This Year'
+//   }
+// ];
 
 // ==============================|| DASHBOARD - DEFAULT ||============================== //
 
 const DashboardDefault = () => {
-  const [value, setValue] = useState('today');
-  const [slot, setSlot] = useState('week');
+  // const [value, setValue] = useState('today');
+  // const [slot, setSlot] = useState('week');
+
+  const [MernCount, setMernCount] = useState(0);
+  const [DPECount, setDPECount] = useState(0);
+  const [orderCount, setOrderCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+
+  // Define the final counts
+  const finalCounts = {
+    Mern: 442236,
+    DPE: 78250,
+    English: 18800
+  };
+
+  // calculate percentage for each finalCount according to the total count
+  const PTMern = Math.round((finalCounts.Mern / (finalCounts.Mern + finalCounts.DPE + finalCounts.English)) * 100);
+  const PTDPE = Math.round((finalCounts.DPE / (finalCounts.Mern + finalCounts.DPE + finalCounts.English)) * 100);
+  const PTEnglish = Math.round((finalCounts.English / (finalCounts.Mern + finalCounts.DPE + finalCounts.English)) * 100);
+
+  // Function to animate count increase
+  const animateCountIncrease = (countRef, finalCount) => {
+    const increment = Math.ceil(finalCount / 100); // Increment by 1% of the final count
+    let currentCount = 0;
+    const interval = setInterval(() => {
+      currentCount += increment;
+      if (currentCount >= finalCount) {
+        currentCount = finalCount;
+        clearInterval(interval);
+      }
+      countRef(currentCount);
+    }, 50); // Adjust the interval for smoother animation
+  };
+
+  // Trigger count animations when component mounts
+  useEffect(() => {
+    animateCountIncrease(setMernCount, finalCounts.Mern);
+    animateCountIncrease(setDPECount, finalCounts.DPE);
+    animateCountIncrease(setOrderCount, finalCounts.English);
+    animateCountIncrease(setTotalCount, finalCounts.Mern + finalCounts.DPE + finalCounts.English);
+  }, []);
 
   return (
     <Grid container rowSpacing={4.5} columnSpacing={2.75}>
@@ -80,22 +119,22 @@ const DashboardDefault = () => {
         <Typography variant="h5">Dashboard</Typography>
       </Grid>
       <Grid item xs={12} sm={6} md={4} lg={3}>
-        <AnalyticEcommerce title="Total Page Views" count="4,42,236" percentage={59.3} extra="35,000" />
+        <AnalyticEcommerce title="MERN" count={MernCount.toLocaleString()} percentage={PTMern} color="warning" />
       </Grid>
       <Grid item xs={12} sm={6} md={4} lg={3}>
-        <AnalyticEcommerce title="Total Users" count="78,250" percentage={70.5} extra="8,900" />
+        <AnalyticEcommerce title="DPE" count={DPECount.toLocaleString()} percentage={PTDPE} color="warning" />
       </Grid>
       <Grid item xs={12} sm={6} md={4} lg={3}>
-        <AnalyticEcommerce title="Total Order" count="18,800" percentage={27.4} isLoss color="warning" extra="1,943" />
+        <AnalyticEcommerce title="English" count={orderCount.toLocaleString()} percentage={PTEnglish} color="warning" />
       </Grid>
       <Grid item xs={12} sm={6} md={4} lg={3}>
-        <AnalyticEcommerce title="Total Sales" count="$35,078" percentage={27.4} isLoss color="warning" extra="$20,395" />
+        <AnalyticEcommerce title="Total" count={totalCount.toLocaleString()} percentage={100} isLoss />
       </Grid>
 
       <Grid item md={8} sx={{ display: { sm: 'none', md: 'block', lg: 'none' } }} />
 
       {/* row 2 */}
-      <Grid item xs={12} md={7} lg={8}>
+      {/* <Grid item xs={12} md={7} lg={8}>
         <Grid container alignItems="center" justifyContent="space-between">
           <Grid item>
             <Typography variant="h5">Unique Visitor</Typography>
@@ -126,7 +165,7 @@ const DashboardDefault = () => {
             <IncomeAreaChart slot={slot} />
           </Box>
         </MainCard>
-      </Grid>
+      </Grid> */}
       <Grid item xs={12} md={5} lg={4}>
         <Grid container alignItems="center" justifyContent="space-between">
           <Grid item>
@@ -134,13 +173,13 @@ const DashboardDefault = () => {
           </Grid>
           <Grid item />
         </Grid>
-        <MainCard sx={{ mt: 2 }} content={false}>
+        <MainCard sx={{ mt: 2, minHeight: 500 }} content={false}>
           <Box sx={{ p: 3, pb: 0 }}>
             <Stack spacing={2}>
               <Typography variant="h6" color="textSecondary">
-                This Week Statistics
+                Enrollment Daily Collection
               </Typography>
-              <Typography variant="h3">$7,650</Typography>
+              <Typography variant="h3">LKR 72,650</Typography>
             </Stack>
           </Box>
           <MonthlyBarChart />
@@ -148,17 +187,17 @@ const DashboardDefault = () => {
       </Grid>
 
       {/* row 3 */}
-      <Grid item xs={12} md={7} lg={8}>
+      {/* <Grid item xs={12} md={7} lg={8}>
         <Grid container alignItems="center" justifyContent="space-between">
           <Grid item>
-            <Typography variant="h5">Recent Orders</Typography>
+            <Typography variant="h5">Recent English</Typography>
           </Grid>
           <Grid item />
         </Grid>
         <MainCard sx={{ mt: 2 }} content={false}>
-          <OrdersTable />
+          <EnglishTable />
         </MainCard>
-      </Grid>
+      </Grid> */}
       <Grid item xs={12} md={5} lg={4}>
         <Grid container alignItems="center" justifyContent="space-between">
           <Grid item>
@@ -166,19 +205,19 @@ const DashboardDefault = () => {
           </Grid>
           <Grid item />
         </Grid>
-        <MainCard sx={{ mt: 2 }} content={false}>
+        <MainCard sx={{ mt: 2, maxHeight: 500 }} content={false}>
           <List sx={{ p: 0, '& .MuiListItemButton-root': { py: 2 } }}>
             <ListItemButton divider>
-              <ListItemText primary="Company Finance Growth" />
-              <Typography variant="h5">+45.14%</Typography>
+              <ListItemText primary="Annual Total Enrollment Collection" />
+              <Typography variant="h5">LKR 2 217,650</Typography>
             </ListItemButton>
             <ListItemButton divider>
-              <ListItemText primary="Company Expenses Ratio" />
-              <Typography variant="h5">0.58%</Typography>
+              <ListItemText primary="Monthly Enrollement Collection" />
+              <Typography variant="h5">LKR 282,650</Typography>
             </ListItemButton>
             <ListItemButton>
-              <ListItemText primary="Business Risk Cases" />
-              <Typography variant="h5">Low</Typography>
+              <ListItemText primary="Percentage Over Annual Collection" />
+              <Typography variant="h5">3%</Typography>
             </ListItemButton>
           </List>
           <ReportAreaChart />
@@ -186,7 +225,7 @@ const DashboardDefault = () => {
       </Grid>
 
       {/* row 4 */}
-      <Grid item xs={12} md={7} lg={8}>
+      {/* <Grid item xs={12} md={7} lg={8}>
         <Grid container alignItems="center" justifyContent="space-between">
           <Grid item>
             <Typography variant="h5">Sales Report</Typography>
@@ -217,8 +256,8 @@ const DashboardDefault = () => {
           </Stack>
           <SalesColumnChart />
         </MainCard>
-      </Grid>
-      <Grid item xs={12} md={5} lg={4}>
+      </Grid> */}
+      {/* <Grid item xs={12} md={5} lg={4}>
         <Grid container alignItems="center" justifyContent="space-between">
           <Grid item>
             <Typography variant="h5">Transaction History</Typography>
@@ -336,7 +375,7 @@ const DashboardDefault = () => {
             </Button>
           </Stack>
         </MainCard>
-      </Grid>
+      </Grid> */}
     </Grid>
   );
 };

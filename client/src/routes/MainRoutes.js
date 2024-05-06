@@ -9,7 +9,7 @@ const DashboardDefault = Loadable(lazy(() => import('pages/dashboard')));
 
 // render - sample page
 const SamplePage = Loadable(lazy(() => import('pages/extra-pages/SamplePage')));
-const Students = Loadable(lazy(() => import('pages/students/Students')));
+const Students = Loadable(lazy(() => import('pages/students/View')));
 
 // render - utilities
 const Typography = Loadable(lazy(() => import('pages/components-overview/Typography')));

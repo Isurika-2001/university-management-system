@@ -1,11 +1,13 @@
 // assets
-import { LoginOutlined, ProfileOutlined, UsergroupDeleteOutlined } from '@ant-design/icons';
+import { LoginOutlined, ProfileOutlined, UsergroupDeleteOutlined, AppstoreOutlined, BranchesOutlined } from '@ant-design/icons';
 
 // icons
 const icons = {
   LoginOutlined,
   ProfileOutlined,
-  UsergroupDeleteOutlined
+  UsergroupDeleteOutlined,
+  AppstoreOutlined,
+  BranchesOutlined
 };
 
 // ==============================|| MENU ITEMS - EXTRA PAGES ||============================== //
@@ -28,14 +30,14 @@ const pages = {
       title: 'Courses',
       type: 'item',
       url: '/app/courses',
-      icon: icons.UsergroupDeleteOutlined
+      icon: icons.AppstoreOutlined
     },
     {
       id: 'batches',
       title: 'Batches',
       type: 'item',
       url: '/app/batches',
-      icon: icons.UsergroupDeleteOutlined
+      icon: icons.BranchesOutlined
     }
   ]
 };

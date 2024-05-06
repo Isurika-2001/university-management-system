@@ -25,27 +25,27 @@ const utilities = {
   title: 'Utilities',
   type: 'group',
   children: [
-    {
-      id: 'util-typography',
-      title: 'Typography',
-      type: 'item',
-      url: '/app/typography',
-      icon: icons.FontSizeOutlined
-    },
-    {
-      id: 'util-color',
-      title: 'Color',
-      type: 'item',
-      url: '/app/color',
-      icon: icons.BgColorsOutlined
-    },
-    {
-      id: 'util-shadow',
-      title: 'Shadow',
-      type: 'item',
-      url: '/app/shadow',
-      icon: icons.BarcodeOutlined
-    },
+    // {
+    //   id: 'util-typography',
+    //   title: 'Typography',
+    //   type: 'item',
+    //   url: '/app/typography',
+    //   icon: icons.FontSizeOutlined
+    // },
+    // {
+    //   id: 'util-color',
+    //   title: 'Color',
+    //   type: 'item',
+    //   url: '/app/color',
+    //   icon: icons.BgColorsOutlined
+    // },
+    // {
+    //   id: 'util-shadow',
+    //   title: 'Shadow',
+    //   type: 'item',
+    //   url: '/app/shadow',
+    //   icon: icons.BarcodeOutlined
+    // },
     {
       id: 'ant-icons',
       title: 'Ant Icons',

@@ -4,7 +4,8 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 
-const AddStudentForm = () => {
+
+const AddForm = () => {
   const initialValues = {
     name: '',
     age: '',
@@ -23,7 +24,7 @@ const AddStudentForm = () => {
   };
 
   return (
-    <MainCard title="Add New Student">
+    <MainCard title="Add New Batch">
       <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
         {({ errors, touched }) => (
           <Form>
@@ -79,7 +80,7 @@ const AddStudentForm = () => {
               <Divider sx={{ mt: 3, mb: 2 }} />
               <Grid item xs={12} sm={6} style={{ textAlign: 'right' }}>
                 <Button type="submit" variant="contained" color="primary" size="small">
-                  Add Student
+                  Add Batch
                 </Button>
               </Grid>
             </Grid>
@@ -90,4 +91,4 @@ const AddStudentForm = () => {
   );
 };
 
-export default AddStudentForm;
+export default AddForm;

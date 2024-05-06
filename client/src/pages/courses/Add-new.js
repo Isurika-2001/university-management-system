@@ -1,42 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { TextField, Button, Grid, Divider, LinearProgress } from '@mui/material';
+import React from 'react';
+import { TextField, Button, Grid, Divider } from '@mui/material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import { useLocation } from 'react-router-dom';
 
-const UpdateStudentForm = () => {
-  const [data, setData] = useState(null);
-  const location = useLocation();
 
-  useEffect(() => {
-    // Function to extract id from URL params and fetch student data
-    const fetchdata = async () => {
-      const searchParams = new URLSearchParams(location.search);
-      const id = searchParams.get('id');
-      // Fetch student data based on the id
-      try {
-        if (id) {
-          console.log('id:', id);
-          const fetchedData = {
-            name: 'John Doe',
-            age: 20,
-            grade: 'A'
-          };
-          setData(fetchedData);
-        }
-      } catch (error) {
-        console.error('Error fetching student data:', error);
-      }
-    };
-
-    fetchdata();
-  }, [location.search]);
-
+const AddForm = () => {
   const initialValues = {
-    name: data ? data.name : '',
-    age: data ? data.age : '',
-    grade: data ? data.grade : ''
+    name: '',
+    age: '',
+    grade: ''
   };
 
   const validationSchema = Yup.object().shape({
@@ -45,21 +18,13 @@ const UpdateStudentForm = () => {
     grade: Yup.string().required('Grade is required')
   });
 
-  const handleSubmit = (values) => {
-    // Handle form submission, you can update the student data here
+  const handleSubmit = (values, { resetForm }) => {
     console.log('Submitted:', values);
+    resetForm();
   };
 
-  if (!data) {
-    return (
-      <div>
-        <LinearProgress />
-      </div>
-    );
-  }
-
   return (
-    <MainCard title="Update Student">
+    <MainCard title="Add New Course">
       <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
         {({ errors, touched }) => (
           <Form>
@@ -115,7 +80,7 @@ const UpdateStudentForm = () => {
               <Divider sx={{ mt: 3, mb: 2 }} />
               <Grid item xs={12} sm={6} style={{ textAlign: 'right' }}>
                 <Button type="submit" variant="contained" color="primary" size="small">
-                  Update Student
+                  Add Course
                 </Button>
               </Grid>
             </Grid>
@@ -126,4 +91,4 @@ const UpdateStudentForm = () => {
   );
 };
 
-export default UpdateStudentForm;
+export default AddForm;

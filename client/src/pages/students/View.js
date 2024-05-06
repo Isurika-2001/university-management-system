@@ -15,11 +15,12 @@ import {
   LinearProgress,
   TextField // Import TextField for input field
 } from '@mui/material';
-import { DownloadOutlined, FileAddOutlined, EditOutlined } from '@ant-design/icons'; // Remove SearchOutlined
+import { DownloadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
+import config from '../../config';
 
-const Students = () => {
+const View = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selected, setSelected] = useState([]);
@@ -34,32 +35,67 @@ const Students = () => {
     fetchData();
   }, []);
 
-  const fetchData = () => {
+  async function fetchData() {
     // Fetch data from API
+    try {
+      const response = await fetch(config.apiUrl + 'api/students', {
+        method: 'GET'
+        // headers: { Authorization: `Bearer ${user.token}` }
+      });
 
-    // Dummy student data
-    setTimeout(() => {
-      const data = [
-        { id: 1, name: 'John Doe', age: 20, grade: 'A' },
-        { id: 2, name: 'Jane Smith', age: 21, grade: 'B' },
-        { id: 3, name: 'Michael Johnson', age: 22, grade: 'C' },
-        { id: 4, name: 'Emily Davis', age: 19, grade: 'A' },
-        { id: 5, name: 'James Wilson', age: 20, grade: 'B' },
-        { id: 6, name: 'Jessica Brown', age: 22, grade: 'B' },
-        { id: 7, name: 'Matthew Taylor', age: 21, grade: 'A' },
-        { id: 8, name: 'Sophia Martinez', age: 20, grade: 'C' },
-        { id: 9, name: 'William Garcia', age: 19, grade: 'B' },
-        { id: 10, name: 'Olivia Hernandez', age: 22, grade: 'A' }
-      ];
+      if (!response.ok) {
+        // if (response.status === 401) {
+        //   console.error('Unauthorized access. Logging out.');
+        //   logout();
+        // }
+        if (response.status === 500) {
+          console.error('Internal Server Error.');
+          // logout();
+          return;
+        }
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Data:', data);
+
       setData(data);
-      setLoading(false); // Set loading to false when data is fetched
-    }, 2000); // Simulating a delay of 2 seconds
-  };
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching data:', error.message);
+      setLoading(false);
+    }
+  }
 
   const handleSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrderBy(property);
     setOrder(isAsc ? 'desc' : 'asc');
+  };
+
+  const getComparator = (order, orderBy) => {
+    switch (orderBy) {
+      case 'id':
+        return order === 'desc' ? (a, b) => b.registration_no - a.registration_no : (a, b) => a.registration_no - b.registration_no;
+      case 'name':
+        return order === 'desc'
+          ? (a, b) => b.firstName.localeCompare(a.firstName) || b.lastName.localeCompare(a.lastName)
+          : (a, b) => a.firstName.localeCompare(b.firstName) || a.lastName.localeCompare(b.lastName);
+      case 'course':
+        return order === 'desc'
+          ? (a, b) => b.courseId.name.localeCompare(a.courseId.name)
+          : (a, b) => a.courseId.name.localeCompare(b.courseId.name);
+      case 'batch':
+        return order === 'desc'
+          ? (a, b) => b.batchId.name.localeCompare(a.batchId.name)
+          : (a, b) => a.batchId.name.localeCompare(b.batchId.name);
+      case 'contact':
+        return order === 'desc' ? (a, b) => b.mobile.localeCompare(a.mobile) : (a, b) => a.mobile.localeCompare(b.mobile);
+      case 'address':
+        return order === 'desc' ? (a, b) => b.address.localeCompare(a.address) : (a, b) => a.address.localeCompare(b.address);
+      default:
+        return () => 0;
+    }
   };
 
   const stableSort = (array, comparator) => {
@@ -70,20 +106,6 @@ const Students = () => {
       return a[1] - b[1];
     });
     return stabilizedThis.map((el) => el[0]);
-  };
-
-  const getComparator = (order, orderBy) => {
-    return order === 'desc' ? (a, b) => descendingComparator(a, b, orderBy) : (a, b) => -descendingComparator(a, b, orderBy);
-  };
-
-  const descendingComparator = (a, b, orderBy) => {
-    if (b[orderBy] < a[orderBy]) {
-      return -1;
-    }
-    if (b[orderBy] > a[orderBy]) {
-      return 1;
-    }
-    return 0;
   };
 
   const handleChangePage = (event, newPage) => {
@@ -125,7 +147,9 @@ const Students = () => {
   const handleSearch = (event) => {
     const term = event.target.value.toLowerCase();
     // Filter the data based on the search term
-    const filteredValues = data.filter((student) => student.name.toLowerCase().includes(term));
+    const filteredValues = data.filter(
+      (student) => student.firstName.toLowerCase().includes(term) || student.lastName.toLowerCase().includes(term)
+    );
     setFilteredData(filteredValues);
   };
 
@@ -147,8 +171,17 @@ const Students = () => {
       exportData = data.filter((student) => selected.includes(student.id));
     }
 
-    const csvHeader = ['ID', 'Name', 'Age', 'Grade'].join(','); // Header row
-    const csvData = exportData.map((student) => [student.id, student.name, student.age, student.grade].join(','));
+    const csvHeader = ['ID', 'Name', 'Course', 'Batch', 'Contact', 'Address'].join(','); // Header row
+    const csvData = exportData.map((student) =>
+      [
+        student.id,
+        student.firstName + ' ' + student.lastName,
+        student.courseId.name,
+        student.batchId.name,
+        student.mobile,
+        student.address
+      ].join(',')
+    );
     // Combine header and data rows
     const csvContent = csvHeader + '\n' + csvData.join('\n');
     // Create a Blob object with CSV content
@@ -179,7 +212,11 @@ const Students = () => {
         <div>
           <Button
             variant="contained"
-            style={{ marginRight: '8px' }}
+            style={{
+              marginRight: '8px'
+            }}
+            color="success"
+            text="white"
             disabled={selected.length === 0}
             onClick={exportToCSV}
             startIcon={<DownloadOutlined />}
@@ -203,7 +240,11 @@ const Students = () => {
                 />
               </TableCell>
               <TableCell>
-                <TableSortLabel active={orderBy === 'id'} direction={orderBy === 'id' ? order : 'asc'} onClick={() => handleSort('id')}>
+                <TableSortLabel
+                  active={orderBy === 'id'}
+                  direction={orderBy === 'id' ? order : 'asc'}
+                  onClick={() => handleSort('id', 'id')}
+                >
                   ID
                 </TableSortLabel>
               </TableCell>
@@ -216,18 +257,40 @@ const Students = () => {
                   Name
                 </TableSortLabel>
               </TableCell>
-              <TableCell>
-                <TableSortLabel active={orderBy === 'age'} direction={orderBy === 'age' ? order : 'asc'} onClick={() => handleSort('age')}>
-                  Age
+              {/* <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'course'}
+                  direction={orderBy === 'course' ? order : 'asc'}
+                  onClick={() => handleSort('course')}
+                >
+                  Course
                 </TableSortLabel>
               </TableCell>
               <TableCell>
                 <TableSortLabel
-                  active={orderBy === 'grade'}
-                  direction={orderBy === 'grade' ? order : 'asc'}
-                  onClick={() => handleSort('grade')}
+                  active={orderBy === 'batch'}
+                  direction={orderBy === 'batch' ? order : 'asc'}
+                  onClick={() => handleSort('batch')}
                 >
-                  Grade
+                  Batch
+                </TableSortLabel>
+              </TableCell> */}
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'contact'}
+                  direction={orderBy === 'contact' ? order : 'asc'}
+                  onClick={() => handleSort('contact')}
+                >
+                  Contact
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'address'}
+                  direction={orderBy === 'address' ? order : 'asc'}
+                  onClick={() => handleSort('address')}
+                >
+                  Address
                 </TableSortLabel>
               </TableCell>
               <TableCell>Action</TableCell> {/* Add column for actions */}
@@ -242,20 +305,28 @@ const Students = () => {
                   <TableCell padding="checkbox">
                     <Checkbox checked={isSelected(student.id)} onChange={(event) => handleCheckboxClick(event, student.id)} />
                   </TableCell>
-                  <TableCell>{student.id}</TableCell>
-                  <TableCell>{student.name}</TableCell>
-                  <TableCell>{student.age}</TableCell>
-                  <TableCell>{student.grade}</TableCell>
+                  <TableCell>{student.registration_no}</TableCell>
+                  <TableCell>{student.firstName + ` ` + student.lastName}</TableCell>
+                  {/* <TableCell>{student.courseId.name}</TableCell>
+                  <TableCell>{student.batchId.name}</TableCell> */}
+                  <TableCell>{student.mobile}</TableCell>
+                  <TableCell>{student.address}</TableCell>
                   <TableCell>
                     <Button
                       variant="outlined"
+                      style={{
+                        marginRight: '8px'
+                      }}
                       color="primary"
                       startIcon={<EditOutlined />}
-                      onClick={() => handleViewRow(student.id)}
+                      onClick={() => handleViewRow(student._id)}
                     >
                       Edit
                     </Button>
-                  </TableCell> {/* Add button to view row */}
+                    <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={() => handleViewRow(student.id)}>
+                      Delete
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
           </TableBody>
@@ -274,4 +345,4 @@ const Students = () => {
   );
 };
 
-export default Students;
+export default View;

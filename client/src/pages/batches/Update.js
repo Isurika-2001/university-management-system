@@ -5,16 +5,16 @@ import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import { useLocation } from 'react-router-dom';
 
-const UpdateStudentForm = () => {
+const UpdateForm = () => {
   const [data, setData] = useState(null);
   const location = useLocation();
 
   useEffect(() => {
-    // Function to extract id from URL params and fetch student data
+    // Function to extract id from URL params and fetch batch data
     const fetchdata = async () => {
       const searchParams = new URLSearchParams(location.search);
       const id = searchParams.get('id');
-      // Fetch student data based on the id
+      // Fetch batch data based on the id
       try {
         if (id) {
           console.log('id:', id);
@@ -26,7 +26,7 @@ const UpdateStudentForm = () => {
           setData(fetchedData);
         }
       } catch (error) {
-        console.error('Error fetching student data:', error);
+        console.error('Error fetching batch data:', error);
       }
     };
 
@@ -46,7 +46,7 @@ const UpdateStudentForm = () => {
   });
 
   const handleSubmit = (values) => {
-    // Handle form submission, you can update the student data here
+    // Handle form submission, you can update the batch data here
     console.log('Submitted:', values);
   };
 
@@ -55,11 +55,11 @@ const UpdateStudentForm = () => {
       <div>
         <LinearProgress />
       </div>
-    );
+    ); 
   }
 
   return (
-    <MainCard title="Update Student">
+    <MainCard title="Update Batch">
       <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
         {({ errors, touched }) => (
           <Form>
@@ -115,7 +115,7 @@ const UpdateStudentForm = () => {
               <Divider sx={{ mt: 3, mb: 2 }} />
               <Grid item xs={12} sm={6} style={{ textAlign: 'right' }}>
                 <Button type="submit" variant="contained" color="primary" size="small">
-                  Update Student
+                  Update Batch
                 </Button>
               </Grid>
             </Grid>
@@ -126,4 +126,4 @@ const UpdateStudentForm = () => {
   );
 };
 
-export default UpdateStudentForm;
+export default UpdateForm;
