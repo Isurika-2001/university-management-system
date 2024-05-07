@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { useAuthContext } from '../context/useAuthContext';
 import Loadable from 'components/Loadable';
 import MainLayout from 'layout/MainLayout';
 import { lazy } from 'react';
@@ -13,16 +14,22 @@ const SamplePage = Loadable(lazy(() => import('pages/extra-pages/SamplePage')));
 const Students = Loadable(lazy(() => import('pages/students/View')));
 const Batches = Loadable(lazy(() => import('pages/batches/View')));
 const Courses = Loadable(lazy(() => import('pages/courses/View')));
+const CourseRegistrations = Loadable(lazy(() => import('pages/course-registrations/View')));
+const Users = Loadable(lazy(() => import('pages/users/View')));
 
 // add new pages
 const AddStudentForm = Loadable(lazy(() => import('pages/students/Add-new')));
 const AddBatchForm = Loadable(lazy(() => import('pages/batches/Add-new')));
 const AddCourseForm = Loadable(lazy(() => import('pages/courses/Add-new')));
+const AddCourseRegistrationForm = Loadable(lazy(() => import('pages/course-registrations/Add-new')));
+const AddUserForm = Loadable(lazy(() => import('pages/users/Add-new')));
 
 // update pages
 const UpdateStudentForm = Loadable(lazy(() => import('pages/students/Update')));
 const UpdateBatchForm = Loadable(lazy(() => import('pages/batches/Update')));
 const UpdateCourseForm = Loadable(lazy(() => import('pages/courses/Update')));
+const UpdateCourseRegistrationForm = Loadable(lazy(() => import('pages/course-registrations/Update')));
+const UpdateUserForm = Loadable(lazy(() => import('pages/users/Update')));
 
 const AuthLogin = Loadable(lazy(() => import('pages/authentication/Login')));
 const AuthRegister = Loadable(lazy(() => import('pages/authentication/Register')));
@@ -36,9 +43,14 @@ const AntIcons = Loadable(lazy(() => import('pages/components-overview/AntIcons'
 // ==============================|| ROUTING RENDER ||============================== //
 
 export default function ThemeRoutes() {
+  const { user } = useAuthContext();
+  // const { permissions } = user || {};
+
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/app/dashboard" />} />
+      <Route path="/" element={!user ? <Navigate to="/pages/login" replace /> : <Navigate to="/app/dashboard" />} />
+      <Route path="/login" element={<AuthLogin />} />
+
       <Route path="pages" element={<Outlet />}>
         <Route path="login" element={<AuthLogin />} />
         <Route path="register" element={<AuthRegister />} />
@@ -58,6 +70,13 @@ export default function ThemeRoutes() {
           <Route path="update" element={<UpdateStudentForm />} />
         </Route>
 
+        {/* Course-Registrations section */}
+        <Route path="course-registrations" element={<Outlet />}>
+          <Route index element={<CourseRegistrations />} />
+          <Route path="add" element={<AddCourseRegistrationForm />} />
+          <Route path="update" element={<UpdateCourseRegistrationForm />} />
+        </Route>
+
         {/* Course section */}
         <Route path="courses" element={<Outlet />}>
           <Route index element={<Courses />} />
@@ -70,6 +89,13 @@ export default function ThemeRoutes() {
           <Route index element={<Batches />} />
           <Route path="add" element={<AddBatchForm />} />
           <Route path="update" element={<UpdateBatchForm />} />
+        </Route>
+
+        {/* User section */}
+        <Route path="users" element={<Outlet />}>
+          <Route index element={<Users />} />
+          <Route path="add" element={<AddUserForm />} />
+          <Route path="update" element={<UpdateUserForm />} />
         </Route>
 
         {/* Sample page */}

@@ -18,6 +18,7 @@ import {
 import { DownloadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
+import config from '../../config';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -34,26 +35,36 @@ const View = () => {
     fetchData();
   }, []);
 
-  const fetchData = () => {
+  const fetchData = async () => {
     // Fetch data from API
+    try {
+      const response = await fetch(config.apiUrl + 'api/courses', {
+        method: 'GET'
+        // headers: { Authorization: `Bearer ${user.token}` }
+      });
 
-    // Dummy course data
-    setTimeout(() => {
-      const data = [
-        { id: 1, name: 'John Doe', age: 20, grade: 'A' },
-        { id: 2, name: 'Jane Smith', age: 21, grade: 'B' },
-        { id: 3, name: 'Michael Johnson', age: 22, grade: 'C' },
-        { id: 4, name: 'Emily Davis', age: 19, grade: 'A' },
-        { id: 5, name: 'James Wilson', age: 20, grade: 'B' },
-        { id: 6, name: 'Jessica Brown', age: 22, grade: 'B' },
-        { id: 7, name: 'Matthew Taylor', age: 21, grade: 'A' },
-        { id: 8, name: 'Sophia Martinez', age: 20, grade: 'C' },
-        { id: 9, name: 'William Garcia', age: 19, grade: 'B' },
-        { id: 10, name: 'Olivia Hernandez', age: 22, grade: 'A' }
-      ];
+      if (!response.ok) {
+        // if (response.status === 401) {
+        //   console.error('Unauthorized access. Logging out.');
+        //   logout();
+        // }
+        if (response.status === 500) {
+          console.error('Internal Server Error.');
+          // logout();
+          return;
+        }
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Data:', data);
+
       setData(data);
-      setLoading(false); // Set loading to false when data is fetched
-    }, 2000); // Simulating a delay of 2 seconds
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching data:', error.message);
+      setLoading(false);
+    }
   };
 
   const handleSort = (property) => {
@@ -125,7 +136,9 @@ const View = () => {
   const handleSearch = (event) => {
     const term = event.target.value.toLowerCase();
     // Filter the data based on the search term
-    const filteredValues = data.filter((course) => course.name.toLowerCase().includes(term));
+    const filteredValues = data.filter(
+      (course) => course.name.toLowerCase().includes(term) || course.description.toLowerCase().includes(term)
+    );
     setFilteredData(filteredValues);
   };
 
@@ -147,8 +160,8 @@ const View = () => {
       exportData = data.filter((course) => selected.includes(course.id));
     }
 
-    const csvHeader = ['ID', 'Name', 'Age', 'Grade'].join(','); // Header row
-    const csvData = exportData.map((course) => [course.id, course.name, course.age, course.grade].join(','));
+    const csvHeader = ['Name', 'Description'].join(','); // Header row
+    const csvData = exportData.map((course) => [course.name, course.description].join(','));
     // Combine header and data rows
     const csvContent = csvHeader + '\n' + csvData.join('\n');
     // Create a Blob object with CSV content
@@ -207,11 +220,6 @@ const View = () => {
                 />
               </TableCell>
               <TableCell>
-                <TableSortLabel active={orderBy === 'id'} direction={orderBy === 'id' ? order : 'asc'} onClick={() => handleSort('id')}>
-                  ID
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
                 <TableSortLabel
                   active={orderBy === 'name'}
                   direction={orderBy === 'name' ? order : 'asc'}
@@ -221,17 +229,12 @@ const View = () => {
                 </TableSortLabel>
               </TableCell>
               <TableCell>
-                <TableSortLabel active={orderBy === 'age'} direction={orderBy === 'age' ? order : 'asc'} onClick={() => handleSort('age')}>
-                  Age
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
                 <TableSortLabel
-                  active={orderBy === 'grade'}
-                  direction={orderBy === 'grade' ? order : 'asc'}
-                  onClick={() => handleSort('grade')}
+                  active={orderBy === 'description'}
+                  direction={orderBy === 'description' ? order : 'asc'}
+                  onClick={() => handleSort('description')}
                 >
-                  Grade
+                  Description
                 </TableSortLabel>
               </TableCell>
               <TableCell>Action</TableCell> {/* Add column for actions */}
@@ -246,10 +249,8 @@ const View = () => {
                   <TableCell padding="checkbox">
                     <Checkbox checked={isSelected(course.id)} onChange={(event) => handleCheckboxClick(event, course.id)} />
                   </TableCell>
-                  <TableCell>{course.id}</TableCell>
                   <TableCell>{course.name}</TableCell>
-                  <TableCell>{course.age}</TableCell>
-                  <TableCell>{course.grade}</TableCell>
+                  <TableCell>{course.description}</TableCell>
                   <TableCell>
                     <Button
                       variant="outlined"

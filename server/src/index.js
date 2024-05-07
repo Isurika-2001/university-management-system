@@ -11,6 +11,9 @@ const connectToDatabase = require("../database");
 const studentRoutes = require('./routes/student');
 const courseRoutes = require('./routes/course');
 const batchRoutes = require('./routes/batch');
+const courseRegistrationRoutes = require('./routes/course_registration');
+const user_typeRoutes = require('./routes/user_type');
+const userRoutes = require('./routes/user');
 
 const app = express();
 app.use(cors());
@@ -30,6 +33,9 @@ connectToDatabase();
 app.use('/api', studentRoutes);
 app.use('/api', courseRoutes);
 app.use('/api', batchRoutes);
+app.use('/api', courseRegistrationRoutes);
+app.use('/api', user_typeRoutes);
+app.use('/api', userRoutes);
 
 // Start the server
 app.listen(PORT, () => {

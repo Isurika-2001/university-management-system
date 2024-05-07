@@ -16,6 +16,10 @@ async function createBatch(req, res) {
 
   const name = `${year}.${number}`;
 
+  if (await checkDuplicateBatch(name)) {
+    return res.status(403).json({ error: "Batch name already exist" });
+  }
+
   const batch = new Batch({
     name,
   });
@@ -24,12 +28,18 @@ async function createBatch(req, res) {
     const newBatch = await batch.save();
     res.status(201).json(newBatch);
   } catch (error) {
-    if (error.code === 11000) { 
+    if (error.code === 11000) {
       res.status(400).json({ error: "Batch name already exist" });
     } else {
       res.status(400).json({ error: "Error creating batch" });
     }
   }
+}
+
+// seperate function for check the batch name is already exist or not
+async function checkDuplicateBatch(name) {
+  const batch = await Batch.findOne({ name });
+  return batch ? true : false;
 }
 
 // Export the functions to make them accessible from other files

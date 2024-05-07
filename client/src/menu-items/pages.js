@@ -1,11 +1,19 @@
 // assets
-import { LoginOutlined, ProfileOutlined, UsergroupDeleteOutlined, AppstoreOutlined, BranchesOutlined } from '@ant-design/icons';
+import {
+  LoginOutlined,
+  ProfileOutlined,
+  UsergroupDeleteOutlined,
+  AppstoreOutlined,
+  BranchesOutlined,
+  FileAddOutlined
+} from '@ant-design/icons';
 
 // icons
 const icons = {
   LoginOutlined,
   ProfileOutlined,
   UsergroupDeleteOutlined,
+  FileAddOutlined,
   AppstoreOutlined,
   BranchesOutlined
 };
@@ -26,6 +34,13 @@ const pages = {
       icon: icons.UsergroupDeleteOutlined
     },
     {
+      id: 'course-registrations',
+      title: 'Course Registrations',
+      type: 'item',
+      url: '/app/course-registrations',
+      icon: icons.FileAddOutlined
+    },
+    {
       id: 'courses',
       title: 'Courses',
       type: 'item',
@@ -38,6 +53,13 @@ const pages = {
       type: 'item',
       url: '/app/batches',
       icon: icons.BranchesOutlined
+    },
+    {
+      id: 'users',
+      title: 'Users',
+      type: 'item',
+      url: '/app/users',
+      icon: icons.ProfileOutlined
     }
   ]
 };

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { TextField, Button, Grid, Divider, CircularProgress } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { TextField, Button, Grid, Divider, CircularProgress, MenuItem } from '@mui/material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
@@ -9,6 +9,7 @@ import withReactContent from 'sweetalert2-react-content';
 
 const AddForm = () => {
   const [submitting, setSubmitting] = useState(false);
+  const [userTypes, setUserTypes] = useState([]);
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -39,21 +40,61 @@ const AddForm = () => {
     });
   };
 
+  useEffect(() => {
+    fetchUserTypes();
+  }, [userTypes]);
+
   const initialValues = {
     name: '',
-    description: ''
+    email: '',
+    password: '',
+    user_type: ''
   };
 
   const validationSchema = Yup.object().shape({
     name: Yup.string().required('Name is required'),
-    description: Yup.string().required('Description is required')
+    email: Yup.string().email('Invalid email').required('Email is required'),
+    password: Yup.string().required('Password is required'),
+    user_type: Yup.string().required('User Type is required')
   });
+
+  // fetch user types
+  async function fetchUserTypes() {
+    try {
+      // Fetch batch options
+      const response = await fetch(config.apiUrl + 'api/user_types', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // if (response.status === 401) {
+        //   console.error('Unauthorized access. Logging out.');
+        //   logout();
+        // }
+        if (response.status === 500) {
+          console.error('Internal Server Error.');
+          // logout();
+          return;
+        }
+        return;
+      }
+      setUserTypes(data);
+    } catch (error) {
+      console.error('Error fetching batches:', error);
+      return [];
+    }
+  }
 
   const handleSubmit = async (values) => {
     console.log('Submitted:', values);
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/course', {
+      const response = await fetch(config.apiUrl + 'api/user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -110,18 +151,56 @@ const AddForm = () => {
                 <Grid item xs={12} sm={6}>
                   <Field
                     as={TextField}
-                    label="Description"
+                    label="Email"
                     variant="outlined"
                     type="text"
-                    name="description"
+                    name="email"
                     fullWidth
-                    error={touched.description && !!errors.description}
-                    helperText={<ErrorMessage name="description" />}
+                    error={touched.email && !!errors.email}
+                    helperText={<ErrorMessage name="email" />}
                     InputProps={{
                       sx: { px: 2, py: 1 } // Padding added
                     }}
                     sx={{ mb: 3 }} // Margin bottom added
                   />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Password"
+                    variant="outlined"
+                    type="password"
+                    name="password"
+                    fullWidth
+                    error={touched.password && !!errors.password}
+                    helperText={<ErrorMessage name="password" />}
+                    InputProps={{
+                      sx: { px: 2, py: 1 } // Padding added
+                    }}
+                    sx={{ mb: 3 }} // Margin bottom added
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    select // Render as select box
+                    label="User Type"
+                    variant="outlined"
+                    name="user_type"
+                    fullWidth
+                    error={touched.user_type && !!errors.user_type}
+                    helperText={<ErrorMessage name="user_type" />}
+                    InputProps={{
+                      sx: { px: 2, py: 1 } // Padding added
+                    }}
+                    sx={{ mb: 3 }} // Margin bottom added
+                  >
+                    {userTypes.map((option) => (
+                      <MenuItem key={option.id} value={option.name}>
+                        {option.name}
+                      </MenuItem>
+                    ))}
+                  </Field>
                 </Grid>
               </Grid>
               <Divider sx={{ mt: 3, mb: 2 }} />

@@ -1,5 +1,7 @@
 import PropTypes from 'prop-types';
 import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthContext } from 'context/useAuthContext';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
@@ -28,6 +30,7 @@ import SettingTab from './SettingTab';
 // assets
 import avatar6 from 'assets/images/users/avatar-6.jpg';
 import { LogoutOutlined } from '@ant-design/icons';
+import { useLogout } from 'hooks/useLogout';
 
 // tab panel wrapper
 function TabPanel({ children, value, index, ...other }) {
@@ -55,9 +58,19 @@ function a11yProps(index) {
 
 const Profile = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
+  const { logout } = useLogout();
+  const { user } = useAuthContext();
 
   const handleLogout = async () => {
-    // logout
+    event.preventDefault(); // Prevent default behavior of the anchor tag or button
+
+    try {
+      logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   const anchorRef = useRef(null);
@@ -98,7 +111,7 @@ const Profile = () => {
       >
         <Stack direction="row" spacing={2} alignItems="center" sx={{ p: 0.5 }}>
           <Avatar alt="profile user" src={avatar6} sx={{ width: 32, height: 32 }} />
-          <Typography variant="subtitle1">John Doe</Typography>
+          <Typography variant="subtitle1">{user.userName}</Typography>
         </Stack>
       </ButtonBase>
       <Popper
@@ -141,9 +154,9 @@ const Profile = () => {
                           <Stack direction="row" spacing={1.25} alignItems="center">
                             <Avatar alt="profile user" src={avatar6} sx={{ width: 32, height: 32 }} />
                             <Stack>
-                              <Typography variant="h6">John Doe</Typography>
+                              <Typography variant="h6">{user.userName}</Typography>
                               <Typography variant="body2" color="textSecondary">
-                                Admin
+                                {user?.userType.name || 'Admin'}
                               </Typography>
                             </Stack>
                           </Stack>

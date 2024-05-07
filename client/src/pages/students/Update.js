@@ -1,21 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { TextField, Button, Grid, Divider, LinearProgress, MenuItem, Select } from '@mui/material';
+import { TextField, Button, Grid, Divider, LinearProgress, CircularProgress } from '@mui/material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import { useLocation } from 'react-router-dom';
 import config from '../../config';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 const UpdateForm = () => {
   const [data, setData] = useState(null);
-  const [courseOptions, setCouseOptions] = useState([]);
-  const [batchOptions, setBatchOptions] = useState([]);
   const location = useLocation();
+  const [submitting, setSubmitting] = useState(false);
+  
+  const Toast = withReactContent(
+    Swal.mixin({
+      toast: true,
+      position: 'bottom',
+      customClass: {
+        popup: 'colored-toast'
+      },
+      background: 'primary',
+      showConfirmButton: false,
+      timer: 3500,
+      timerProgressBar: true
+    })
+  );
+
+  const showSuccessSwal = (e) => {
+    Toast.fire({
+      icon: 'success',
+      title: e
+    });
+  };
+
+  // error showErrorSwal
+  const showErrorSwal = (e) => {
+    Toast.fire({
+      icon: 'error',
+      title: e
+    });
+  };
 
   useEffect(() => {
     fetchdata();
-    fetchCourses();
-    fetchBatches();
   }, [location.search]);
 
   async function fetchdata() {
@@ -52,70 +80,6 @@ const UpdateForm = () => {
     }
   }
 
-  // fetch course options
-  async function fetchCourses() {
-    try {
-      // Fetch course options
-      const response = await fetch(config.apiUrl + 'api/courses', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          // logout();
-          return;
-        }
-        return;
-      }
-      setCouseOptions(data);
-    } catch (error) {
-      console.error('Error fetching courses:', error);
-      return [];
-    }
-  }
-
-  // fetch batch options
-  async function fetchBatches() {
-    try {
-      // Fetch batch options
-      const response = await fetch(config.apiUrl + 'api/batches', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          // logout();
-          return;
-        }
-        return;
-      }
-      setBatchOptions(data);
-    } catch (error) {
-      console.error('Error fetching batches:', error);
-      return [];
-    }
-  }
-
   const initialValues = {
     firstName: data ? data.firstName : '',
     lastName: data ? data.lastName : '',
@@ -124,9 +88,7 @@ const UpdateForm = () => {
     address: data ? data.address : '',
     mobile: data ? data.mobile : '',
     homeContact: data ? data.homeContact : '',
-    email: data ? data.email : '',
-    courseId: data ? data.courseId._id : '',
-    batchId: data ? data.batchId._id : ''
+    email: data ? data.email : ''
   };
 
   const validationSchema = Yup.object().shape({
@@ -144,14 +106,45 @@ const UpdateForm = () => {
       .matches(/^\+?\d{10,12}$/, 'Contact No should be 10 to 12 digits with an optional leading + sign')
       .required('Contact No is required'),
     homeContact: Yup.string().matches(/^\+?\d{10,12}$/, 'Contact No should be 10 to 12 digits with an optional leading + sign'),
-    email: Yup.string().required('Email is required'),
-    courseId: Yup.string().required('Course is required'),
-    batchId: Yup.string().required('Batch is required')
+    email: Yup.string().required('Email is required')
   });
 
-  const handleSubmit = (values) => {
-    // Handle form submission, you can update the student data here
-    console.log('Submitted:', values);
+  const handleSubmit = async (values) => {
+    const searchParams = new URLSearchParams(location.search);
+    const id = searchParams.get('id');
+    console.log('Submitting:', values, id);
+    try {
+      setSubmitting(true);
+      const response = await fetch(config.apiUrl + 'api/students/' + id, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(values)
+      });
+
+      if (!response.ok) {
+        // display error message
+        const errorMessage = await response.text();
+        if (response.status === 500) {
+          console.error('Internal Server Error.');
+          return;
+        } else if (response.status === 403) {
+          showErrorSwal(errorMessage); // Show error message from response body
+        }
+        return;
+      } else {
+        const successMessage = await response.text(); // Get success message from response body
+        showSuccessSwal(successMessage); // Show success message from response body
+      }
+
+      console.log('Student updated successfully');
+    } catch (error) {
+      console.error(error);
+      showErrorSwal(error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!data) {
@@ -291,59 +284,17 @@ const UpdateForm = () => {
                     sx={{ mb: 3 }} // Margin bottom added
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Field
-                    as={Select}
-                    displayEmpty
-                    variant="outlined"
-                    name="courseId"
-                    fullWidth
-                    error={touched.courseId && !!errors.courseId}
-                    helperText={<ErrorMessage name="courseId" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 }
-                    }}
-                    sx={{ mb: 3, minHeight: '3.5rem' }}
-                  >
-                    <MenuItem value="" disabled>
-                      Course
-                    </MenuItem>
-                    {courseOptions.map((course) => (
-                      <MenuItem key={course._id} value={course._id}>
-                        {course.name}
-                      </MenuItem>
-                    ))}
-                  </Field>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Field
-                    as={Select}
-                    displayEmpty
-                    variant="outlined"
-                    name="batchId"
-                    SelectProps={{ native: true }}
-                    fullWidth
-                    error={touched.batchId && !!errors.batchId}
-                    helperText={<ErrorMessage name="batchId" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 }
-                    }}
-                    sx={{ mb: 3, minHeight: '3.5rem' }}
-                  >
-                    <option value="" disabled>
-                      Batch
-                    </option>
-                    {batchOptions.map((batch) => (
-                      <option key={batch._id} value={batch._id}>
-                        {batch.name}
-                      </option>
-                    ))}
-                  </Field>
-                </Grid>
               </Grid>
               <Divider sx={{ mt: 3, mb: 2 }} />
               <Grid item xs={12} sm={6} style={{ textAlign: 'right' }}>
-                <Button type="submit" variant="contained" color="primary" size="small">
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  disabled={submitting}
+                  endIcon={submitting ? <CircularProgress size={20} color="inherit" /> : null}
+                >
                   Update Student
                 </Button>
               </Grid>

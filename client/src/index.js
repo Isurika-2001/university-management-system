@@ -11,6 +11,8 @@ import { Provider as ReduxProvider } from 'react-redux';
 // apex-chart
 import 'assets/third-party/apex-chart.css';
 
+import { AuthContextProvider } from './context/AuthContext';
+
 // project import
 import App from './App';
 import { store } from 'store';
@@ -22,13 +24,15 @@ import config from './config';
 const container = document.getElementById('root');
 const root = createRoot(container); // createRoot(container!) if you use TypeScript
 root.render(
-  <StrictMode>
-    <ReduxProvider store={store}>
-      <BrowserRouter basename={config.basename}>
-        <App />
-      </BrowserRouter>
-    </ReduxProvider>
-  </StrictMode>
+  <AuthContextProvider>
+    <StrictMode>
+      <ReduxProvider store={store}>
+        <BrowserRouter basename={config.basename}>
+          <App />
+        </BrowserRouter>
+      </ReduxProvider>
+    </StrictMode>
+  </AuthContextProvider>
 );
 
 // If you want to start measuring performance in your app, pass a function

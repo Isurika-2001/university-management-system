@@ -9,16 +9,6 @@ const studentSchema = new mongoose.Schema({
   mobile: String,
   homeContact: String,
   email: String,
-  courseId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Course",
-    required: true,
-  },
-  batchId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Batch",
-    required: true,
-  },
   registration_no: {
     type: Number,
     required: true,

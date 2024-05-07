@@ -15,8 +15,8 @@ import {
   LinearProgress,
   TextField // Import TextField for input field
 } from '@mui/material';
-import { DownloadOutlined, EditOutlined, DeleteOutlined, FileAddOutlined } from '@ant-design/icons'; // Remove SearchOutlined
-import { useNavigate } from 'react-router-dom';
+import { DownloadOutlined } from '@ant-design/icons'; // Remove SearchOutlined
+// import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import config from '../../config';
 
@@ -29,7 +29,7 @@ const View = () => {
   const [order, setOrder] = useState('asc');
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   useEffect(() => {
     fetchData();
@@ -38,7 +38,7 @@ const View = () => {
   async function fetchData() {
     // Fetch data from API
     try {
-      const response = await fetch(config.apiUrl + 'api/students', {
+      const response = await fetch(config.apiUrl + 'api/course_registrations', {
         method: 'GET'
         // headers: { Authorization: `Bearer ${user.token}` }
       });
@@ -76,21 +76,32 @@ const View = () => {
   const getComparator = (order, orderBy) => {
     switch (orderBy) {
       case 'id':
-        return order === 'desc' ? (a, b) => b.registration_no - a.registration_no : (a, b) => a.registration_no - b.registration_no;
+        return order === 'desc' ? (a, b) => b.courseReg_no - a.courseReg_no : (a, b) => a.courseReg_no - b.courseReg_no;
+      case 'reg_id':
+        return order === 'desc'
+          ? (a, b) => b.studentId.registration_no - a.studentId.registration_no
+          : (a, b) => a.studentId.registration_no - b.studentId.registration_no;
       case 'name':
         return order === 'desc'
-          ? (a, b) => b.firstName.localeCompare(a.firstName) || b.lastName.localeCompare(a.lastName)
-          : (a, b) => a.firstName.localeCompare(b.firstName) || a.lastName.localeCompare(b.lastName);
-      case 'nic':
-        return order === 'desc' ? (a, b) => b.nic.localeCompare(a.nic) : (a, b) => a.nic.localeCompare(b.nic);
+          ? (a, b) => b.studentId.firstName.localeCompare(a.studentId.firstName) || b.studentId.lastName.localeCompare(a.studentId.lastName)
+          : (a, b) =>
+              a.studentId.firstName.localeCompare(b.studentId.firstName) || a.studentId.lastName.localeCompare(b.studentId.lastName);
+      case 'course':
+        return order === 'desc'
+          ? (a, b) => b.courseId.name.localeCompare(a.courseId.name)
+          : (a, b) => a.courseId.name.localeCompare(b.courseId.name);
       case 'batch':
         return order === 'desc'
           ? (a, b) => b.batchId.name.localeCompare(a.batchId.name)
           : (a, b) => a.batchId.name.localeCompare(b.batchId.name);
       case 'contact':
-        return order === 'desc' ? (a, b) => b.mobile.localeCompare(a.mobile) : (a, b) => a.mobile.localeCompare(b.mobile);
+        return order === 'desc'
+          ? (a, b) => b.studentId.mobile.localeCompare(a.mobile)
+          : (a, b) => a.studentId.mobile.localeCompare(b.studentId.mobile);
       case 'address':
-        return order === 'desc' ? (a, b) => b.address.localeCompare(a.address) : (a, b) => a.address.localeCompare(b.address);
+        return order === 'desc'
+          ? (a, b) => b.studentId.address.localeCompare(a.studentId.address)
+          : (a, b) => a.studentId.address.localeCompare(b.studentId.address);
       default:
         return () => 0;
     }
@@ -117,7 +128,7 @@ const View = () => {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = data.map((student) => student.id);
+      const newSelecteds = data.map((courseReg) => courseReg.id);
       setSelected(newSelecteds);
     } else {
       setSelected([]);
@@ -146,30 +157,26 @@ const View = () => {
     const term = event.target.value.toLowerCase();
     // Filter the data based on the search term
     const filteredValues = data.filter(
-      (student) =>
-        student.firstName.toLowerCase().includes(term) ||
-        student.lastName.toLowerCase().includes(term) ||
-        student.nic.toLowerCase().includes(term) ||
-        student.mobile.toLowerCase().includes(term) ||
-        student.address.toLowerCase().includes(term)
+      (courseReg) =>
+        courseReg.studentId.firstName.toLowerCase().includes(term) ||
+        courseReg.studentId.lastName.toLowerCase().includes(term) ||
+        courseReg.studentId.lastName.toLowerCase().includes(term) ||
+        courseReg.studentId.nic.toLowerCase().includes(term) ||
+        courseReg.studentId.mobile.toLowerCase().includes(term) ||
+        courseReg.studentId.address.toLowerCase().includes(term) ||
+        courseReg.courseId.name.toLowerCase().includes(term) ||
+        courseReg.batchId.name.toLowerCase().includes(term)
     );
     setFilteredData(filteredValues);
   };
 
-  const handleViewRow = (id) => {
-    // Navigate to detailed view of the row with provided id
-    navigate('/app/course-registrations/update?id=' + id);
-  };
+  // const handleClickAddNew = () => {
+  //   navigate('/app/course-registrations/add');
+  // };
 
-  const handleClickAddNew = () => {
-    // Navigate to the add new student page
-    navigate('/app/students/add');
-  };
-
-  // const handleAddNewReg = (id) => {
-  //   // Navigate to the add new student page
+  // const handleViewRow = (id) => {
+  //   // Navigate to detailed view of the row with provided id
   //   navigate('/app/course-registrations/update?id=' + id);
-  //   console.log(id);
   // };
 
   const exportToCSV = () => {
@@ -178,12 +185,20 @@ const View = () => {
     if (filteredData.length > 0) {
       exportData = filteredData;
     } else {
-      exportData = data.filter((student) => selected.includes(student.id));
+      exportData = data.filter((courseReg) => selected.includes(courseReg.id));
     }
 
-    const csvHeader = ['Student ID', 'Name', 'NIC', 'Contact', 'Address'].join(','); // Header row
-    const csvData = exportData.map((student) =>
-      [student.registration_no, student.firstName + ' ' + student.lastName, student.nic, student.mobile, student.address].join(',')
+    const csvHeader = ['Student ID', 'Registration ID', 'Name', 'Course', 'Batch', 'Contact', 'Address'].join(','); // Header row
+    const csvData = exportData.map((courseReg) =>
+      [
+        courseReg.studentId.registration_no,
+        courseReg.courseReg_no,
+        courseReg.studentId.firstName + ' ' + courseReg.studentId.lastName,
+        courseReg.courseId.name,
+        courseReg.batchId.name,
+        courseReg.studentId.mobile,
+        courseReg.studentId.address
+      ].join(',')
     );
     // Combine header and data rows
     const csvContent = csvHeader + '\n' + csvData.join('\n');
@@ -192,7 +207,7 @@ const View = () => {
     // Create a temporary anchor element to initiate the download
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
-    link.download = 'student_data.csv';
+    link.download = 'courseReg_data.csv';
     // Trigger the download
     document.body.appendChild(link);
     link.click();
@@ -201,7 +216,7 @@ const View = () => {
   };
 
   return (
-    <MainCard title="Student List">
+    <MainCard title="Course Registration List">
       <Box
         sx={{
           display: 'flex',
@@ -226,9 +241,9 @@ const View = () => {
           >
             Export
           </Button>
-          <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
-            Add New Student
-          </Button>
+          {/* <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
+            Add New
+          </Button> */}
         </div>
       </Box>
       <TableContainer component={Paper}>
@@ -248,7 +263,16 @@ const View = () => {
                   direction={orderBy === 'id' ? order : 'asc'}
                   onClick={() => handleSort('id', 'id')}
                 >
-                  ID
+                  STU_ID
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'reg_id'}
+                  direction={orderBy === 'reg_id' ? order : 'asc'}
+                  onClick={() => handleSort('reg_id', 'reg_id')}
+                >
+                  REG_ID
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -265,7 +289,16 @@ const View = () => {
                   NIC
                 </TableSortLabel>
               </TableCell>
-              {/* <TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'course'}
+                  direction={orderBy === 'course' ? order : 'asc'}
+                  onClick={() => handleSort('course')}
+                >
+                  Course
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
                 <TableSortLabel
                   active={orderBy === 'batch'}
                   direction={orderBy === 'batch' ? order : 'asc'}
@@ -273,7 +306,7 @@ const View = () => {
                 >
                   Batch
                 </TableSortLabel>
-              </TableCell> */}
+              </TableCell>
               <TableCell>
                 <TableSortLabel
                   active={orderBy === 'contact'}
@@ -292,25 +325,27 @@ const View = () => {
                   Address
                 </TableSortLabel>
               </TableCell>
-              <TableCell>Action</TableCell> {/* Add column for actions */}
+              {/* <TableCell>Action</TableCell> Add column for actions */}
             </TableRow>
           </TableHead>
           {loading && <LinearProgress sx={{ width: '100%' }} />}
           <TableBody>
             {stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy))
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((student) => (
-                <TableRow key={student.id} selected={isSelected(student.id)}>
+              .map((courseReg) => (
+                <TableRow key={courseReg.id} selected={isSelected(courseReg.id)}>
                   <TableCell padding="checkbox">
-                    <Checkbox checked={isSelected(student.id)} onChange={(event) => handleCheckboxClick(event, student.id)} />
+                    <Checkbox checked={isSelected(courseReg.id)} onChange={(event) => handleCheckboxClick(event, courseReg.id)} />
                   </TableCell>
-                  <TableCell>{student.registration_no}</TableCell>
-                  <TableCell>{student.firstName + ` ` + student.lastName}</TableCell>
-                  {/* <TableCell>{student.courseId.name}</TableCell> */}
-                  <TableCell>{student.nic}</TableCell>
-                  <TableCell>{student.mobile}</TableCell>
-                  <TableCell>{student.address}</TableCell>
-                  <TableCell>
+                  <TableCell>{courseReg.courseReg_no}</TableCell>
+                  <TableCell>{courseReg.studentId.registration_no}</TableCell>
+                  <TableCell>{courseReg.studentId.firstName + ` ` + courseReg.studentId.lastName}</TableCell>
+                  <TableCell>{courseReg.studentId.nic}</TableCell>
+                  <TableCell>{courseReg.courseId.name}</TableCell>
+                  <TableCell>{courseReg.batchId.name}</TableCell>
+                  <TableCell>{courseReg.studentId.mobile}</TableCell>
+                  <TableCell>{courseReg.studentId.address}</TableCell>
+                  {/* <TableCell>
                     <Button
                       variant="outlined"
                       style={{
@@ -318,25 +353,14 @@ const View = () => {
                       }}
                       color="primary"
                       startIcon={<EditOutlined />}
-                      onClick={() => handleViewRow(student._id)}
+                      onClick={() => handleViewRow(courseReg._id)}
                     >
                       Edit
                     </Button>
-                    <Button
-                      variant="outlined"
-                      style={{
-                        marginRight: '8px'
-                      }}
-                      color="error"
-                      startIcon={<DeleteOutlined />}
-                      // onClick={() => handleAddNewReg(student._id)}
-                    >
+                    <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={() => handleViewRow(courseReg.id)}>
                       Delete
                     </Button>
-                    {/* <Button variant="outlined" color="info" startIcon={<FileAddOutlined />} onClick={() => handleAddNewReg(student._id)}>
-                      New
-                    </Button> */}
-                  </TableCell>
+                  </TableCell> */}
                 </TableRow>
               ))}
           </TableBody>

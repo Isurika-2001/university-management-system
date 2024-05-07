@@ -38,7 +38,7 @@ const View = () => {
   const fetchData = async () => {
     // Fetch data from API
     try {
-      const response = await fetch(config.apiUrl + 'api/batches', {
+      const response = await fetch(config.apiUrl + 'api/users', {
         method: 'GET'
         // headers: { Authorization: `Bearer ${user.token}` }
       });
@@ -108,7 +108,7 @@ const View = () => {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = data.map((batch) => batch.id);
+      const newSelecteds = data.map((user) => user.id);
       setSelected(newSelecteds);
     } else {
       setSelected([]);
@@ -136,17 +136,17 @@ const View = () => {
   const handleSearch = (event) => {
     const term = event.target.value.toLowerCase();
     // Filter the data based on the search term
-    const filteredValues = data.filter((batch) => batch.name.toLowerCase().includes(term));
+    const filteredValues = data.filter((user) => user.name.toLowerCase().includes(term) || user.email.toLowerCase().includes(term));
     setFilteredData(filteredValues);
   };
 
   const handleClickAddNew = () => {
-    navigate('/app/batches/add');
+    navigate('/app/users/add');
   };
 
   const handleViewRow = (id) => {
     // Navigate to detailed view of the row with provided id
-    navigate('/app/batches/update?id=' + id);
+    navigate('/app/users/update?id=' + id);
   };
 
   const exportToCSV = () => {
@@ -155,11 +155,11 @@ const View = () => {
     if (filteredData.length > 0) {
       exportData = filteredData;
     } else {
-      exportData = data.filter((batch) => selected.includes(batch.id));
+      exportData = data.filter((user) => selected.includes(user.id));
     }
 
-    const csvHeader = ['ID', 'Name', 'Age', 'Grade'].join(','); // Header row
-    const csvData = exportData.map((batch) => [batch.id, batch.name, batch.age, batch.grade].join(','));
+    const csvHeader = ['Name', 'Email', 'Role'].join(','); // Header row
+    const csvData = exportData.map((user) => [user.name, user.email, user.user_type].join(','));
     // Combine header and data rows
     const csvContent = csvHeader + '\n' + csvData.join('\n');
     // Create a Blob object with CSV content
@@ -167,7 +167,7 @@ const View = () => {
     // Create a temporary anchor element to initiate the download
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
-    link.download = 'batch_data.csv';
+    link.download = 'user_data.csv';
     // Trigger the download
     document.body.appendChild(link);
     link.click();
@@ -176,7 +176,7 @@ const View = () => {
   };
 
   return (
-    <MainCard title="Batch List">
+    <MainCard title="User List">
       <Box
         sx={{
           display: 'flex',
@@ -226,6 +226,24 @@ const View = () => {
                   Name
                 </TableSortLabel>
               </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'email'}
+                  direction={orderBy === 'email' ? order : 'asc'}
+                  onClick={() => handleSort('email')}
+                >
+                  Email
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'user_type'}
+                  direction={orderBy === 'user_type' ? order : 'asc'}
+                  onClick={() => handleSort('user_type')}
+                >
+                  Role
+                </TableSortLabel>
+              </TableCell>
               <TableCell>Action</TableCell> {/* Add column for actions */}
             </TableRow>
           </TableHead>
@@ -233,12 +251,14 @@ const View = () => {
           <TableBody>
             {stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy))
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((batch) => (
-                <TableRow key={batch.id} selected={isSelected(batch.id)}>
+              .map((user) => (
+                <TableRow key={user.id} selected={isSelected(user.id)}>
                   <TableCell padding="checkbox">
-                    <Checkbox checked={isSelected(batch.id)} onChange={(event) => handleCheckboxClick(event, batch.id)} />
+                    <Checkbox checked={isSelected(user.id)} onChange={(event) => handleCheckboxClick(event, user.id)} />
                   </TableCell>
-                  <TableCell>{batch.name}</TableCell>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.user_type.name}</TableCell>
                   <TableCell>
                     <Button
                       variant="outlined"
@@ -248,10 +268,17 @@ const View = () => {
                       color="primary"
                       startIcon={<EditOutlined />}
                       onClick={() => handleViewRow(student.id)}
+                      disabled
                     >
                       Edit
                     </Button>
-                    <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={() => handleViewRow(student.id)}>
+                    <Button
+                      disabled
+                      variant="outlined"
+                      color="error"
+                      startIcon={<DeleteOutlined />}
+                      onClick={() => handleViewRow(student.id)}
+                    >
                       Delete
                     </Button>
                   </TableCell>
