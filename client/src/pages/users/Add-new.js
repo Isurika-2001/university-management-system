@@ -213,7 +213,7 @@ const AddForm = () => {
                   disabled={submitting}
                   endIcon={submitting ? <CircularProgress size={20} color="inherit" /> : null}
                 >
-                  Add Course
+                  Add User
                 </Button>
               </Grid>
             </Grid>
