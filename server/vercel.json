@@ -2,12 +2,12 @@
   "version": "2",
   "builds": [
     {
-      "name": "1.0.0",
-      "files": ["index.html", "main.js", "style.css"]
+        "src": "*.js",
+        "use": "@vercel/node"
     }
   ],
   "routes": {
-    "src": "/src",
+    "src": "/src(.*)",
     "dest": "/"
   }
 }
