@@ -1,4 +1,3 @@
-// script to start the server
 require("dotenv").config();
 const bodyParser = require("body-parser");
 const express = require("express");
@@ -16,7 +15,19 @@ const user_typeRoutes = require("./src/routes/user_type");
 const userRoutes = require("./src/routes/user");
 
 const app = express();
-app.use(cors());
+
+// Allow requests from all origins
+// app.use(cors());
+
+// Or specify specific origins
+app.use(
+  cors({
+    origin: "https://ums-client.vercel.app",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
 const PORT = process.env.PORT || 5000;
 
 // default route
