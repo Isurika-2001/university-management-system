@@ -15,7 +15,6 @@ const AuthBackground = () => {
         <rect x="200" y="0" width="200" height="200" fill={theme.palette.success.light} />
       </svg>
     </Box>
-
   );
 };
 
