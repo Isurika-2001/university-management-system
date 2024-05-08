@@ -127,7 +127,7 @@ const AddForm = () => {
   };
 
   return (
-    <MainCard title="Add New Course">
+    <MainCard title="Add New User">
       <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
         {({ errors, handleSubmit, touched }) => (
           <Form onSubmit={handleSubmit}>
