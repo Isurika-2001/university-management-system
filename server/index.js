@@ -16,7 +16,12 @@ const userRoutes = require("./src/routes/user");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: 'https://ums-client.vercel.app', // Replace this with your frontend URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Add the HTTP methods you want to allow
+  allowedHeaders: ['Content-Type', 'Authorization'], // Add the headers you want to allow
+}));
+
 
 const PORT = process.env.PORT || 5000;
 
