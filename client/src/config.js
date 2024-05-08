@@ -10,7 +10,7 @@ const config = {
   presetColor: 'default',
   themeDirection: 'ltr',
   basename: '/',
-  apiUrl: 'https://ums-polymath-api.vercel.app/', 
+  apiUrl: 'http://localhost:5000/', 
 };
 
 export default config;
