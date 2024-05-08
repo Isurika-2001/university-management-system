@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from 'context/useAuthContext';
 
 // material-ui
@@ -58,7 +58,7 @@ function a11yProps(index) {
 
 const Profile = () => {
   const theme = useTheme();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const { logout } = useLogout();
   const { user } = useAuthContext();
 
@@ -67,7 +67,7 @@ const Profile = () => {
 
     try {
       logout();
-      navigate('/login');
+      // navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
     }

@@ -6,7 +6,7 @@ const user_typeSchema = new mongoose.Schema({
   student: String,
   course: String,
   batch: String,
-  course_registration: String,
+  registrations: String,
 });
 
 const User_type = mongoose.model("User_type", user_typeSchema);

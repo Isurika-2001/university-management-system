@@ -34,7 +34,7 @@ export const useLogin = () => {
       setIsLoading(false)
 
       // navogaite to the dashboard
-      window.location.href = '/app/dashboard'
+      // window.location.href = '/app/dashboard'
     }
   }
 

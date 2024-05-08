@@ -1,13 +1,24 @@
 // project import
 import pages from './pages';
+import counselor_pages from './counselor-pages';
 import dashboard from './dashboard';
-// import utilities from './utilities';
-// import support from './support';
+import { useAuthContext } from 'context/useAuthContext';
 
 // ==============================|| MENU ITEMS ||============================== //
 
-const menuItems = {
-  items: [dashboard, pages]
+const MenuItems = () => {
+  const { user } = useAuthContext();
+  const userType = user?.userType?.name;
+  
+  let items = [];
+  
+  if (userType === 'admin') {
+    items = [dashboard, pages];
+  } else if (userType === 'counselor') {
+    items = [dashboard, counselor_pages];
+  }
+  
+  return { items };
 };
 
-export default menuItems;
+export default MenuItems;

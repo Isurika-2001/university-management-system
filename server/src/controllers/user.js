@@ -95,7 +95,7 @@ async function login(req, res) {
           student: userType.student,
           course: userType.course,
           batch: userType.batch,
-          course_registration: userType.course_registration,
+          registrations: userType.registrations,
         }
       : {};
     // Create JWT token with user information and permissions
