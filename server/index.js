@@ -20,13 +20,7 @@ app.use(cors());
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(
-  express.json({
-    origin: "https://ums-client.vercel.app",
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-  })
-);
+app.use(cors());
 
 // default route
 app.get("/", (req, res) => {
