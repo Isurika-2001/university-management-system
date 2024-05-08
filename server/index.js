@@ -16,17 +16,7 @@ const userRoutes = require("./src/routes/user");
 
 const app = express();
 
-// Allow requests from all origins
-// app.use(cors());
-
-// Or specify specific origins
-app.use(
-  cors({
-    origin: "https://ums-client.vercel.app",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  })
-);
+app.use(cors());
 
 const PORT = process.env.PORT || 5000;
 
