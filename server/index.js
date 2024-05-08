@@ -19,11 +19,6 @@ const app = express();
 app.use(cors());
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors({
-  origin: 'https://ums-client.vercel.app'
-}));
-
 // default route
 app.get("/", (req, res) => {
   res.send("Welcome to the student management system");
