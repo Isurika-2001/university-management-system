@@ -5,15 +5,15 @@ const express = require("express");
 const cors = require("cors");
 
 // project imports
-const connectToDatabase = require("../database");
+const connectToDatabase = require("./database");
 
 // Routes
-const studentRoutes = require("./routes/student");
-const courseRoutes = require("./routes/course");
-const batchRoutes = require("./routes/batch");
-const courseRegistrationRoutes = require("./routes/course_registration");
-const user_typeRoutes = require("./routes/user_type");
-const userRoutes = require("./routes/user");
+const studentRoutes = require("./src/routes/student");
+const courseRoutes = require("./src/routes/course");
+const batchRoutes = require("./src/routes/batch");
+const courseRegistrationRoutes = require("./src/routes/course_registration");
+const user_typeRoutes = require("./src/routes/user_type");
+const userRoutes = require("./src/routes/user");
 
 const app = express();
 app.use(cors());
@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(
   express.json({
-    origin: "https://ums-polymath.vercel.app/",
+    origin: "https://localhost:3000",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
   })
