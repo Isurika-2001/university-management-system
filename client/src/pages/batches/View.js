@@ -248,10 +248,17 @@ const View = () => {
                       color="primary"
                       startIcon={<EditOutlined />}
                       onClick={() => handleViewRow(student.id)}
+                      disabled
                     >
                       Edit
                     </Button>
-                    <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={() => handleViewRow(student.id)}>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      disabled
+                      startIcon={<DeleteOutlined />}
+                      onClick={() => handleViewRow(student.id)}
+                    >
                       Delete
                     </Button>
                   </TableCell>
