@@ -93,33 +93,39 @@ export default function ThemeRoutes() {
 
         {/* Course section */}
         <Route path="courses" element={<Outlet />}>
-          <Route index element={permissions?.course?.includes('view-all') ? <Courses /> : <Navigate to="/app/access-denied" replace />} />
+          <Route index element={permissions?.course?.includes('read-all') ? <Courses /> : <Navigate to="/app/access-denied" replace />} />
           <Route
-            index
+            path="add"
             element={permissions?.course?.includes('create') ? <AddCourseForm /> : <Navigate to="/app/access-denied" replace />}
           />
           <Route
-            index
+            path="update"
             element={permissions?.course?.includes('update-all') ? <UpdateCourseForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
 
         {/* Batch section */}
         <Route path="batches" element={<Outlet />}>
-          <Route index element={permissions?.batch?.includes('view-all') ? <Batches /> : <Navigate to="/app/access-denied" replace />} />
-          <Route index element={permissions?.batch?.includes('create') ? <AddBatchForm /> : <Navigate to="/app/access-denied" replace />} />
+          <Route index element={permissions?.batch?.includes('read-all') ? <Batches /> : <Navigate to="/app/access-denied" replace />} />
           <Route
-            index
+            path="add"
+            element={permissions?.batch?.includes('create') ? <AddBatchForm /> : <Navigate to="/app/access-denied" replace />}
+          />
+          <Route
+            path="update"
             element={permissions?.batch?.includes('update-all') ? <UpdateBatchForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
 
         {/* User section */}
         <Route path="users" element={<Outlet />}>
-          <Route index element={permissions?.user?.includes('view-all') ? <Users /> : <Navigate to="/app/access-denied" replace />} />
-          <Route index element={permissions?.user?.includes('create') ? <AddUserForm /> : <Navigate to="/app/access-denied" replace />} />
+          <Route index element={permissions?.user?.includes('read-all') ? <Users /> : <Navigate to="/app/access-denied" replace />} />
           <Route
-            index
+            path="add"
+            element={permissions?.user?.includes('create') ? <AddUserForm /> : <Navigate to="/app/access-denied" replace />}
+          />
+          <Route
+            path="updae"
             element={permissions?.user?.includes('update-all') ? <UpdateUserForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
