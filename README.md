@@ -15,7 +15,10 @@ Authentication Module:
 Secure authentication with Auth Context and JWT token-based sessions to ensure data protection and user authentication.
 
 ## 🚀 Tech Stack:
-### Frontend: React, Material UI
-### Backend: Node.js, Express.js
-### Database: MongoDB
+Frontend: React, Material UI
+
+Backend: Node.js, Express.js
+
+Database: MongoDB
+
 This system is designed to provide an all-in-one solution for managing the various facets of a university, ensuring an efficient and secure environment for both administrators and students.
