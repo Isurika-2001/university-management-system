@@ -17,7 +17,7 @@ const userRoutes = require("./src/routes/user");
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:3000', // Replace this with your frontend URL
+  origin: 'https://ums-demo.vercel.app', // Replace this with your frontend URL
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Add the HTTP methods you want to allow
   allowedHeaders: ['Content-Type', 'Authorization'], // Add the headers you want to allow
 }));

@@ -10,7 +10,7 @@ const config = {
   presetColor: 'default',
   themeDirection: 'ltr',
   basename: '/',
-  apiUrl: 'https://ums-demo-be.vercel.app/', 
+  apiUrl: 'https://ums-demo-be.vercel.app/', // qa url
 };
 
 export default config;
