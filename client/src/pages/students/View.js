@@ -329,6 +329,7 @@ const View = () => {
                       }}
                       color="error"
                       startIcon={<DeleteOutlined />}
+                      disabled
                       // onClick={() => handleAddNewReg(student._id)}
                     >
                       Delete
