@@ -19,22 +19,26 @@ async function getUsers(req, res) {
 
 async function createUser(req, res) {
   try {
-    const { name, password, email, user_type } =
-      req.body;
+    const { name, password, email, user_type } = req.body;
+
     // Check if user_type exists in the user_type collection
     const user_type_document = await User_type.findOne({ name: user_type });
 
     if (!user_type_document) {
-      return res
-        .status(400)
-        .json({ error: `user_type not found: ${user_type}` });
+      return res.status(400).json({
+        success: false,
+        message: `User type not found: ${user_type}`,
+      });
     }
 
-    // check if the email already exists
+    // Check if the email already exists
     const userAvailable = await User.findOne({ email });
 
     if (userAvailable) {
-      return res.status(400).json({ error: "Email already exists" });
+      return res.status(409).json({
+        success: false,
+        message: "Email already exists",
+      });
     }
 
     // Hash the password before saving
@@ -48,11 +52,27 @@ async function createUser(req, res) {
       user_type: user_type_document._id,
     });
 
-    // Save and return user with success message
-    await user.save();
-    res.status(201).json({ user, message: "User created!" });
+    // Save user
+    const newUser = await user.save();
+
+    res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      data: {
+        userId: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        user_type: user_type_document.name,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error(error); // log for debugging
+
+    res.status(500).json({
+      success: false,
+      message: "Error creating user",
+      error: error.message,
+    });
   }
 }
 
@@ -60,35 +80,39 @@ async function login(req, res) {
   try {
     const { email, password } = req.body;
 
-    // Find the user with the given email and populate the 'user_type' field
+    // Find user by email and populate user_type
     const user = await User.findOne({ email }).populate({
       path: "user_type",
       model: "User_type",
     });
 
-    // Check if the user exists
     if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
     }
 
-    // Compare the provided password with the stored hashed password
+    // Verify password
     const passwordMatch = await bcrypt.compare(password, user.password);
-
     if (!passwordMatch) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
     }
 
-    // check user status is true
+    // Check user status
     if (!user.status) {
-      return res
-        .status(401)
-        .json({ error: "Permission denied. Please contact admin." });
+      return res.status(403).json({
+        success: false,
+        message: "Permission denied. Please contact admin.",
+      });
     }
 
-    // Extract relevant information for the token payload
+    // Prepare user info for token payload
     const { _id, name: userName, email: userEmail, user_type: userType } = user;
 
-    // Extract permissions from user_type
     const permissions = userType
       ? {
           user: userType.user,
@@ -98,28 +122,37 @@ async function login(req, res) {
           registrations: userType.registrations,
         }
       : {};
-    // Create JWT token with user information and permissions
+
+    // Create JWT token
     const token = jwt.sign(
-      { userId: _id, userName, userEmail, userType, permissions },
+      { userId: _id, userName, userEmail, userType: userType?.name, permissions },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    // Attach the decoded user information to the req object
+    // Attach decoded user info to req.user (optional)
     req.user = jwt.decode(token);
 
-    // Return the token along with success message and user data
+    // Respond with token and user info
     res.status(200).json({
+      success: true,
       message: "Login successful",
       token,
-      _id,
-      userName,
-      userEmail,
-      userType,
-      permissions,
+      data: {
+        userId: _id,
+        userName,
+        userEmail,
+        userType: userType?.name,
+        permissions,
+      },
     });
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 }
 

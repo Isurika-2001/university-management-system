@@ -16,22 +16,37 @@ async function createBatch(req, res) {
 
   const name = `${year}.${number}`;
 
-  if (await checkDuplicateBatch(name)) {
-    return res.status(403).json({ error: "Batch name already exist" });
-  }
-
-  const batch = new Batch({
-    name,
-  });
-
   try {
+    // Check for duplicate batch
+    if (await checkDuplicateBatch(name)) {
+      return res.status(403).json({
+        success: false,
+        message: "Batch name already exists",
+      });
+    }
+
+    const batch = new Batch({ name });
     const newBatch = await batch.save();
-    res.status(201).json(newBatch);
+
+    res.status(201).json({
+      success: true,
+      message: "Batch created successfully",
+      data: newBatch,
+    });
   } catch (error) {
+    console.error(error); // log for debugging
+
     if (error.code === 11000) {
-      res.status(400).json({ error: "Batch name already exist" });
+      res.status(400).json({
+        success: false,
+        message: "Batch name already exists (duplicate key error)",
+      });
     } else {
-      res.status(400).json({ error: "Error creating batch" });
+      res.status(500).json({
+        success: false,
+        message: "Error creating batch",
+        error: error.message, // optional detailed error for debugging
+      });
     }
   }
 }

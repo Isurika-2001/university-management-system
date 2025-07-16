@@ -43,88 +43,109 @@ async function createStudent(req, res) {
     batchId,
   } = req.body;
 
-  // Check if the student is already registered for the system
-  const isDuplicate = await checkDuplicateRegistration(nic);
-  if (isDuplicate) {
-    const student = await Student.findOne({ nic });
-    // check if the student is already registered for the same course with the same batch
-    const isCourseDuplicate = await checkDuplicateCourseRegistration(
-      student._id,
-      courseId,
-      batchId
-    );
-    if (isCourseDuplicate) {
-      return res.status(403).json({
-        error: "Student already registered for this course with the same batch",
-      });
-    } else {
-      // register the student for the course and batch with the same registration number
-      const courseSequenceValue = await getNextSequenceValue(
-        "course_id_sequence"
-      );
+  try {
+    // Check if the student is already registered in the system
+    const isDuplicate = await checkDuplicateRegistration(nic);
 
-      await courseRegistration(
+    if (isDuplicate) {
+      const student = await Student.findOne({ nic });
+
+      // Check if the student is already registered for the same course and batch
+      const isCourseDuplicate = await checkDuplicateCourseRegistration(
         student._id,
         courseId,
-        batchId,
-        student.registration_no,
-        courseSequenceValue
+        batchId
       );
-      return res
-        .status(201)
-        .json({ message: "Existing student registered for the new course" });
+
+      if (isCourseDuplicate) {
+        return res.status(403).json({
+          success: false,
+          message: "Student already registered for this course with the same batch",
+        });
+      } else {
+        // Register the existing student for the new course and batch
+        const courseSequenceValue = await getNextSequenceValue("course_id_sequence");
+
+        await courseRegistration(
+          student._id,
+          courseId,
+          batchId,
+          student.registration_no,
+          courseSequenceValue
+        );
+
+        return res.status(201).json({
+          success: true,
+          message: "Existing student registered for the new course",
+          data: {
+            studentId: student._id,
+            courseId,
+            batchId,
+          },
+        });
+      }
     }
-  }
 
-  const sequenceValue = await getNextSequenceValue("unique_id_sequence");
+    // New student registration
+    const sequenceValue = await getNextSequenceValue("unique_id_sequence");
 
-  const student = new Student({
-    firstName,
-    lastName,
-    dob,
-    nic,
-    address,
-    mobile,
-    homeContact,
-    email,
-    registration_no: sequenceValue,
-  });
+    const student = new Student({
+      firstName,
+      lastName,
+      dob,
+      nic,
+      address,
+      mobile,
+      homeContact,
+      email,
+      registration_no: sequenceValue,
+    });
 
-  try {
     const newStudent = await student.save();
 
-    // get the saved student document
-    const savedStudent = await Student.findById(student._id);
+    const courseSequenceValue = await getNextSequenceValue("course_id_sequence");
 
-    const courseSequenceValue = await getNextSequenceValue(
-      "course_id_sequence"
-    );
-
-    // new course registration using the function
+    // Register new student for course and batch
     await courseRegistration(
-      savedStudent._id,
+      newStudent._id,
       courseId,
       batchId,
       sequenceValue,
       courseSequenceValue
     );
 
-    res.status(202).json({ message: "New student registered for the course" });
+    res.status(201).json({
+      success: true,
+      message: "New student registered for the course",
+      data: {
+        studentId: newStudent._id,
+        courseId,
+        batchId,
+      },
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error(error); // Log for debugging
+
+    res.status(500).json({
+      success: false,
+      message: "Error registering student",
+      error: error.message,
+    });
   }
 }
 
 async function updateStudent(req, res) {
   const studentId = req.params.id;
-  const { firstName, lastName, dob, nic, address, mobile, homeContact, email } =
-    req.body;
+  const { firstName, lastName, dob, nic, address, mobile, homeContact, email } = req.body;
 
   try {
     const student = await Student.findById(studentId);
 
     if (!student) {
-      return res.status(404).json({ error: "Student not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
     }
 
     student.firstName = firstName;
@@ -138,9 +159,20 @@ async function updateStudent(req, res) {
 
     await student.save();
 
-    res.status(200).json({ message: "Student updated successfully" });
+    res.status(200).json({
+      success: true,
+      message: "Student updated successfully",
+      data: {
+        studentId: student._id,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating student",
+      error: error.message,
+    });
   }
 }
 
@@ -148,28 +180,45 @@ async function AddCourseRegistration(req, res) {
   const studentId = req.params.id;
   const { courseId, batchId } = req.body;
 
-  // Check if the student is already registered for the system
-  const isDuplicate = await checkDuplicateCourseRegistration(
-    studentId,
-    courseId,
-    batchId
-  );
-  if (isDuplicate) {
-    return res.status(403).json({
-      error: "Student already registered for this course with the same batch",
-    });
-  }
-  
-  const courseSequenceValue = await getNextSequenceValue("course_id_sequence");
-
-  // get the registration number of the student
-  const student = await Student.findById(studentId);
-
   try {
+    // Check if the student is already registered for this course and batch
+    const isDuplicate = await checkDuplicateCourseRegistration(studentId, courseId, batchId);
+
+    if (isDuplicate) {
+      return res.status(403).json({
+        success: false,
+        message: "Student already registered for this course with the same batch",
+      });
+    }
+
+    const courseSequenceValue = await getNextSequenceValue("course_id_sequence");
+
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
     await courseRegistration(studentId, courseId, batchId, student.registration_no, courseSequenceValue);
-    res.status(201).json({ message: "Student registered for the course" });
+
+    res.status(201).json({
+      success: true,
+      message: "Student registered for the course",
+      data: {
+        studentId,
+        courseId,
+        batchId,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error registering student for course",
+      error: error.message,
+    });
   }
 }
 
@@ -177,17 +226,29 @@ async function deleteCourseRegistration(req, res) {
   const courseRegistrationId = req.params.id;
 
   try {
-    const courseRegistration = await CourseRegistration.findByIdAndDelete(
-      courseRegistrationId
-    );
+    const courseRegistration = await CourseRegistration.findByIdAndDelete(courseRegistrationId);
 
     if (!courseRegistration) {
-      return res.status(404).json({ error: "Course registration not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Course registration not found",
+      });
     }
 
-    res.status(200).json({ message: "Course registration deleted successfully" });
+    res.status(200).json({
+      success: true,
+      message: "Course registration deleted successfully",
+      data: {
+        courseRegistrationId,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting course registration",
+      error: error.message,
+    });
   }
 }
 
