@@ -14,23 +14,33 @@ async function getAllCourses(req, res) {
 async function createCourse(req, res) {
   const { name, description } = req.body;
 
-  // Check if the course name is already taken
-  const isDuplicate = await checkDuplicateCourse(name);
-
-  if (isDuplicate) {
-    return res.status(403).json({ error: "Course name is already taken" });
-  }
-
-  const course = new Course({
-    name,
-    description,
-  });
-
   try {
+    // Check if the course name is already taken
+    const isDuplicate = await checkDuplicateCourse(name);
+
+    if (isDuplicate) {
+      return res.status(403).json({
+        success: false,
+        message: "Course name is already taken",
+      });
+    }
+
+    const course = new Course({ name, description });
     const newCourse = await course.save();
-    res.status(201).json(newCourse);
+
+    res.status(201).json({
+      success: true,
+      message: "Course created successfully",
+      data: newCourse,
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error(error); // log for debugging
+
+    res.status(500).json({
+      success: false,
+      message: "Error creating course",
+      error: error.message, // optional detailed error
+    });
   }
 }
 

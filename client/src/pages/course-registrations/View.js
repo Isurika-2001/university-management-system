@@ -263,7 +263,7 @@ const View = () => {
                   direction={orderBy === 'id' ? order : 'asc'}
                   onClick={() => handleSort('id', 'id')}
                 >
-                  STU_ID
+                  Reg ID
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -272,7 +272,7 @@ const View = () => {
                   direction={orderBy === 'reg_id' ? order : 'asc'}
                   onClick={() => handleSort('reg_id', 'reg_id')}
                 >
-                  REG_ID
+                  Student ID
                 </TableSortLabel>
               </TableCell>
               <TableCell>

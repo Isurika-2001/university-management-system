@@ -61,9 +61,11 @@ const AddForm = () => {
         body: JSON.stringify(values)
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
         // display error message
-        const errorMessage = await response.text();
+        const errorMessage = responseData.message;
         if (response.status === 500) {
           console.error('Internal Server Error.');
           return;
@@ -72,7 +74,7 @@ const AddForm = () => {
         }
         return;
       } else {
-        const successMessage = await response.text(); // Get success message from response body
+        const successMessage = responseData.message; // Get success message from response body
         showSuccessSwal(successMessage); // Show success message from response body
       }
 
