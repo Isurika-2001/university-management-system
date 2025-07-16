@@ -1,42 +1,49 @@
 import { useState } from 'react'
-import { useAuthContext} from "../context/useAuthContext";
+import { useAuthContext } from "../context/useAuthContext";
 import config from "../config";
 
 export const useLogin = () => {
-  const [error, setError] = useState(null)
-  const [isLoading, setIsLoading] = useState(null)
-  const { dispatch } = useAuthContext()
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(null);
+  const { dispatch } = useAuthContext();
 
   const login = async (values) => {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
-    const response = await fetch(config.apiUrl+'api/login', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(values)
-    })
-    const json = await response.json()
+    try {
+      const response = await fetch(config.apiUrl + 'api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values)
+      });
 
-    if (!response.ok) {
-      setIsLoading(false)
-      setError(json.error)
-      console.log(json.error)
+      const json = await response.json();
+
+      if (!response.ok) {
+        setIsLoading(false);
+        setError(json.message || 'Login failed');
+        console.log(json.message || 'Login failed');
+        return { success: false, message: json.message || 'Login failed' }; // return failure
+      }
+
+      // Save the user to local storage
+      localStorage.setItem('user', JSON.stringify(json));
+
+      // Update the auth context
+      dispatch({ type: 'LOGIN', payload: json });
+
+      setIsLoading(false);
+
+      return { success: true, message: json.message || 'Login successful' }; // return success
+
+    } catch (err) {
+      setIsLoading(false);
+      setError(err.message || 'Login failed');
+      console.error(err);
+      return { success: false, message: err.message || 'Login failed' }; // return catch error
     }
-    if (response.ok) {
-      // save the user to local storage
-      localStorage.setItem('user', JSON.stringify(json))
+  };
 
-      // update the auth context
-      dispatch({type: 'LOGIN', payload: json})
-
-      // update loading state
-      setIsLoading(false)
-
-      // navogaite to the dashboard
-      // window.location.href = '/app/dashboard'
-    }
-  }
-
-  return { login, isLoading, error }
-}
+  return { login, isLoading, error };
+};

@@ -2,6 +2,8 @@ import React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { useLogin } from '../../../hooks/useLogin';
 import useScriptRef from 'hooks/useScriptRef';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 // material-ui
 import {
@@ -35,8 +37,30 @@ import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 
 const AuthLogin = () => {
   const [checked, setChecked] = React.useState(false);
-  const { login, error } = useLogin();
+  const { login } = useLogin();
   const scriptedRef = useScriptRef();
+
+  const Toast = withReactContent(
+    Swal.mixin({
+      toast: true,
+      position: 'bottom',
+      customClass: {
+        popup: 'colored-toast'
+      },
+      background: 'primary',
+      showConfirmButton: false,
+      timer: 3500,
+      timerProgressBar: true
+    })
+  );
+
+  // error showErrorSwal
+  const showErrorSwal = (e) => {
+    Toast.fire({
+      icon: 'error',
+      title: e
+    });
+  };
 
   const [showPassword, setShowPassword] = React.useState(false);
   const handleClickShowPassword = () => {
@@ -60,26 +84,33 @@ const AuthLogin = () => {
           password: Yup.string().max(255).required('Password is required')
         })}
         onSubmit={async (values, { setErrors, setStatus, setSubmitting }) => {
+          setSubmitting(true);
           try {
-            await login(values);
-          } catch (err) {
-            helpers.setStatus({ success: false });
-            helpers.setErrors({ submit: error });
-            helpers.setSubmitting(false);
-          }
+            const res = await login(values);
+            console.log("LOGIN RESULT: ", res);
 
-          try {
-            if (scriptedRef.current) {
-              setStatus({ success: true });
-              setSubmitting(false);
+            if (!res.success) {
+              if (scriptedRef.current) {
+                setStatus({ success: false });
+                setErrors({ submit: res.message || 'Login failed' });
+                setSubmitting(false);
+              }
+              showErrorSwal(res.message || 'Login failed');
+            } else {
+              if (scriptedRef.current) {
+                setStatus({ success: true });
+                setSubmitting(false);
+                // navigate('/dashboard') if needed
+              }
             }
           } catch (err) {
             console.error(err);
             if (scriptedRef.current) {
               setStatus({ success: false });
-              setErrors({ submit: err.message });
+              setErrors({ submit: err.message || 'Login failed' });
               setSubmitting(false);
             }
+            showErrorSwal(err.message || 'Login failed');
           }
         }}
       >
