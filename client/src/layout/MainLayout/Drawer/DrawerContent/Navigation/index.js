@@ -22,7 +22,13 @@ const Navigation = () => {
     }
   });
 
-  return <Box sx={{ pt: 2 }}>{navGroups}</Box>;
+  return (
+    <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Box sx={{ flexGrow: 1 }}>
+        {navGroups}
+      </Box>
+    </Box>
+  );
 };
 
 export default Navigation;
