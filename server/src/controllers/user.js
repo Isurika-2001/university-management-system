@@ -113,38 +113,37 @@ async function login(req, res) {
     // Prepare user info for token payload
     const { _id, name: userName, email: userEmail, user_type: userType } = user;
 
-    const permissions = userType
-      ? {
-          user: userType.user,
-          student: userType.student,
-          course: userType.course,
-          batch: userType.batch,
-          registrations: userType.registrations,
-        }
-      : {};
+    // Construct permissions object from userType document
+    const permissions = {
+      user: userType.user,
+      student: userType.student,
+      course: userType.course,
+      batch: userType.batch,
+      registrations: userType.registrations,
+    };
 
     // Create JWT token
     const token = jwt.sign(
-      { userId: _id, userName, userEmail, userType: userType?.name, permissions },
+      {
+        userId: _id,
+        userName,
+        userEmail,
+        userType, // include full userType object here
+        permissions,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    // Attach decoded user info to req.user (optional)
-    req.user = jwt.decode(token);
-
-    // Respond with token and user info
+    // Respond with expected structure
     res.status(200).json({
-      success: true,
       message: "Login successful",
       token,
-      data: {
-        userId: _id,
-        userName,
-        userEmail,
-        userType: userType?.name,
-        permissions,
-      },
+      permissions, // at root level
+      userId: _id,
+      userName,
+      userEmail,
+      userType, // full userType object
     });
   } catch (error) {
     console.error(error);
