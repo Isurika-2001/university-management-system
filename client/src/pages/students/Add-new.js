@@ -11,6 +11,7 @@ const AddForm = () => {
   const [courseOptions, setCouseOptions] = useState([]);
   const [batchOptions, setBatchOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState('');
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -43,8 +44,13 @@ const AddForm = () => {
 
   useEffect(() => {
     fetchCourses();
-    fetchBatches();
+    console.log('selectedCourse', selectedCourse)
   }, []);
+
+  useEffect(() => {
+    fetchBatches(selectedCourse);
+    console.log('selectedCourse', selectedCourse)
+  }, [selectedCourse]);
 
   // fetch course options
   async function fetchCourses() {
@@ -79,10 +85,15 @@ const AddForm = () => {
   }
 
   // fetch batch options
-  async function fetchBatches() {
+  async function fetchBatches(courseId) {
+    if (!courseId) {
+      setBatchOptions([]); // Clear batches if no course selected
+      return;
+    }
+
     try {
-      // Fetch batch options
-      const response = await fetch(config.apiUrl + 'api/batches', {
+      // Fetch batch options for the selected course
+      const response = await fetch(config.apiUrl + `api/batches/course/${courseId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -92,17 +103,13 @@ const AddForm = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
         if (response.status === 500) {
           console.error('Internal Server Error.');
-          // logout();
           return;
         }
         return;
       }
+
       setBatchOptions(data);
     } catch (error) {
       console.error('Error fetching batches:', error);
@@ -323,6 +330,10 @@ const AddForm = () => {
                       sx: { px: 2, py: 1 }
                     }}
                     sx={{ mb: 3, minHeight: '3.5rem' }}
+                    onChange={(e) => {
+                    const selected = e.target.value;
+                    setSelectedCourse(selected);
+            }}
                   >
                     <MenuItem value="" disabled>
                       Course
@@ -334,30 +345,34 @@ const AddForm = () => {
                     ))}
                   </Field>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Field
-                    as={Select}
-                    displayEmpty
-                    variant="outlined"
-                    name="batchId"
-                    fullWidth
-                    error={touched.batchId && !!errors.batchId}
-                    helperText={<ErrorMessage name="batchId" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 }
-                    }}
-                    sx={{ mb: 3, minHeight: '3.5rem' }}
-                  >
-                    <MenuItem value="" disabled>
-                      Batch
-                    </MenuItem>
-                    {batchOptions.map((batch) => (
-                      <MenuItem key={batch._id} value={batch._id}>
-                        {batch.name}
+
+                {selectedCourse && (
+                  <Grid item xs={12} sm={6}>
+                    <Field
+                      as={Select}
+                      displayEmpty
+                      variant="outlined"
+                      name="batchId"
+                      fullWidth
+                      error={touched.batchId && !!errors.batchId}
+                      helperText={<ErrorMessage name="batchId" />}
+                      InputProps={{
+                        sx: { px: 2, py: 1 }
+                      }}
+                      sx={{ mb: 3, minHeight: '3.5rem' }}
+                    >
+                      <MenuItem value="" disabled>
+                        Batch
                       </MenuItem>
-                    ))}
-                  </Field>
-                </Grid>
+                      {batchOptions.map((batch) => (
+                        <MenuItem key={batch._id} value={batch._id}>
+                          {batch.name}
+                        </MenuItem>
+                      ))}
+                    </Field>
+                  </Grid>
+                )}
+
               </Grid>
               <Divider sx={{ mt: 3, mb: 2 }} />
               <Grid item xs={12} sm={6} style={{ textAlign: 'right' }}>

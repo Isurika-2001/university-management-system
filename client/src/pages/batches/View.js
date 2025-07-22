@@ -226,6 +226,15 @@ const View = () => {
                   Name
                 </TableSortLabel>
               </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'courseName'}
+                  direction={orderBy === 'courseName' ? order : 'asc'}
+                  onClick={() => handleSort('courseName')}
+                >
+                  Course
+                </TableSortLabel>
+              </TableCell>
               <TableCell>Action</TableCell> {/* Add column for actions */}
             </TableRow>
           </TableHead>
@@ -239,6 +248,7 @@ const View = () => {
                     <Checkbox checked={isSelected(batch.id)} onChange={(event) => handleCheckboxClick(event, batch.id)} />
                   </TableCell>
                   <TableCell>{batch.name}</TableCell>
+                  <TableCell>{batch.courseName}</TableCell>
                   <TableCell>
                     <Button
                       variant="outlined"
