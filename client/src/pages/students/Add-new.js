@@ -318,31 +318,33 @@ const AddForm = () => {
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Field
-                    as={Select}
-                    displayEmpty
-                    variant="outlined"
-                    name="courseId"
-                    fullWidth
-                    error={touched.courseId && !!errors.courseId}
-                    helperText={<ErrorMessage name="courseId" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 }
-                    }}
-                    sx={{ mb: 3, minHeight: '3.5rem' }}
-                    onChange={(e) => {
-                    const selected = e.target.value;
-                    setSelectedCourse(selected);
-            }}
-                  >
-                    <MenuItem value="" disabled>
-                      Course
-                    </MenuItem>
-                    {courseOptions.map((course) => (
-                      <MenuItem key={course._id} value={course._id}>
-                        {course.name}
-                      </MenuItem>
-                    ))}
+                  <Field name="courseId">
+                    {({ field, form }) => (
+                      <Select
+                        {...field}
+                        displayEmpty
+                        variant="outlined"
+                        fullWidth
+                        error={form.touched.courseId && !!form.errors.courseId}
+                        sx={{ mb: 3, minHeight: '3.5rem' }}
+                        onChange={(e) => {
+                          const selected = e.target.value;
+                          form.setFieldValue('courseId', selected);
+                          setSelectedCourse(selected);
+                          fetchBatches(selected);
+                          form.setFieldValue('batchId','')
+                        }}
+                      >
+                        <MenuItem value="" disabled>
+                          Course
+                        </MenuItem>
+                        {courseOptions.map((course) => (
+                          <MenuItem key={course._id} value={course._id}>
+                            {course.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    )}
                   </Field>
                 </Grid>
 

@@ -59,13 +59,17 @@ const UpdateForm = () => {
   useEffect(() => {
     fetchdata();
     fetchCourses();
-    fetchBatches();
     console.log(courseRegistrations, courseOptions, batchOptions);
   }, [location.search]);
 
   useEffect(() => {
     fetchCourseRegistrations();
   }, []);
+  
+  useEffect(() => {
+    fetchBatches(selectedCourse);
+    console.log('selectedCourse', selectedCourse)
+  }, [selectedCourse]);
 
   async function fetchdata() {
     setLoading(true);
@@ -174,10 +178,15 @@ const UpdateForm = () => {
   }
 
   // fetch batch options
-  async function fetchBatches() {
+  async function fetchBatches(selectedCourse) {
+    if (!selectedCourse) {
+      setBatchOptions([]); // Clear batches if no course selected
+      return;
+    }
+
     try {
-      // Fetch batch options
-      const response = await fetch(config.apiUrl + 'api/batches', {
+      // Fetch batch options for the selected course
+      const response = await fetch(config.apiUrl + `api/batches/course/${selectedCourse}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -187,17 +196,13 @@ const UpdateForm = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
         if (response.status === 500) {
           console.error('Internal Server Error.');
-          // logout();
           return;
         }
         return;
       }
+
       setBatchOptions(data);
     } catch (error) {
       console.error('Error fetching batches:', error);
@@ -298,6 +303,7 @@ const UpdateForm = () => {
 
   const handleCourseChange = (event) => {
     setSelectedCourse(event.target.value);
+    setSelectedBatch(null)
   };
 
   const handleBatchChange = (event) => {
@@ -615,7 +621,7 @@ const UpdateForm = () => {
           </Table>
         </TableContainer>
       </MainCard>
-      <Dialog open={open} onClose={handleClose} maxWidth="md">
+      <Dialog open={open} onClose={handleClose} width='md' maxWidth="md">
         <DialogTitle>Add New Course Registration</DialogTitle>
         <DialogContent>
           <Formik initialValues={{}} onSubmit={handleAddCourseRegistration}>
@@ -640,6 +646,8 @@ const UpdateForm = () => {
                       <ErrorMessage name="course" component="div" className="error-message" />
                     </FormControl>
                   </Grid>
+                  
+                {selectedCourse && (
                   <Grid item xs={12}>
                     <FormControl fullWidth error={!!dialogErrors.batch}>
                       <InputLabel>Select Batch</InputLabel>
@@ -658,6 +666,7 @@ const UpdateForm = () => {
                       <ErrorMessage name="batch" component="div" className="error-message" />
                     </FormControl>
                   </Grid>
+                )}
                 </Grid>
               </Form>
             )}
