@@ -59,7 +59,7 @@ const View = () => {
     params.append('limit', rowsPerPage);
 
     if (debouncedSearchTerm) {
-      params.append('name', debouncedSearchTerm);
+      params.append('search', debouncedSearchTerm);
     }
 
     try {
