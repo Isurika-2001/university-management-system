@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAuthContext } from "../context/useAuthContext";
+import { useAuthContext } from '../context/useAuthContext';
 import { apiRoutes } from 'config';
 
 export const useLogin = () => {
@@ -12,7 +12,7 @@ export const useLogin = () => {
     setError(null);
 
     try {
-      const response = await fetch(apiRoutes.authRoute + '/login', {
+      const response = await fetch(apiRoutes.authRoute + 'login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values)
