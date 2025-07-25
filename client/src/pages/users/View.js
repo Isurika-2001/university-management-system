@@ -40,14 +40,9 @@ const View = () => {
     try {
       const response = await fetch(apiRoutes.userRoute, {
         method: 'GET'
-        // headers: { Authorization: `Bearer ${user.token}` }
       });
 
       if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
         if (response.status === 500) {
           console.error('Internal Server Error.');
           // logout();
