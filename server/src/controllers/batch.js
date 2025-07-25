@@ -49,11 +49,11 @@ async function createBatch(req, res) {
   const name = `${year}.${number}`;
 
   try {
-    // Check for duplicate batch
-    if (await checkDuplicateBatch(name)) {
+    // Check for duplicate batch within the same course
+    if (await checkDuplicateBatch(courseId, name)) {
       return res.status(403).json({
         success: false,
-        message: "Batch name already exists",
+        message: "Batch name already exists for this course",
       });
     }
 
@@ -83,10 +83,10 @@ async function createBatch(req, res) {
   }
 }
 
-// seperate function for check the batch name is already exist or not
-async function checkDuplicateBatch(name) {
-  const batch = await Batch.findOne({ name });
-  return batch ? true : false;
+// updated checkDuplicateBatch to include courseId
+async function checkDuplicateBatch(courseId, name) {
+  const batch = await Batch.findOne({ courseId, name });
+  return !!batch;
 }
 
 // Export the functions to make them accessible from other files

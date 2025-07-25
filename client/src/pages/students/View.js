@@ -15,7 +15,7 @@ import {
   LinearProgress,
   TextField // Import TextField for input field
 } from '@mui/material';
-import { DownloadOutlined, EditOutlined, DeleteOutlined, FileAddOutlined } from '@ant-design/icons'; // Remove SearchOutlined
+import { DownloadOutlined, EditOutlined, FileAddOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import config from '../../config';
@@ -322,21 +322,6 @@ const View = () => {
                     >
                       Edit
                     </Button>
-                    <Button
-                      variant="outlined"
-                      style={{
-                        marginRight: '8px'
-                      }}
-                      color="error"
-                      startIcon={<DeleteOutlined />}
-                      disabled
-                      // onClick={() => handleAddNewReg(student._id)}
-                    >
-                      Delete
-                    </Button>
-                    {/* <Button variant="outlined" color="info" startIcon={<FileAddOutlined />} onClick={() => handleAddNewReg(student._id)}>
-                      New
-                    </Button> */}
                   </TableCell>
                 </TableRow>
               ))}

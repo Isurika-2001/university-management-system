@@ -10,7 +10,7 @@ const studentSchema = new mongoose.Schema({
   homeContact: String,
   email: String,
   registration_no: {
-    type: Number,
+    type: String,
     required: true,
     unique: true,
   },
