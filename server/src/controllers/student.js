@@ -4,6 +4,9 @@ const Student = require("../models/student");
 const Counter = require("../models/counter");
 const CourseRegistration = require("../models/course_registration");
 
+// utility calling
+const { getNextSequenceValue } = require('../utilities/counter'); 
+
 async function getAllStudents(req, res) {
   try {
     const students = await Student.find();
@@ -283,24 +286,6 @@ async function courseRegistration(
   });
 
   await courseRegistration.save();
-}
-
-async function getNextSequenceValue(sequenceName) {
-  const counter = await Counter.findOneAndUpdate(
-    { _id: sequenceName },
-    { $inc: { sequence_value: 1 } },
-    { new: true, upsert: true }
-  );
-
-  let prefix = "";
-
-  if (sequenceName === "unique_id_sequence") {
-    prefix = "ST_REG";
-  } else if (sequenceName === "course_id_sequence") {
-    prefix = "CS_REG";
-  }
-
-  return `${prefix}${counter.sequence_value}`;
 }
 
 module.exports = {

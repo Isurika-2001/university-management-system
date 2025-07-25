@@ -188,11 +188,11 @@ const View = () => {
       exportData = data.filter((courseReg) => selected.includes(courseReg.id));
     }
 
-    const csvHeader = ['Student ID', 'Registration ID', 'Name', 'Course', 'Batch', 'Contact', 'Address'].join(','); // Header row
+    const csvHeader = ['Registration ID', 'Student ID', 'Name', 'Course', 'Batch', 'Contact', 'Address'].join(','); // Header row
     const csvData = exportData.map((courseReg) =>
       [
-        courseReg.studentId.registration_no,
         courseReg.courseReg_no,
+        courseReg.studentId.registration_no,
         courseReg.studentId.firstName + ' ' + courseReg.studentId.lastName,
         courseReg.courseId.name,
         courseReg.batchId.name,
