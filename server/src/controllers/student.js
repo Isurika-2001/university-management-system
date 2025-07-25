@@ -9,9 +9,61 @@ const { getNextSequenceValue } = require('../utilities/counter');
 
 async function getAllStudents(req, res) {
   try {
-    const students = await Student.find();
-    res.status(200).json(students);
+    const { registration_no, name, nic, contact, address, page = 1, limit = 10 } = req.query;
+
+    const filter = {};
+
+    if (registration_no) {
+      filter.registration_no = { $regex: registration_no, $options: "i" };
+    }
+
+    if (name) {
+      filter.$or = [
+        { firstName: { $regex: name, $options: "i" } },
+        { lastName: { $regex: name, $options: "i" } },
+      ];
+    }
+
+    if (nic) {
+      filter.nic = { $regex: nic, $options: "i" };
+    }
+
+    if (contact) {
+      filter.$or = filter.$or || [];
+      filter.$or.push(
+        { mobile: { $regex: contact, $options: "i" } },
+        { homeContact: { $regex: contact, $options: "i" } }
+      );
+    }
+
+    if (address) {
+      filter.address = { $regex: address, $options: "i" };
+    }
+
+    // Convert page and limit to numbers and set defaults
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+
+    // Calculate how many documents to skip
+    const skip = (pageNum - 1) * limitNum;
+
+    // Total count for pagination info
+    const totalStudents = await Student.countDocuments(filter);
+
+    // Fetch students with pagination
+    const students = await Student.find(filter)
+      .skip(skip)
+      .limit(limitNum);
+
+    res.status(200).json({
+      total: totalStudents,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(totalStudents / limitNum),
+      data: students,
+    });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
