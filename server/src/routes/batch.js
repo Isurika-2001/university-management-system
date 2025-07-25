@@ -5,9 +5,9 @@ const { getAllBatches, createBatch, getBatchesByCourseId } = require("../control
 
 const router = express.Router();
 
-router.get("/batches", getAllBatches);
-router.post("/batch", createBatch);
-router.get('/batches/course/:courseId', getBatchesByCourseId);
+router.get("/", getAllBatches);
+router.post("/", createBatch);
+router.get('/course/:courseId', getBatchesByCourseId);
 
 // Define other routes
 

@@ -4,7 +4,7 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import { useLocation } from 'react-router-dom';
-import config from '../../config';
+import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
@@ -51,7 +51,7 @@ const UpdateForm = () => {
     const id = searchParams.get('id');
     // Fetch student data based on the id
     try {
-      const response = await fetch(config.apiUrl + 'api/students/' + id, {
+      const response = await fetch(apiRoutes.studentRoute + id, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -115,7 +115,7 @@ const UpdateForm = () => {
     console.log('Submitting:', values, id);
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/students/' + id, {
+      const response = await fetch(apiRoutes.studentRoute + id, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

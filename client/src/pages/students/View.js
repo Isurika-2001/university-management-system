@@ -18,7 +18,7 @@ import {
 import { DownloadOutlined, EditOutlined, FileAddOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
-import config from '../../config';
+import { apiRoutes } from '../../config';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -38,7 +38,7 @@ const View = () => {
   async function fetchData() {
     // Fetch data from API
     try {
-      const response = await fetch(config.apiUrl + 'api/students', {
+      const response = await fetch(apiRoutes.studentRoute, {
         method: 'GET'
         // headers: { Authorization: `Bearer ${user.token}` }
       });

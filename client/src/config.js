@@ -10,7 +10,20 @@ const config = {
   presetColor: 'default',
   themeDirection: 'ltr',
   basename: '/',
-  apiUrl: 'http://localhost:5000/', 
+
+  // Base API URL
+  apiUrl: 'http://localhost:5000/api/',
+};
+
+// Route endpoints based on your Express routes
+export const apiRoutes = {
+  studentRoute: `${config.apiUrl}student/`,
+  courseRoute: `${config.apiUrl}course/`,
+  batchRoute: `${config.apiUrl}batch/`,
+  courseRegistrationRoute: `${config.apiUrl}course-registration/`,
+  userTypeRoute: `${config.apiUrl}user-type/`,
+  userRoute: `${config.apiUrl}user/`,
+  authRoute: `${config.apiUrl}auth/`,
 };
 
 export default config;

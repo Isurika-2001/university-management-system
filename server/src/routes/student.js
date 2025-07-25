@@ -5,12 +5,12 @@ const { getAllStudents, getStudentById, createStudent, updateStudent, AddCourseR
 
 const router = express.Router();
 
-router.get('/students', getAllStudents);
-router.post('/student', createStudent);
-router.get('/students/:id', getStudentById);
-router.put('/students/:id', updateStudent);
-router.post('/students/course_registration/:id', AddCourseRegistration);
-router.delete('/students/course_registration/:id', deleteCourseRegistration);
+router.get('/', getAllStudents);
+router.post('/', createStudent);
+router.get('/:id', getStudentById);
+router.put('/:id', updateStudent);
+router.post('/course_registration/:id', AddCourseRegistration);
+router.delete('/course_registration/:id', deleteCourseRegistration);
 
 // Define other routes
 

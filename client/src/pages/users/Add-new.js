@@ -3,7 +3,7 @@ import { TextField, Button, Grid, Divider, CircularProgress, MenuItem } from '@m
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import config from '../../config';
+import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
@@ -62,7 +62,7 @@ const AddForm = () => {
   async function fetchUserTypes() {
     try {
       // Fetch batch options
-      const response = await fetch(config.apiUrl + 'api/user_types', {
+      const response = await fetch(apiRoutes.userTypeRoute, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -94,7 +94,7 @@ const AddForm = () => {
     console.log('Submitted:', values);
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/user', {
+      const response = await fetch(apiRoutes.userRoute, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -3,7 +3,7 @@ import { TextField, Button, Grid, Divider, CircularProgress } from '@mui/materia
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import config from '../../config';
+import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
@@ -53,7 +53,7 @@ const AddForm = () => {
     console.log('Submitted:', values);
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/course', {
+      const response = await fetch(apiRoutes.courseRoute, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -4,6 +4,7 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import config from '../../config';
+import { apiRoutes } from '../../config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
@@ -50,7 +51,7 @@ const AddForm = () => {
   async function fetchCourses() {
     try {
       // Fetch course options
-      const response = await fetch(config.apiUrl + 'api/courses', {
+      const response = await fetch(apiRoutes.courseRoute, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -82,7 +83,7 @@ const AddForm = () => {
   async function fetchBatches() {
     try {
       // Fetch batch options
-      const response = await fetch(config.apiUrl + 'api/batches', {
+      const response = await fetch(apiRoutes.batchRoute, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -147,7 +148,7 @@ const AddForm = () => {
     console.log('Submitting:', values);
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/student', {
+      const response = await fetch(apiRoutes.studentRoute, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

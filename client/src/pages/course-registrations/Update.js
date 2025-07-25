@@ -8,7 +8,7 @@ import { FileAddOutlined } from '@ant-design/icons';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import { useLocation } from 'react-router-dom';
-import config from '../../config';
+import { apiRoutes } from '../../config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
@@ -77,7 +77,7 @@ const UpdateForm = () => {
     const id = searchParams.get('id');
     // Fetch student data based on the id
     try {
-      const response = await fetch(config.apiUrl + 'api/students/' + id, {
+      const response = await fetch(apiRoutes.studentRoute + id, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -114,7 +114,7 @@ const UpdateForm = () => {
     try {
       setLoading(true);
       // Fetch course registrations
-      const response = await fetch(config.apiUrl + 'api/course_registrations/student/' + id, {
+      const response = await fetch(apiRoutes.courseRegistrationRoute + 'student/' + id, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -149,7 +149,7 @@ const UpdateForm = () => {
   async function fetchCourses() {
     try {
       // Fetch course options
-      const response = await fetch(config.apiUrl + 'api/courses', {
+      const response = await fetch(apiRoutes.courseRoute, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -186,7 +186,7 @@ const UpdateForm = () => {
 
     try {
       // Fetch batch options for the selected course
-      const response = await fetch(config.apiUrl + `api/batches/course/${selectedCourse}`, {
+      const response = await fetch(apiRoutes.batchRoute + `course/${selectedCourse}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -245,7 +245,7 @@ const UpdateForm = () => {
     console.log('Submitting:', values, id);
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/students/' + id, {
+      const response = await fetch(apiRoutes.studentRoute + id, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -350,7 +350,7 @@ const UpdateForm = () => {
 
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/students/course_registration/' + id, {
+      const response = await fetch(apiRoutes.studentRoute + 'course_registration/' + id, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -388,7 +388,7 @@ const UpdateForm = () => {
 
   const handleDelete = (id) => async () => {
     try {
-      const response = await fetch(config.apiUrl + 'api/students/course_registration/' + id, {
+      const response = await fetch(apiRoutes.studentRoute + 'course_registration/' + id, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'

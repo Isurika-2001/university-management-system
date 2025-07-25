@@ -3,7 +3,7 @@ import { TextField, Button, Grid, MenuItem, Select, Divider, CircularProgress } 
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import config from '../../config';
+import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
@@ -59,7 +59,7 @@ const AddForm = () => {
   async function fetchCourses() {
     try {
       // Fetch course options
-      const response = await fetch(config.apiUrl + 'api/courses', {
+      const response = await fetch(apiRoutes.courseRoute, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -91,7 +91,7 @@ const AddForm = () => {
     console.log('Submitted:', values);
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/batch', {
+      const response = await fetch(apiRoutes.batchRoute, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

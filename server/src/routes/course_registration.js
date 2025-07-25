@@ -6,9 +6,9 @@ const { getAllCourseRegistrations, getCourseRegistrationById, getAllCourseRegist
 
 const router = express.Router();
 
-router.get('/course_registrations', getAllCourseRegistrations);
-router.get('/course_registrations/:id', getCourseRegistrationById);
-router.get('/course_registrations/student/:id', getAllCourseRegistrationsByStudentId);
+router.get('/', getAllCourseRegistrations);
+router.get('/:id', getCourseRegistrationById);
+router.get('/student/:id', getAllCourseRegistrationsByStudentId);
 
 // Define other routes
 
