@@ -4,11 +4,51 @@ const Student = require("../models/student");
 const Counter = require("../models/counter");
 const CourseRegistration = require("../models/course_registration");
 
+// utility calling
+const { getNextSequenceValue } = require('../utilities/counter'); 
+
 async function getAllStudents(req, res) {
   try {
-    const students = await Student.find();
-    res.status(200).json(students);
+    const { search = '', page = 1, limit = 10 } = req.query;
+
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build a filter that searches across multiple fields if search is not empty
+    let filter = {};
+
+    if (search.trim() !== '') {
+      const searchRegex = new RegExp(search, 'i'); // case-insensitive regex
+
+      filter = {
+        $or: [
+          { registration_no: searchRegex },
+          { firstName: searchRegex },
+          { lastName: searchRegex },
+          { nic: searchRegex },
+          { mobile: searchRegex },
+          { homeContact: searchRegex },
+          { address: searchRegex }
+        ]
+      };
+    }
+
+    const totalStudents = await Student.countDocuments(filter);
+
+    const students = await Student.find(filter)
+      .skip(skip)
+      .limit(limitNum);
+
+    res.status(200).json({
+      total: totalStudents,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(totalStudents / limitNum),
+      data: students,
+    });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
@@ -267,12 +307,67 @@ async function checkDuplicateCourseRegistration(studentId, courseId, batchId) {
   return !!courseRegistration;
 }
 
+async function exportStudents(req, res) {
+  try {
+    const { search = '' } = req.query;
+
+    console.log('--- Export Students Request ---');
+    console.log('Received Query Params:', { search });
+
+    let filter = {};
+
+    if (search.trim() !== '') {
+      const searchRegex = new RegExp(search, 'i'); // case-insensitive regex
+
+      filter = {
+        $or: [
+          { registration_no: searchRegex },
+          { firstName: searchRegex },
+          { lastName: searchRegex },
+          { nic: searchRegex },
+          { mobile: searchRegex },
+          { homeContact: searchRegex },
+          { address: searchRegex }
+        ]
+      };
+    }
+
+    console.log('MongoDB Filter:', filter);
+
+    const students = await Student.find(filter);
+
+    console.log('Students fetched from DB:', students.length);
+
+    const exportData = students.map((student) => ({
+      registrationNo: student.registration_no,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      nic: student.nic,
+      dob: student.dob,
+      address: student.address,
+      mobile: student.mobile,
+      homeContact: student.homeContact,
+      email: student.email
+    }));
+
+    console.log('Final export data count:', exportData.length);
+
+    res.status(200).json({
+      total: exportData.length,
+      data: exportData
+    });
+  } catch (error) {
+    console.error('Error in exportStudents:', error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
 async function courseRegistration(
   studentId,
   courseId,
   batchId,
   sequenceValue,
-  courseSequenceValue
+  courseSequenceValue,
 ) {
   const courseRegistration = new CourseRegistration({
     studentId,
@@ -285,15 +380,6 @@ async function courseRegistration(
   await courseRegistration.save();
 }
 
-async function getNextSequenceValue(sequenceName) {
-  const counter = await Counter.findOneAndUpdate(
-    { _id: sequenceName },
-    { $inc: { sequence_value: 1 } },
-    { returnOriginal: false, upsert: true }
-  );
-  return counter.sequence_value;
-}
-
 module.exports = {
   getAllStudents,
   getStudentById,
@@ -301,4 +387,5 @@ module.exports = {
   updateStudent,
   AddCourseRegistration,
   deleteCourseRegistration,
+  exportStudents,
 };

@@ -3,13 +3,15 @@ import { TextField, Button, Grid, Divider, CircularProgress, MenuItem } from '@m
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import config from '../../config';
+import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useAuthContext } from 'context/useAuthContext';
 
 const AddForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [userTypes, setUserTypes] = useState([]);
+  const { user } = useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -62,11 +64,12 @@ const AddForm = () => {
   async function fetchUserTypes() {
     try {
       // Fetch batch options
-      const response = await fetch(config.apiUrl + 'api/user_types', {
-        method: 'GET',
+      const response = await fetch(apiRoutes.userTypeRoute, {
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -94,10 +97,11 @@ const AddForm = () => {
     console.log('Submitted:', values);
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/user', {
-        method: 'POST',
+      const response = await fetch(apiRoutes.userRoute, {
+        method: 'POST',   
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify(values)
       });

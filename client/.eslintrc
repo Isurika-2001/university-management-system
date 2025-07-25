@@ -29,19 +29,14 @@
       }
     }
   },
-  "parser": "@babel/eslint-parser",
   "parserOptions": {
-    "requireConfigFile": false,
     "ecmaFeatures": {
       "experimentalObjectRestSpread": true,
       "impliedStrict": true,
       "jsx": true
     },
     "ecmaVersion": 12,
-    "sourceType": "module",
-    "babelOptions": {
-      "presets": ["@babel/preset-react"]
-    }
+    "sourceType": "module"
   },
   "plugins": ["prettier", "react", "react-hooks"],
   "rules": {

@@ -3,14 +3,17 @@ import { TextField, Button, Grid, Divider, Select, MenuItem, CircularProgress } 
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import config from '../../config';
+import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useAuthContext } from 'context/useAuthContext';
 
 const AddForm = () => {
   const [courseOptions, setCouseOptions] = useState([]);
   const [batchOptions, setBatchOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const { user } = useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -43,18 +46,24 @@ const AddForm = () => {
 
   useEffect(() => {
     fetchCourses();
-    fetchBatches();
+    console.log('selectedCourse', selectedCourse)
   }, []);
+
+  useEffect(() => {
+    fetchBatches(selectedCourse);
+    console.log('selectedCourse', selectedCourse)
+  }, [selectedCourse]);
 
   // fetch course options
   async function fetchCourses() {
     try {
       // Fetch course options
-      const response = await fetch(config.apiUrl + 'api/courses', {
-        method: 'GET',
+      const response = await fetch(apiRoutes.courseRoute, {
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -79,30 +88,32 @@ const AddForm = () => {
   }
 
   // fetch batch options
-  async function fetchBatches() {
+  async function fetchBatches(courseId) {
+    if (!courseId) {
+      setBatchOptions([]); // Clear batches if no course selected
+      return;
+    }
+
     try {
-      // Fetch batch options
-      const response = await fetch(config.apiUrl + 'api/batches', {
-        method: 'GET',
+      // Fetch batch options for the selected course
+      const response = await fetch(apiRoutes.batchRoute + `course/${courseId}`, {
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
         if (response.status === 500) {
           console.error('Internal Server Error.');
-          // logout();
           return;
         }
         return;
       }
+
       setBatchOptions(data);
     } catch (error) {
       console.error('Error fetching batches:', error);
@@ -147,10 +158,11 @@ const AddForm = () => {
     console.log('Submitting:', values);
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/student', {
-        method: 'POST',
+      const response = await fetch(apiRoutes.studentRoute, {
+        method: 'POST',   
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify(values)
       });
@@ -311,53 +323,63 @@ const AddForm = () => {
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Field
-                    as={Select}
-                    displayEmpty
-                    variant="outlined"
-                    name="courseId"
-                    fullWidth
-                    error={touched.courseId && !!errors.courseId}
-                    helperText={<ErrorMessage name="courseId" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 }
-                    }}
-                    sx={{ mb: 3, minHeight: '3.5rem' }}
-                  >
-                    <MenuItem value="" disabled>
-                      Course
-                    </MenuItem>
-                    {courseOptions.map((course) => (
-                      <MenuItem key={course._id} value={course._id}>
-                        {course.name}
-                      </MenuItem>
-                    ))}
+                  <Field name="courseId">
+                    {({ field, form }) => (
+                      <Select
+                        {...field}
+                        displayEmpty
+                        variant="outlined"
+                        fullWidth
+                        error={form.touched.courseId && !!form.errors.courseId}
+                        sx={{ mb: 3, minHeight: '3.5rem' }}
+                        onChange={(e) => {
+                          const selected = e.target.value;
+                          form.setFieldValue('courseId', selected);
+                          setSelectedCourse(selected);
+                          fetchBatches(selected);
+                          form.setFieldValue('batchId','')
+                        }}
+                      >
+                        <MenuItem value="" disabled>
+                          Course
+                        </MenuItem>
+                        {courseOptions.map((course) => (
+                          <MenuItem key={course._id} value={course._id}>
+                            {course.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    )}
                   </Field>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Field
-                    as={Select}
-                    displayEmpty
-                    variant="outlined"
-                    name="batchId"
-                    fullWidth
-                    error={touched.batchId && !!errors.batchId}
-                    helperText={<ErrorMessage name="batchId" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 }
-                    }}
-                    sx={{ mb: 3, minHeight: '3.5rem' }}
-                  >
-                    <MenuItem value="" disabled>
-                      Batch
-                    </MenuItem>
-                    {batchOptions.map((batch) => (
-                      <MenuItem key={batch._id} value={batch._id}>
-                        {batch.name}
+
+                {selectedCourse && (
+                  <Grid item xs={12} sm={6}>
+                    <Field
+                      as={Select}
+                      displayEmpty
+                      variant="outlined"
+                      name="batchId"
+                      fullWidth
+                      error={touched.batchId && !!errors.batchId}
+                      helperText={<ErrorMessage name="batchId" />}
+                      InputProps={{
+                        sx: { px: 2, py: 1 }
+                      }}
+                      sx={{ mb: 3, minHeight: '3.5rem' }}
+                    >
+                      <MenuItem value="" disabled>
+                        Batch
                       </MenuItem>
-                    ))}
-                  </Field>
-                </Grid>
+                      {batchOptions.map((batch) => (
+                        <MenuItem key={batch._id} value={batch._id}>
+                          {batch.name}
+                        </MenuItem>
+                      ))}
+                    </Field>
+                  </Grid>
+                )}
+
               </Grid>
               <Divider sx={{ mt: 3, mb: 2 }} />
               <Grid item xs={12} sm={6} style={{ textAlign: 'right' }}>

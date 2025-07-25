@@ -5,8 +5,8 @@ const { getAllCourses, createCourse } = require("../controllers/course");
 
 const router = express.Router();
 
-router.get("/courses", getAllCourses);
-router.post("/course", createCourse);
+router.get("/", getAllCourses);
+router.post("/", createCourse);
 
 // Define other routes
 

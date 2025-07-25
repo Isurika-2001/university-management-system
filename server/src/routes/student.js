@@ -1,16 +1,17 @@
 // studentRoutes.js
 
 const express = require('express');
-const { getAllStudents, getStudentById, createStudent, updateStudent, AddCourseRegistration, deleteCourseRegistration } = require('../controllers/student');
+const { exportStudents, getAllStudents, getStudentById, createStudent, updateStudent, AddCourseRegistration, deleteCourseRegistration } = require('../controllers/student');
 
 const router = express.Router();
 
-router.get('/students', getAllStudents);
-router.post('/student', createStudent);
-router.get('/students/:id', getStudentById);
-router.put('/students/:id', updateStudent);
-router.post('/students/course_registration/:id', AddCourseRegistration);
-router.delete('/students/course_registration/:id', deleteCourseRegistration);
+router.get('/', getAllStudents);
+router.post('/', createStudent);
+router.get('/export', exportStudents);
+router.get('/:id', getStudentById);
+router.put('/:id', updateStudent);
+router.post('/course_registration/:id', AddCourseRegistration);
+router.delete('/course_registration/:id', deleteCourseRegistration);
 
 // Define other routes
 

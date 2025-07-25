@@ -17,11 +17,11 @@ const courseRegistrationSchema = new mongoose.Schema({
     required: true,
   },
   registration_no: {
-    type: Number,
+    type: String,
     required: true,
   },
   courseReg_no: {
-    type: Number,
+    type: String,
     required: true,
     unique: true,
   },
