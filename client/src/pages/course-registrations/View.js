@@ -19,6 +19,7 @@ import { DownloadOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 // import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from '../../config';
+import { useAuthContext } from 'context/useAuthContext';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -29,6 +30,7 @@ const View = () => {
   const [order, setOrder] = useState('asc');
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuthContext();
   // const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,8 +41,11 @@ const View = () => {
     // Fetch data from API
     try {
       const response = await fetch(apiRoutes.courseRegistrationRoute, {
-        method: 'GET'
-        // headers: { Authorization: `Bearer ${user.token}` }
+        method: 'GET',   
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       if (!response.ok) {

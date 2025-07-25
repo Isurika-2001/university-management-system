@@ -19,6 +19,7 @@ import { DownloadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from 
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from 'config';
+import { useAuthContext } from 'context/useAuthContext';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -30,6 +31,7 @@ const View = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuthContext();
 
   useEffect(() => {
     fetchData();
@@ -39,8 +41,11 @@ const View = () => {
     // Fetch data from API
     try {
       const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET'
-        // headers: { Authorization: `Bearer ${user.token}` }
+        method: 'GET',   
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       if (!response.ok) {

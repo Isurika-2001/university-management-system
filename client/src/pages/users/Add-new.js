@@ -6,10 +6,12 @@ import MainCard from 'components/MainCard';
 import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useAuthContext } from 'context/useAuthContext';
 
 const AddForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [userTypes, setUserTypes] = useState([]);
+  const { user } = useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -63,10 +65,11 @@ const AddForm = () => {
     try {
       // Fetch batch options
       const response = await fetch(apiRoutes.userTypeRoute, {
-        method: 'GET',
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -95,9 +98,10 @@ const AddForm = () => {
     try {
       setSubmitting(true);
       const response = await fetch(apiRoutes.userRoute, {
-        method: 'POST',
+        method: 'POST',   
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify(values)
       });

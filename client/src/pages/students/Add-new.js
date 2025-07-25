@@ -6,12 +6,14 @@ import MainCard from 'components/MainCard';
 import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useAuthContext } from 'context/useAuthContext';
 
 const AddForm = () => {
   const [courseOptions, setCouseOptions] = useState([]);
   const [batchOptions, setBatchOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState('');
+  const { user } = useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -57,10 +59,11 @@ const AddForm = () => {
     try {
       // Fetch course options
       const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -94,10 +97,11 @@ const AddForm = () => {
     try {
       // Fetch batch options for the selected course
       const response = await fetch(apiRoutes.batchRoute + `course/${courseId}`, {
-        method: 'GET',
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -155,9 +159,10 @@ const AddForm = () => {
     try {
       setSubmitting(true);
       const response = await fetch(apiRoutes.studentRoute, {
-        method: 'POST',
+        method: 'POST',   
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify(values)
       });

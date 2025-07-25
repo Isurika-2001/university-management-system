@@ -41,10 +41,11 @@ const View = () => {
     // Fetch data from API
     try {
       const response = await fetch(apiRoutes.studentRoute, {
-        method: 'GET',
+        method: 'GET',   
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
-        }
+        },
       });
 
       if (!response.ok) {

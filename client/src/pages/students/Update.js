@@ -7,11 +7,13 @@ import { useLocation } from 'react-router-dom';
 import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useAuthContext } from 'context/useAuthContext';
 
 const UpdateForm = () => {
   const [data, setData] = useState(null);
   const location = useLocation();
   const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuthContext();
   
   const Toast = withReactContent(
     Swal.mixin({
@@ -52,10 +54,11 @@ const UpdateForm = () => {
     // Fetch student data based on the id
     try {
       const response = await fetch(apiRoutes.studentRoute + id, {
-        method: 'GET',
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -116,9 +119,10 @@ const UpdateForm = () => {
     try {
       setSubmitting(true);
       const response = await fetch(apiRoutes.studentRoute + id, {
-        method: 'PUT',
+        method: 'PUT',   
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify(values)
       });

@@ -11,6 +11,7 @@ import { useLocation } from 'react-router-dom';
 import { apiRoutes } from '../../config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useAuthContext } from 'context/useAuthContext';
 
 const UpdateForm = () => {
   const [data, setData] = useState(null);
@@ -19,6 +20,7 @@ const UpdateForm = () => {
   const [batchOptions, setBatchOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuthContext();
 
   const [open, setOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState('');
@@ -78,10 +80,11 @@ const UpdateForm = () => {
     // Fetch student data based on the id
     try {
       const response = await fetch(apiRoutes.studentRoute + id, {
-        method: 'GET',
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -115,10 +118,11 @@ const UpdateForm = () => {
       setLoading(true);
       // Fetch course registrations
       const response = await fetch(apiRoutes.courseRegistrationRoute + 'student/' + id, {
-        method: 'GET',
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -150,10 +154,11 @@ const UpdateForm = () => {
     try {
       // Fetch course options
       const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -187,10 +192,11 @@ const UpdateForm = () => {
     try {
       // Fetch batch options for the selected course
       const response = await fetch(apiRoutes.batchRoute + `course/${selectedCourse}`, {
-        method: 'GET',
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -246,9 +252,10 @@ const UpdateForm = () => {
     try {
       setSubmitting(true);
       const response = await fetch(apiRoutes.studentRoute + id, {
-        method: 'PUT',
+        method: 'PUT',   
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify(values)
       });
@@ -351,9 +358,10 @@ const UpdateForm = () => {
     try {
       setSubmitting(true);
       const response = await fetch(apiRoutes.studentRoute + 'course_registration/' + id, {
-        method: 'POST',
+        method: 'POST',   
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify(values)
       });
@@ -389,10 +397,11 @@ const UpdateForm = () => {
   const handleDelete = (id) => async () => {
     try {
       const response = await fetch(apiRoutes.studentRoute + 'course_registration/' + id, {
-        method: 'DELETE',
+        method: 'DELETE',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const responseData = await response.json();
