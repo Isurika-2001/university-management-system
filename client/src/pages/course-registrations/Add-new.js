@@ -3,7 +3,6 @@ import { TextField, Button, Grid, Divider, Select, MenuItem, CircularProgress } 
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import config from '../../config';
 import { apiRoutes } from '../../config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
@@ -54,11 +53,11 @@ const AddForm = () => {
     try {
       // Fetch course options
       const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',   
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
-        },
+        }
       });
 
       const data = await response.json();
@@ -87,19 +86,19 @@ const AddForm = () => {
     try {
       // Fetch batch options
       const response = await fetch(apiRoutes.batchRoute, {
-        method: 'GET',   
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
-        },
+        }
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
+        // console.error('Unauthorized access. Logging out.');
+        // logout();
         // }
         if (response.status === 500) {
           console.error('Internal Server Error.');
@@ -153,7 +152,7 @@ const AddForm = () => {
     try {
       setSubmitting(true);
       const response = await fetch(apiRoutes.studentRoute, {
-        method: 'POST',   
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
