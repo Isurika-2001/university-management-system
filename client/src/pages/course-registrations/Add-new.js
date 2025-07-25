@@ -3,14 +3,16 @@ import { TextField, Button, Grid, Divider, Select, MenuItem, CircularProgress } 
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import config from '../../config';
+import { apiRoutes } from '../../config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useAuthContext } from 'context/useAuthContext';
 
 const AddForm = () => {
   const [courseOptions, setCouseOptions] = useState([]);
   const [batchOptions, setBatchOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -50,10 +52,11 @@ const AddForm = () => {
   async function fetchCourses() {
     try {
       // Fetch course options
-      const response = await fetch(config.apiUrl + 'api/courses', {
+      const response = await fetch(apiRoutes.courseRoute, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         }
       });
 
@@ -82,10 +85,11 @@ const AddForm = () => {
   async function fetchBatches() {
     try {
       // Fetch batch options
-      const response = await fetch(config.apiUrl + 'api/batches', {
+      const response = await fetch(apiRoutes.batchRoute, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         }
       });
 
@@ -93,8 +97,8 @@ const AddForm = () => {
 
       if (!response.ok) {
         // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
+        // console.error('Unauthorized access. Logging out.');
+        // logout();
         // }
         if (response.status === 500) {
           console.error('Internal Server Error.');
@@ -147,10 +151,11 @@ const AddForm = () => {
     console.log('Submitting:', values);
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/student', {
+      const response = await fetch(apiRoutes.studentRoute, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify(values)
       });

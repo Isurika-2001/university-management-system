@@ -7,12 +7,7 @@ const cors = require("cors");
 const connectToDatabase = require("./database");
 
 // Routes
-const studentRoutes = require("./src/routes/student");
-const courseRoutes = require("./src/routes/course");
-const batchRoutes = require("./src/routes/batch");
-const courseRegistrationRoutes = require("./src/routes/course_registration");
-const user_typeRoutes = require("./src/routes/user_type");
-const userRoutes = require("./src/routes/user");
+const routes = require('./src/routes/index');
 
 const app = express();
 
@@ -21,7 +16,6 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Add the HTTP methods you want to allow
   allowedHeaders: ['Content-Type', 'Authorization'], // Add the headers you want to allow
 }));
-
 
 const PORT = process.env.PORT || 5000;
 
@@ -38,12 +32,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 connectToDatabase();
 
 // Routes
-app.use("/api", studentRoutes);
-app.use("/api", courseRoutes);
-app.use("/api", batchRoutes);
-app.use("/api", courseRegistrationRoutes);
-app.use("/api", user_typeRoutes);
-app.use("/api", userRoutes);
+app.use("/api", routes);
 
 // Start the server
 app.listen(PORT, () => {

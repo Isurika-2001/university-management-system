@@ -8,9 +8,10 @@ import { FileAddOutlined } from '@ant-design/icons';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import { useLocation } from 'react-router-dom';
-import config from '../../config';
+import { apiRoutes } from '../../config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useAuthContext } from 'context/useAuthContext';
 
 const UpdateForm = () => {
   const [data, setData] = useState(null);
@@ -19,6 +20,7 @@ const UpdateForm = () => {
   const [batchOptions, setBatchOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuthContext();
 
   const [open, setOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState('');
@@ -59,13 +61,17 @@ const UpdateForm = () => {
   useEffect(() => {
     fetchdata();
     fetchCourses();
-    fetchBatches();
     console.log(courseRegistrations, courseOptions, batchOptions);
   }, [location.search]);
 
   useEffect(() => {
     fetchCourseRegistrations();
   }, []);
+  
+  useEffect(() => {
+    fetchBatches(selectedCourse);
+    console.log('selectedCourse', selectedCourse)
+  }, [selectedCourse]);
 
   async function fetchdata() {
     setLoading(true);
@@ -73,11 +79,12 @@ const UpdateForm = () => {
     const id = searchParams.get('id');
     // Fetch student data based on the id
     try {
-      const response = await fetch(config.apiUrl + 'api/students/' + id, {
-        method: 'GET',
+      const response = await fetch(apiRoutes.studentRoute + id, {
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -110,11 +117,12 @@ const UpdateForm = () => {
     try {
       setLoading(true);
       // Fetch course registrations
-      const response = await fetch(config.apiUrl + 'api/course_registrations/student/' + id, {
-        method: 'GET',
+      const response = await fetch(apiRoutes.courseRegistrationRoute + 'student/' + id, {
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -145,11 +153,12 @@ const UpdateForm = () => {
   async function fetchCourses() {
     try {
       // Fetch course options
-      const response = await fetch(config.apiUrl + 'api/courses', {
-        method: 'GET',
+      const response = await fetch(apiRoutes.courseRoute, {
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -174,30 +183,32 @@ const UpdateForm = () => {
   }
 
   // fetch batch options
-  async function fetchBatches() {
+  async function fetchBatches(selectedCourse) {
+    if (!selectedCourse) {
+      setBatchOptions([]); // Clear batches if no course selected
+      return;
+    }
+
     try {
-      // Fetch batch options
-      const response = await fetch(config.apiUrl + 'api/batches', {
-        method: 'GET',
+      // Fetch batch options for the selected course
+      const response = await fetch(apiRoutes.batchRoute + `course/${selectedCourse}`, {
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
         if (response.status === 500) {
           console.error('Internal Server Error.');
-          // logout();
           return;
         }
         return;
       }
+
       setBatchOptions(data);
     } catch (error) {
       console.error('Error fetching batches:', error);
@@ -240,10 +251,11 @@ const UpdateForm = () => {
     console.log('Submitting:', values, id);
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/students/' + id, {
-        method: 'PUT',
+      const response = await fetch(apiRoutes.studentRoute + id, {
+        method: 'PUT',   
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify(values)
       });
@@ -298,6 +310,7 @@ const UpdateForm = () => {
 
   const handleCourseChange = (event) => {
     setSelectedCourse(event.target.value);
+    setSelectedBatch(null)
   };
 
   const handleBatchChange = (event) => {
@@ -344,10 +357,11 @@ const UpdateForm = () => {
 
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/students/course_registration/' + id, {
-        method: 'POST',
+      const response = await fetch(apiRoutes.studentRoute + 'course_registration/' + id, {
+        method: 'POST',   
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify(values)
       });
@@ -382,11 +396,12 @@ const UpdateForm = () => {
 
   const handleDelete = (id) => async () => {
     try {
-      const response = await fetch(config.apiUrl + 'api/students/course_registration/' + id, {
-        method: 'DELETE',
+      const response = await fetch(apiRoutes.studentRoute + 'course_registration/' + id, {
+        method: 'DELETE',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const responseData = await response.json();
@@ -615,7 +630,7 @@ const UpdateForm = () => {
           </Table>
         </TableContainer>
       </MainCard>
-      <Dialog open={open} onClose={handleClose} maxWidth="md">
+      <Dialog open={open} onClose={handleClose} width='md' maxWidth="md">
         <DialogTitle>Add New Course Registration</DialogTitle>
         <DialogContent>
           <Formik initialValues={{}} onSubmit={handleAddCourseRegistration}>
@@ -640,6 +655,8 @@ const UpdateForm = () => {
                       <ErrorMessage name="course" component="div" className="error-message" />
                     </FormControl>
                   </Grid>
+                  
+                {selectedCourse && (
                   <Grid item xs={12}>
                     <FormControl fullWidth error={!!dialogErrors.batch}>
                       <InputLabel>Select Batch</InputLabel>
@@ -658,6 +675,7 @@ const UpdateForm = () => {
                       <ErrorMessage name="batch" component="div" className="error-message" />
                     </FormControl>
                   </Grid>
+                )}
                 </Grid>
               </Form>
             )}

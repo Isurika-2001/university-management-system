@@ -11,55 +11,78 @@ import {
   Box,
   Checkbox,
   TablePagination,
-  TableSortLabel,
   LinearProgress,
-  TextField // Import TextField for input field
+  TextField
 } from '@mui/material';
-import { DownloadOutlined, EditOutlined, DeleteOutlined, FileAddOutlined } from '@ant-design/icons'; // Remove SearchOutlined
+import { DownloadOutlined, EditOutlined, FileAddOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
-import config from '../../config';
+import { apiRoutes } from '../../config';
+import { useAuthContext } from 'context/useAuthContext';
 
 const View = () => {
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(0); // zero-based page index
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selected, setSelected] = useState([]);
   const [data, setData] = useState([]);
-  const [orderBy, setOrderBy] = useState('');
-  const [order, setOrder] = useState('asc');
-  const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  const [totalCount, setTotalCount] = useState(0);
+
+  const navigate = useNavigate();
+  const { user } = useAuthContext();
+
+  // Debounce searchTerm: update debouncedSearchTerm 500ms after user stops typing
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  // Fetch data whenever page, rowsPerPage or debouncedSearchTerm changes
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [page, rowsPerPage, debouncedSearchTerm]);
 
   async function fetchData() {
-    // Fetch data from API
+    setLoading(true);
+
+    const params = new URLSearchParams();
+    params.append('page', page + 1); // backend page 1-based
+    params.append('limit', rowsPerPage);
+
+    if (debouncedSearchTerm) {
+      params.append('search', debouncedSearchTerm);
+    }
+
     try {
-      const response = await fetch(config.apiUrl + 'api/students', {
-        method: 'GET'
-        // headers: { Authorization: `Bearer ${user.token}` }
+      const response = await fetch(`${apiRoutes.studentRoute}?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        }
       });
 
       if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
         if (response.status === 500) {
           console.error('Internal Server Error.');
-          // logout();
-          return;
+          // Optional: logout or alert user
         }
+        setLoading(false);
         return;
       }
 
-      const data = await response.json();
-      console.log('Data:', data);
-
-      setData(data);
+      const json = await response.json();
+      setData(json.data);
+      setTotalCount(json.total);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching data:', error.message);
@@ -67,43 +90,9 @@ const View = () => {
     }
   }
 
-  const handleSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrderBy(property);
-    setOrder(isAsc ? 'desc' : 'asc');
-  };
-
-  const getComparator = (order, orderBy) => {
-    switch (orderBy) {
-      case 'id':
-        return order === 'desc' ? (a, b) => b.registration_no - a.registration_no : (a, b) => a.registration_no - b.registration_no;
-      case 'name':
-        return order === 'desc'
-          ? (a, b) => b.firstName.localeCompare(a.firstName) || b.lastName.localeCompare(a.lastName)
-          : (a, b) => a.firstName.localeCompare(b.firstName) || a.lastName.localeCompare(b.lastName);
-      case 'nic':
-        return order === 'desc' ? (a, b) => b.nic.localeCompare(a.nic) : (a, b) => a.nic.localeCompare(b.nic);
-      case 'batch':
-        return order === 'desc'
-          ? (a, b) => b.batchId.name.localeCompare(a.batchId.name)
-          : (a, b) => a.batchId.name.localeCompare(b.batchId.name);
-      case 'contact':
-        return order === 'desc' ? (a, b) => b.mobile.localeCompare(a.mobile) : (a, b) => a.mobile.localeCompare(b.mobile);
-      case 'address':
-        return order === 'desc' ? (a, b) => b.address.localeCompare(a.address) : (a, b) => a.address.localeCompare(b.address);
-      default:
-        return () => 0;
-    }
-  };
-
-  const stableSort = (array, comparator) => {
-    const stabilizedThis = array.map((el, index) => [el, index]);
-    stabilizedThis.sort((a, b) => {
-      const order = comparator(a[0], b[0]);
-      if (order !== 0) return order;
-      return a[1] - b[1];
-    });
-    return stabilizedThis.map((el) => el[0]);
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value);
+    setPage(0); // Reset to first page when search term changes
   };
 
   const handleChangePage = (event, newPage) => {
@@ -117,11 +106,11 @@ const View = () => {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = data.map((student) => student.id);
+      const newSelecteds = data.map((student) => student._id);
       setSelected(newSelecteds);
-    } else {
-      setSelected([]);
+      return;
     }
+    setSelected([]);
   };
 
   const handleCheckboxClick = (event, id) => {
@@ -142,211 +131,133 @@ const View = () => {
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
 
-  const handleSearch = (event) => {
-    const term = event.target.value.toLowerCase();
-    // Filter the data based on the search term
-    const filteredValues = data.filter(
-      (student) =>
-        student.firstName.toLowerCase().includes(term) ||
-        student.lastName.toLowerCase().includes(term) ||
-        student.nic.toLowerCase().includes(term) ||
-        student.mobile.toLowerCase().includes(term) ||
-        student.address.toLowerCase().includes(term)
-    );
-    setFilteredData(filteredValues);
-  };
-
   const handleViewRow = (id) => {
-    // Navigate to detailed view of the row with provided id
     navigate('/app/course-registrations/update?id=' + id);
   };
 
   const handleClickAddNew = () => {
-    // Navigate to the add new student page
     navigate('/app/students/add');
   };
 
-  // const handleAddNewReg = (id) => {
-  //   // Navigate to the add new student page
-  //   navigate('/app/course-registrations/update?id=' + id);
-  //   console.log(id);
-  // };
+  const exportToCSV = async () => {
+    const params = new URLSearchParams();
+    if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
 
-  const exportToCSV = () => {
-    let exportData = [];
+    try {
+      const response = await fetch(`${apiRoutes.studentRoute + 'export'}?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        }
+      });
 
-    if (filteredData.length > 0) {
-      exportData = filteredData;
-    } else {
-      exportData = data.filter((student) => selected.includes(student.id));
+      if (!response.ok) throw new Error('Error exporting students');
+
+      const json = await response.json();
+      const exportData = json.data || [];
+
+      const csvHeader = ['Student ID', 'First Name', 'Last Name', 'NIC', 'DOB', 'Address', 'Mobile', 'Home Contact', 'Email'].join(',');
+      const csvData = exportData.map((student) =>
+        [
+          student.registrationNo,
+          student.firstName,
+          student.lastName,
+          student.nic,
+          student.dob,
+          student.address,
+          student.mobile,
+          student.homeContact,
+          student.email
+        ].join(',')
+      );
+
+      const csvContent = csvHeader + '\n' + csvData.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = 'students_export.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Export error:', error.message);
     }
-
-    const csvHeader = ['Student ID', 'Name', 'NIC', 'Contact', 'Address'].join(','); // Header row
-    const csvData = exportData.map((student) =>
-      [student.registration_no, student.firstName + ' ' + student.lastName, student.nic, student.mobile, student.address].join(',')
-    );
-    // Combine header and data rows
-    const csvContent = csvHeader + '\n' + csvData.join('\n');
-    // Create a Blob object with CSV content
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    // Create a temporary anchor element to initiate the download
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = 'student_data.csv';
-    // Trigger the download
-    document.body.appendChild(link);
-    link.click();
-    // Cleanup
-    document.body.removeChild(link);
   };
 
   return (
     <MainCard title="Student List">
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 2,
-          flexDirection: 'row' // Ensure items are aligned horizontally
-        }}
-      >
-        <TextField label="Search" variant="outlined" onChange={handleSearch} />
-        <div>
-          <Button
-            variant="contained"
-            style={{
-              marginRight: '8px'
-            }}
-            color="success"
-            text="white"
-            disabled={selected.length === 0}
-            onClick={exportToCSV}
-            startIcon={<DownloadOutlined />}
-          >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+        {/* Left side: Filters */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+          <TextField label="Search" variant="outlined" onChange={handleSearch} value={searchTerm} sx={{ width: 300 }} />
+        </Box>
+        {/* Right side: Export button */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+          <Button variant="contained" color="success" onClick={exportToCSV} startIcon={<DownloadOutlined />}>
             Export
           </Button>
           <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
             Add New Student
           </Button>
-        </div>
+        </Box>
       </Box>
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>
+              <TableCell padding="checkbox">
                 <Checkbox
                   indeterminate={selected.length > 0 && selected.length < data.length}
-                  checked={selected.length === data.length}
+                  checked={data.length > 0 && selected.length === data.length}
                   onChange={handleSelectAllClick}
                 />
               </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'id'}
-                  direction={orderBy === 'id' ? order : 'asc'}
-                  onClick={() => handleSort('id', 'id')}
-                >
-                  ID
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'name'}
-                  direction={orderBy === 'name' ? order : 'asc'}
-                  onClick={() => handleSort('name')}
-                >
-                  Name
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel active={orderBy === 'nic'} direction={orderBy === 'nic' ? order : 'asc'} onClick={() => handleSort('nic')}>
-                  NIC
-                </TableSortLabel>
-              </TableCell>
-              {/* <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'batch'}
-                  direction={orderBy === 'batch' ? order : 'asc'}
-                  onClick={() => handleSort('batch')}
-                >
-                  Batch
-                </TableSortLabel>
-              </TableCell> */}
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'contact'}
-                  direction={orderBy === 'contact' ? order : 'asc'}
-                  onClick={() => handleSort('contact')}
-                >
-                  Contact
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'address'}
-                  direction={orderBy === 'address' ? order : 'asc'}
-                  onClick={() => handleSort('address')}
-                >
-                  Address
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>Action</TableCell> {/* Add column for actions */}
+              <TableCell>ID</TableCell>
+              <TableCell>Name</TableCell>
+              <TableCell>NIC</TableCell>
+              <TableCell>Contact</TableCell>
+              <TableCell>Address</TableCell>
+              <TableCell>Action</TableCell>
             </TableRow>
           </TableHead>
           {loading && <LinearProgress sx={{ width: '100%' }} />}
           <TableBody>
-            {stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy))
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((student) => (
-                <TableRow key={student.id} selected={isSelected(student.id)}>
-                  <TableCell padding="checkbox">
-                    <Checkbox checked={isSelected(student.id)} onChange={(event) => handleCheckboxClick(event, student.id)} />
-                  </TableCell>
-                  <TableCell>{student.registration_no}</TableCell>
-                  <TableCell>{student.firstName + ` ` + student.lastName}</TableCell>
-                  {/* <TableCell>{student.courseId.name}</TableCell> */}
-                  <TableCell>{student.nic}</TableCell>
-                  <TableCell>{student.mobile}</TableCell>
-                  <TableCell>{student.address}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outlined"
-                      style={{
-                        marginRight: '8px'
-                      }}
-                      color="primary"
-                      startIcon={<EditOutlined />}
-                      onClick={() => handleViewRow(student._id)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      style={{
-                        marginRight: '8px'
-                      }}
-                      color="error"
-                      startIcon={<DeleteOutlined />}
-                      disabled
-                      // onClick={() => handleAddNewReg(student._id)}
-                    >
-                      Delete
-                    </Button>
-                    {/* <Button variant="outlined" color="info" startIcon={<FileAddOutlined />} onClick={() => handleAddNewReg(student._id)}>
-                      New
-                    </Button> */}
-                  </TableCell>
-                </TableRow>
-              ))}
+            {data.map((student) => (
+              <TableRow key={student._id} selected={isSelected(student._id)}>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={isSelected(student._id)}
+                    onChange={(event) => handleCheckboxClick(event, student._id)}
+                  />
+                </TableCell>
+                <TableCell>{student.registration_no}</TableCell>
+                <TableCell>{student.firstName + ' ' + student.lastName}</TableCell>
+                <TableCell>{student.nic}</TableCell>
+                <TableCell>{student.mobile}</TableCell>
+                <TableCell>{student.address}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="outlined"
+                    style={{ marginRight: '8px' }}
+                    color="primary"
+                    startIcon={<EditOutlined />}
+                    onClick={() => handleViewRow(student._id)}
+                  >
+                    Edit
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
+
       <TablePagination
         rowsPerPageOptions={[5, 10, 25]}
         component="div"
-        count={data.length}
+        count={totalCount}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}

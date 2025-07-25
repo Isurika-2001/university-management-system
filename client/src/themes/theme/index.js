@@ -37,6 +37,7 @@ const Theme = (colors) => {
       900: red[9],
       contrastText
     },
+    
     secondary: {
       lighter: greyColors[100],
       100: greyColors[100],

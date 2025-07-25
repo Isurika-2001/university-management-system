@@ -4,14 +4,16 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import { useLocation } from 'react-router-dom';
-import config from '../../config';
+import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useAuthContext } from 'context/useAuthContext';
 
 const UpdateForm = () => {
   const [data, setData] = useState(null);
   const location = useLocation();
   const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuthContext();
   
   const Toast = withReactContent(
     Swal.mixin({
@@ -51,11 +53,12 @@ const UpdateForm = () => {
     const id = searchParams.get('id');
     // Fetch student data based on the id
     try {
-      const response = await fetch(config.apiUrl + 'api/students/' + id, {
-        method: 'GET',
+      const response = await fetch(apiRoutes.studentRoute + id, {
+        method: 'GET',   
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
       });
 
       const data = await response.json();
@@ -115,10 +118,11 @@ const UpdateForm = () => {
     console.log('Submitting:', values, id);
     try {
       setSubmitting(true);
-      const response = await fetch(config.apiUrl + 'api/students/' + id, {
-        method: 'PUT',
+      const response = await fetch(apiRoutes.studentRoute + id, {
+        method: 'PUT',   
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
         },
         body: JSON.stringify(values)
       });
