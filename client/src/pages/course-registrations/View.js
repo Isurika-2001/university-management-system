@@ -11,12 +11,11 @@ import {
   Box,
   Checkbox,
   TablePagination,
-  TableSortLabel,
   LinearProgress,
-  TextField // Import TextField for input field
+  TextField,
+  MenuItem
 } from '@mui/material';
-import { DownloadOutlined } from '@ant-design/icons'; // Remove SearchOutlined
-// import { useNavigate } from 'react-router-dom';
+import { DownloadOutlined } from '@ant-design/icons';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from '../../config';
 import { useAuthContext } from 'context/useAuthContext';
@@ -26,106 +25,120 @@ const View = () => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selected, setSelected] = useState([]);
   const [data, setData] = useState([]);
-  const [orderBy, setOrderBy] = useState('');
-  const [order, setOrder] = useState('asc');
-  const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuthContext();
-  // const navigate = useNavigate();
+  const [totalCount, setTotalCount] = useState(0);
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  const [courseFilter, setCourseFilter] = useState('');
+  const [batchFilter, setBatchFilter] = useState('');
+
+  const [courses, setCourses] = useState([]); // store courses
+  const [batches, setBatches] = useState([]); // store batches
+
+  const { user } = useAuthContext();
+
+  // Debounce search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPage(0);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // Fetch registrations whenever filters change
   useEffect(() => {
     fetchData();
+  }, [page, rowsPerPage, debouncedSearchTerm, courseFilter, batchFilter]);
+
+  // Fetch courses and batches on mount
+  useEffect(() => {
+    fetchCourseData();
+    fetchBatchData();
   }, []);
 
   async function fetchData() {
-    // Fetch data from API
+    setLoading(true);
+    const params = new URLSearchParams();
+    params.append('page', page + 1);
+    params.append('limit', rowsPerPage);
+    if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+    if (courseFilter) params.append('courseId', courseFilter);
+    if (batchFilter) params.append('batchId', batchFilter);
+
     try {
-      const response = await fetch(apiRoutes.courseRegistrationRoute, {
-        method: 'GET',   
+      const response = await fetch(`${apiRoutes.courseRegistrationRoute}?${params.toString()}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
-        },
+        }
       });
 
-      if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          // logout();
-          return;
-        }
-        return;
-      }
+      if (!response.ok) throw new Error('Error fetching registrations');
 
-      const data = await response.json();
-      console.log('Data:', data);
-
-      setData(data);
-      setLoading(false);
+      const json = await response.json();
+      setData(json.data || []);
+      setTotalCount(json.total || 0);
     } catch (error) {
-      console.error('Error fetching data:', error.message);
+      console.error(error.message);
+    } finally {
       setLoading(false);
     }
   }
 
-  const handleSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrderBy(property);
-    setOrder(isAsc ? 'desc' : 'asc');
-  };
+  const fetchCourseData = async () => {
+    try {
+      const response = await fetch(apiRoutes.courseRoute, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        }
+      });
 
-  const getComparator = (order, orderBy) => {
-    switch (orderBy) {
-      case 'id':
-        return order === 'desc' ? (a, b) => b.courseReg_no - a.courseReg_no : (a, b) => a.courseReg_no - b.courseReg_no;
-      case 'reg_id':
-        return order === 'desc'
-          ? (a, b) => b.studentId.registration_no - a.studentId.registration_no
-          : (a, b) => a.studentId.registration_no - b.studentId.registration_no;
-      case 'name':
-        return order === 'desc'
-          ? (a, b) => b.studentId.firstName.localeCompare(a.studentId.firstName) || b.studentId.lastName.localeCompare(a.studentId.lastName)
-          : (a, b) =>
-              a.studentId.firstName.localeCompare(b.studentId.firstName) || a.studentId.lastName.localeCompare(b.studentId.lastName);
-      case 'course':
-        return order === 'desc'
-          ? (a, b) => b.courseId.name.localeCompare(a.courseId.name)
-          : (a, b) => a.courseId.name.localeCompare(b.courseId.name);
-      case 'batch':
-        return order === 'desc'
-          ? (a, b) => b.batchId.name.localeCompare(a.batchId.name)
-          : (a, b) => a.batchId.name.localeCompare(b.batchId.name);
-      case 'contact':
-        return order === 'desc'
-          ? (a, b) => b.studentId.mobile.localeCompare(a.mobile)
-          : (a, b) => a.studentId.mobile.localeCompare(b.studentId.mobile);
-      case 'address':
-        return order === 'desc'
-          ? (a, b) => b.studentId.address.localeCompare(a.studentId.address)
-          : (a, b) => a.studentId.address.localeCompare(b.studentId.address);
-      default:
-        return () => 0;
+      if (!response.ok) throw new Error('Error fetching courses');
+      const data = await response.json();
+      setCourses(data || []);
+    } catch (error) {
+      console.error(error.message);
     }
   };
 
-  const stableSort = (array, comparator) => {
-    const stabilizedThis = array.map((el, index) => [el, index]);
-    stabilizedThis.sort((a, b) => {
-      const order = comparator(a[0], b[0]);
-      if (order !== 0) return order;
-      return a[1] - b[1];
-    });
-    return stabilizedThis.map((el) => el[0]);
+  const fetchBatchData = async () => {
+    try {
+      const response = await fetch(apiRoutes.batchRoute, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Error fetching batches');
+
+      const data = await response.json();
+
+      // Filter unique batch names
+      const uniqueBatches = [];
+      const namesSet = new Set();
+
+      data.forEach((batch) => {
+        if (!namesSet.has(batch.name)) {
+          namesSet.add(batch.name);
+          uniqueBatches.push(batch);
+        }
+      });
+
+      setBatches(uniqueBatches);
+    } catch (error) {
+      console.error(error.message);
+    }
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
+  const handleChangePage = (event, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
@@ -133,8 +146,7 @@ const View = () => {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = data.map((courseReg) => courseReg.id);
-      setSelected(newSelecteds);
+      setSelected(data.map((reg) => reg._id));
     } else {
       setSelected([]);
     }
@@ -145,236 +157,141 @@ const View = () => {
     let newSelected = [];
 
     if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, id);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
+      newSelected = selected.concat(id);
+    } else {
+      newSelected = selected.filter((item) => item !== id);
     }
+
     setSelected(newSelected);
   };
 
-  const isSelected = (id) => selected.indexOf(id) !== -1;
-
-  const handleSearch = (event) => {
-    const term = event.target.value.toLowerCase();
-    // Filter the data based on the search term
-    const filteredValues = data.filter(
-      (courseReg) =>
-        courseReg.studentId.firstName.toLowerCase().includes(term) ||
-        courseReg.studentId.lastName.toLowerCase().includes(term) ||
-        courseReg.studentId.lastName.toLowerCase().includes(term) ||
-        courseReg.studentId.nic.toLowerCase().includes(term) ||
-        courseReg.studentId.mobile.toLowerCase().includes(term) ||
-        courseReg.studentId.address.toLowerCase().includes(term) ||
-        courseReg.courseId.name.toLowerCase().includes(term) ||
-        courseReg.batchId.name.toLowerCase().includes(term)
-    );
-    setFilteredData(filteredValues);
-  };
-
-  // const handleClickAddNew = () => {
-  //   navigate('/app/course-registrations/add');
-  // };
-
-  // const handleViewRow = (id) => {
-  //   // Navigate to detailed view of the row with provided id
-  //   navigate('/app/course-registrations/update?id=' + id);
-  // };
+  const isSelected = (id) => selected.includes(id);
 
   const exportToCSV = () => {
-    let exportData = [];
+    const exportData = selected.length > 0 ? data.filter((reg) => selected.includes(reg._id)) : data;
 
-    if (filteredData.length > 0) {
-      exportData = filteredData;
-    } else {
-      exportData = data.filter((courseReg) => selected.includes(courseReg.id));
-    }
-
-    const csvHeader = ['Registration ID', 'Student ID', 'Name', 'Course', 'Batch', 'Contact', 'Address'].join(','); // Header row
-    const csvData = exportData.map((courseReg) =>
+    const csvHeader = ['Registration ID', 'Student ID', 'Name', 'NIC', 'Course', 'Batch', 'Contact', 'Address'].join(',');
+    const csvData = exportData.map((reg) =>
       [
-        courseReg.courseReg_no,
-        courseReg.studentId.registration_no,
-        courseReg.studentId.firstName + ' ' + courseReg.studentId.lastName,
-        courseReg.courseId.name,
-        courseReg.batchId.name,
-        courseReg.studentId.mobile,
-        courseReg.studentId.address
+        reg.courseReg_no,
+        reg.studentId?.registration_no,
+        `${reg.studentId?.firstName} ${reg.studentId?.lastName}`,
+        reg.studentId?.nic,
+        reg.courseId?.name,
+        reg.batchId?.name,
+        reg.studentId?.mobile,
+        reg.studentId?.address
       ].join(',')
     );
-    // Combine header and data rows
+
     const csvContent = csvHeader + '\n' + csvData.join('\n');
-    // Create a Blob object with CSV content
     const blob = new Blob([csvContent], { type: 'text/csv' });
-    // Create a temporary anchor element to initiate the download
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
-    link.download = 'courseReg_data.csv';
-    // Trigger the download
+    link.download = 'course_registrations.csv';
     document.body.appendChild(link);
     link.click();
-    // Cleanup
     document.body.removeChild(link);
   };
 
   return (
     <MainCard title="Course Registration List">
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 2,
-          flexDirection: 'row' // Ensure items are aligned horizontally
-        }}
-      >
-        <TextField label="Search" variant="outlined" onChange={handleSearch} />
-        <div>
-          <Button
-            variant="contained"
-            style={{
-              marginRight: '8px'
-            }}
-            color="success"
-            text="white"
-            disabled={selected.length === 0}
-            onClick={exportToCSV}
-            startIcon={<DownloadOutlined />}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+        {/* Left side: Filters */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+          <TextField
+            label="Search"
+            variant="outlined"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ width: 250 }}
+          />
+
+          <TextField
+            label="Course Filter"
+            variant="outlined"
+            select
+            value={courseFilter}
+            onChange={(e) => setCourseFilter(e.target.value)}
+            sx={{ width: 200 }}
           >
-            Export
-          </Button>
-          {/* <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
-            Add New
-          </Button> */}
-        </div>
+            <MenuItem value="">All Courses</MenuItem>
+            {courses.map((course) => (
+              <MenuItem key={course._id} value={course._id}>
+                {course.name}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            label="Batch Filter"
+            variant="outlined"
+            select
+            value={batchFilter}
+            onChange={(e) => setBatchFilter(e.target.value)}
+            sx={{ width: 200 }}
+          >
+            <MenuItem value="">All Batches</MenuItem>
+            {batches.map((batch) => (
+              <MenuItem key={batch._id} value={batch._id}>
+                {batch.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+
+        {/* Right side: Export button */}
+        <Button variant="contained" color="success" disabled={selected.length === 0} onClick={exportToCSV} startIcon={<DownloadOutlined />}>
+          Export
+        </Button>
       </Box>
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>
+              <TableCell padding="checkbox">
                 <Checkbox
                   indeterminate={selected.length > 0 && selected.length < data.length}
-                  checked={selected.length === data.length}
+                  checked={data.length > 0 && selected.length === data.length}
                   onChange={handleSelectAllClick}
                 />
               </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'id'}
-                  direction={orderBy === 'id' ? order : 'asc'}
-                  onClick={() => handleSort('id', 'id')}
-                >
-                  Reg ID
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'reg_id'}
-                  direction={orderBy === 'reg_id' ? order : 'asc'}
-                  onClick={() => handleSort('reg_id', 'reg_id')}
-                >
-                  Student ID
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'name'}
-                  direction={orderBy === 'name' ? order : 'asc'}
-                  onClick={() => handleSort('name')}
-                >
-                  Name
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel active={orderBy === 'nic'} direction={orderBy === 'nic' ? order : 'asc'} onClick={() => handleSort('nic')}>
-                  NIC
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'course'}
-                  direction={orderBy === 'course' ? order : 'asc'}
-                  onClick={() => handleSort('course')}
-                >
-                  Course
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'batch'}
-                  direction={orderBy === 'batch' ? order : 'asc'}
-                  onClick={() => handleSort('batch')}
-                >
-                  Batch
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'contact'}
-                  direction={orderBy === 'contact' ? order : 'asc'}
-                  onClick={() => handleSort('contact')}
-                >
-                  Contact
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'address'}
-                  direction={orderBy === 'address' ? order : 'asc'}
-                  onClick={() => handleSort('address')}
-                >
-                  Address
-                </TableSortLabel>
-              </TableCell>
-              {/* <TableCell>Action</TableCell> Add column for actions */}
+              <TableCell>Reg ID</TableCell>
+              <TableCell>Student ID</TableCell>
+              <TableCell>Name</TableCell>
+              <TableCell>NIC</TableCell>
+              <TableCell>Course</TableCell>
+              <TableCell>Batch</TableCell>
+              <TableCell>Contact</TableCell>
+              <TableCell>Address</TableCell>
             </TableRow>
           </TableHead>
           {loading && <LinearProgress sx={{ width: '100%' }} />}
           <TableBody>
-            {stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy))
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((courseReg) => (
-                <TableRow key={courseReg.id} selected={isSelected(courseReg.id)}>
-                  <TableCell padding="checkbox">
-                    <Checkbox checked={isSelected(courseReg.id)} onChange={(event) => handleCheckboxClick(event, courseReg.id)} />
-                  </TableCell>
-                  <TableCell>{courseReg.courseReg_no}</TableCell>
-                  <TableCell>{courseReg.studentId.registration_no}</TableCell>
-                  <TableCell>{courseReg.studentId.firstName + ` ` + courseReg.studentId.lastName}</TableCell>
-                  <TableCell>{courseReg.studentId.nic}</TableCell>
-                  <TableCell>{courseReg.courseId.name}</TableCell>
-                  <TableCell>{courseReg.batchId.name}</TableCell>
-                  <TableCell>{courseReg.studentId.mobile}</TableCell>
-                  <TableCell>{courseReg.studentId.address}</TableCell>
-                  {/* <TableCell>
-                    <Button
-                      variant="outlined"
-                      style={{
-                        marginRight: '8px'
-                      }}
-                      color="primary"
-                      startIcon={<EditOutlined />}
-                      onClick={() => handleViewRow(courseReg._id)}
-                    >
-                      Edit
-                    </Button>
-                    <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={() => handleViewRow(courseReg.id)}>
-                      Delete
-                    </Button>
-                  </TableCell> */}
-                </TableRow>
-              ))}
+            {data.map((reg) => (
+              <TableRow key={reg._id} selected={isSelected(reg._id)}>
+                <TableCell padding="checkbox">
+                  <Checkbox checked={isSelected(reg._id)} onChange={(e) => handleCheckboxClick(e, reg._id)} />
+                </TableCell>
+                <TableCell>{reg.courseReg_no}</TableCell>
+                <TableCell>{reg.student?.registration_no}</TableCell>
+                <TableCell>{`${reg.student?.firstName} ${reg.student?.lastName}`}</TableCell>
+                <TableCell>{reg.student?.nic}</TableCell>
+                <TableCell>{reg.course?.name}</TableCell>
+                <TableCell>{reg.batch?.name}</TableCell>
+                <TableCell>{reg.student?.mobile}</TableCell>
+                <TableCell>{reg.student?.address}</TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
+
       <TablePagination
         rowsPerPageOptions={[5, 10, 25]}
         component="div"
-        count={data.length}
+        count={totalCount}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}

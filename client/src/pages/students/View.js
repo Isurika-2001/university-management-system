@@ -161,26 +161,15 @@ const View = () => {
 
   return (
     <MainCard title="Student List">
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 2,
-          flexDirection: 'row'
-        }}
-      >
-        <TextField
-          label="Search by name"
-          variant="outlined"
-          onChange={handleSearch}
-          value={searchTerm}
-          sx={{ width: 300 }}
-        />
-        <div>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+        {/* Left side: Filters */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+          <TextField label="Search" variant="outlined" onChange={handleSearch} value={searchTerm} sx={{ width: 300 }} />
+        </Box>
+        {/* Right side: Export button */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
           <Button
             variant="contained"
-            style={{ marginRight: '8px' }}
             color="success"
             disabled={selected.length === 0}
             onClick={exportToCSV}
@@ -191,7 +180,7 @@ const View = () => {
           <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
             Add New Student
           </Button>
-        </div>
+        </Box>
       </Box>
 
       <TableContainer component={Paper}>
