@@ -307,12 +307,67 @@ async function checkDuplicateCourseRegistration(studentId, courseId, batchId) {
   return !!courseRegistration;
 }
 
+async function exportStudents(req, res) {
+  try {
+    const { search = '' } = req.query;
+
+    console.log('--- Export Students Request ---');
+    console.log('Received Query Params:', { search });
+
+    let filter = {};
+
+    if (search.trim() !== '') {
+      const searchRegex = new RegExp(search, 'i'); // case-insensitive regex
+
+      filter = {
+        $or: [
+          { registration_no: searchRegex },
+          { firstName: searchRegex },
+          { lastName: searchRegex },
+          { nic: searchRegex },
+          { mobile: searchRegex },
+          { homeContact: searchRegex },
+          { address: searchRegex }
+        ]
+      };
+    }
+
+    console.log('MongoDB Filter:', filter);
+
+    const students = await Student.find(filter);
+
+    console.log('Students fetched from DB:', students.length);
+
+    const exportData = students.map((student) => ({
+      registrationNo: student.registration_no,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      nic: student.nic,
+      dob: student.dob,
+      address: student.address,
+      mobile: student.mobile,
+      homeContact: student.homeContact,
+      email: student.email
+    }));
+
+    console.log('Final export data count:', exportData.length);
+
+    res.status(200).json({
+      total: exportData.length,
+      data: exportData
+    });
+  } catch (error) {
+    console.error('Error in exportStudents:', error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
 async function courseRegistration(
   studentId,
   courseId,
   batchId,
   sequenceValue,
-  courseSequenceValue
+  courseSequenceValue,
 ) {
   const courseRegistration = new CourseRegistration({
     studentId,
@@ -332,4 +387,5 @@ module.exports = {
   updateStudent,
   AddCourseRegistration,
   deleteCourseRegistration,
+  exportStudents,
 };

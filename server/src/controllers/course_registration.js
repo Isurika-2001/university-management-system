@@ -1,6 +1,7 @@
 // course_registrationController.js
 
 const CourseRegistration = require("../models/course_registration");
+const mongoose = require('mongoose');
 
 async function getAllCourseRegistrations(req, res) {
   try {
@@ -133,4 +134,78 @@ async function getAllCourseRegistrationsByStudentId(req, res) {
   }
 }
 
-module.exports = { getAllCourseRegistrations, getCourseRegistrationById, getAllCourseRegistrationsByStudentId };
+async function exportCourseRegistrations(req, res) {
+  try {
+    const { search = '', courseId, batchId } = req.query;
+
+    console.log('--- Export Course Registrations Request ---');
+    console.log('Received Query Params:', { search, courseId, batchId });
+
+    const filter = {};
+    if (courseId) filter.courseId = courseId;
+    if (batchId) filter.batchId = batchId;
+
+    console.log('MongoDB Filter:', filter);
+
+    let registrations = await CourseRegistration.find(filter)
+      .populate([
+        { path: 'studentId' },
+        { path: 'courseId' },
+        { path: 'batchId' }
+      ]);
+
+    console.log('Registrations fetched from DB:', registrations.length);
+
+    // If search term is provided, further filter results
+    if (search.trim() !== '') {
+      const lowerSearch = search.toLowerCase();
+      const searchRegex = new RegExp(search, 'i');
+
+      registrations = registrations.filter((reg) => {
+        const student = reg.studentId;
+        if (!student) return false;
+
+        const nameMatch =
+          student.firstName?.toLowerCase().includes(lowerSearch) ||
+          student.lastName?.toLowerCase().includes(lowerSearch);
+        const nicMatch = student.nic?.toLowerCase().includes(lowerSearch);
+        const contactMatch =
+          student.mobile?.toLowerCase().includes(lowerSearch) ||
+          student.homeContact?.toLowerCase().includes(lowerSearch);
+        const addressMatch = student.address?.toLowerCase().includes(lowerSearch);
+
+        const regNoMatch = reg.registration_no?.toLowerCase().includes(lowerSearch);
+        const courseRegNoMatch = reg.courseReg_no?.toLowerCase().includes(lowerSearch);
+
+        return nameMatch || nicMatch || contactMatch || addressMatch || regNoMatch || courseRegNoMatch;
+      });
+
+      console.log('Registrations after search filter:', registrations.length);
+    }
+
+    // Map data to your export structure if needed
+    const exportData = registrations.map((reg) => ({
+      registrationNo: reg.registration_no,
+      courseRegNo: reg.courseReg_no,
+      studentId: reg.studentId?.registration_no,
+      studentName: `${reg.studentId?.firstName || ''} ${reg.studentId?.lastName || ''}`,
+      nic: reg.studentId?.nic,
+      course: reg.courseId?.name,
+      batch: reg.batchId?.name,
+      contact: reg.studentId?.mobile,
+      address: reg.studentId?.address
+    }));
+
+    console.log('Final export data count:', exportData.length);
+
+    res.status(200).json({
+      total: exportData.length,
+      data: exportData
+    });
+  } catch (error) {
+    console.error('Error in exportCourseRegistrations:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+module.exports = { getAllCourseRegistrations, getCourseRegistrationById, getAllCourseRegistrationsByStudentId, exportCourseRegistrations };

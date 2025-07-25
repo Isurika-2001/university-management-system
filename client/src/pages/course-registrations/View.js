@@ -167,31 +167,61 @@ const View = () => {
 
   const isSelected = (id) => selected.includes(id);
 
-  const exportToCSV = () => {
-    const exportData = selected.length > 0 ? data.filter((reg) => selected.includes(reg._id)) : data;
+  const exportToCSV = async () => {
+    const params = new URLSearchParams();
+    if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+    if (courseFilter) params.append('courseId', courseFilter);
+    if (batchFilter) params.append('batchId', batchFilter);
 
-    const csvHeader = ['Registration ID', 'Student ID', 'Name', 'NIC', 'Course', 'Batch', 'Contact', 'Address'].join(',');
-    const csvData = exportData.map((reg) =>
-      [
-        reg.courseReg_no,
-        reg.studentId?.registration_no,
-        `${reg.studentId?.firstName} ${reg.studentId?.lastName}`,
-        reg.studentId?.nic,
-        reg.courseId?.name,
-        reg.batchId?.name,
-        reg.studentId?.mobile,
-        reg.studentId?.address
-      ].join(',')
-    );
+    try {
+      const response = await fetch(`${apiRoutes.courseRegistrationRoute}export?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        }
+      });
 
-    const csvContent = csvHeader + '\n' + csvData.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = 'course_registrations.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      if (!response.ok) throw new Error('Error exporting registrations');
+
+      const json = await response.json();
+      const exportData = json.data || [];
+
+      if (exportData.length === 0) {
+        console.log('No data to export.');
+        return;
+      }
+
+      // Prepare CSV
+      const csvHeader = ['Registration ID', 'Student ID', 'Name', 'NIC', 'Course', 'Batch', 'Contact', 'Address'].join(',');
+      const csvData = exportData.map((reg) =>
+        [
+          reg.courseRegNo ?? '',
+          reg.studentId ?? '',
+          reg.studentName ?? '',
+          reg.nic ?? '',
+          reg.course ?? '',
+          reg.batch ?? '',
+          reg.contact ?? '',
+          reg.address ?? ''
+        ].join(',')
+      );
+
+      const csvContent = csvHeader + '\n' + csvData.join('\n');
+
+      // Download as file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.setAttribute('download', 'course_registrations_export.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url); // Clean up memory
+    } catch (error) {
+      console.error('Export failed:', error.message);
+    }
   };
 
   return (
@@ -241,7 +271,7 @@ const View = () => {
         </Box>
 
         {/* Right side: Export button */}
-        <Button variant="contained" color="success" disabled={selected.length === 0} onClick={exportToCSV} startIcon={<DownloadOutlined />}>
+        <Button variant="contained" color="success" onClick={exportToCSV} startIcon={<DownloadOutlined />}>
           Export
         </Button>
       </Box>

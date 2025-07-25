@@ -139,24 +139,50 @@ const View = () => {
     navigate('/app/students/add');
   };
 
-  const exportToCSV = () => {
-    let exportData = data.filter((student) => selected.includes(student._id));
+  const exportToCSV = async () => {
+    const params = new URLSearchParams();
+    if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
 
-    if (exportData.length === 0) exportData = data; // export all visible if none selected
+    try {
+      const response = await fetch(`${apiRoutes.studentRoute + 'export'}?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        }
+      });
 
-    const csvHeader = ['Student ID', 'Name', 'NIC', 'Contact', 'Address'].join(',');
-    const csvData = exportData.map((student) =>
-      [student.registration_no, student.firstName + ' ' + student.lastName, student.nic, student.mobile, student.address].join(',')
-    );
+      if (!response.ok) throw new Error('Error exporting students');
 
-    const csvContent = csvHeader + '\n' + csvData.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = 'student_data.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const json = await response.json();
+      const exportData = json.data || [];
+
+      const csvHeader = ['Student ID', 'First Name', 'Last Name', 'NIC', 'DOB', 'Address', 'Mobile', 'Home Contact', 'Email'].join(',');
+      const csvData = exportData.map((student) =>
+        [
+          student.registrationNo,
+          student.firstName,
+          student.lastName,
+          student.nic,
+          student.dob,
+          student.address,
+          student.mobile,
+          student.homeContact,
+          student.email
+        ].join(',')
+      );
+
+      const csvContent = csvHeader + '\n' + csvData.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = 'students_export.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Export error:', error.message);
+    }
   };
 
   return (
@@ -168,13 +194,7 @@ const View = () => {
         </Box>
         {/* Right side: Export button */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-          <Button
-            variant="contained"
-            color="success"
-            disabled={selected.length === 0}
-            onClick={exportToCSV}
-            startIcon={<DownloadOutlined />}
-          >
+          <Button variant="contained" color="success" onClick={exportToCSV} startIcon={<DownloadOutlined />}>
             Export
           </Button>
           <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
