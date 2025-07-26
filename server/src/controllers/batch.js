@@ -4,9 +4,38 @@ const Batch = require("../models/batch");
 // Define an async function to get all batches
 async function getAllBatches(req, res) {
   try {
-    const batches = await Batch.find().populate('courseId', 'name');
+    const {
+      search = '',
+      courseId,
+      page = 1,
+      limit = 10
+    } = req.query;
 
-    // Map course.name for each batch and add as courseName
+    const pageNum = Math.max(parseInt(page, 10), 1);
+    const limitNum = Math.max(parseInt(limit, 10), 1);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build filter object
+    const filter = {};
+
+    if (search.trim() !== '') {
+      filter.name = { $regex: search.trim(), $options: 'i' };
+    }
+
+    if (courseId) {
+      filter.courseId = courseId; // assume courseId is a string ID
+    }
+
+    // Get total count for pagination
+    const total = await Batch.countDocuments(filter);
+
+    // Query batches with filter, pagination and populate course name
+    const batches = await Batch.find(filter)
+      .populate('courseId', 'name')
+      .skip(skip)
+      .limit(limitNum);
+
+    // Format response with courseName
     const formattedBatches = batches.map(batch => ({
       _id: batch._id,
       name: batch.name,
@@ -14,7 +43,13 @@ async function getAllBatches(req, res) {
       courseName: batch.courseId?.name || null,
     }));
 
-    res.status(200).json(formattedBatches);
+    res.status(200).json({
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum),
+      data: formattedBatches,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
