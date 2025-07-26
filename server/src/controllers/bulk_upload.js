@@ -1,9 +1,7 @@
-// controllers/bulkUploadController.js
-
 const {
   findStudentByNIC,
   createStudentAndRegister,
-  registerCourse
+  registerExistingStudent
 } = require('../utilities/bulk_upload_helper');
 
 async function bulkUploadStudents(req, res) {
@@ -19,22 +17,33 @@ async function bulkUploadStudents(req, res) {
       const existingStudent = await findStudentByNIC(entry.nic);
 
       if (!existingStudent) {
-        // New student
+        // New student with optional course registration
         const result = await createStudentAndRegister(entry);
-        results.success.push({
-          type: 'new_student',
-          studentId: result.studentId,
-          registration_no: result.registration_no,
-          courseReg: result.courseRegStatus?.success || false
-        });
+
+        if (result.courseRegStatus?.success) {
+          results.success.push({
+            type: 'new_student_with_course',
+            studentId: result.studentId,
+            registration_no: result.registration_no,
+            courseReg: true
+          });
+        } else {
+          results.success.push({
+            type: 'new_student_no_course',
+            studentId: result.studentId,
+            registration_no: result.registration_no,
+            courseReg: false,
+            courseRegReason: result.courseRegStatus?.reason || 'No courseCode or batchName provided'
+          });
+        }
+
       } else {
-        // Student already exists
-        if (entry.courseId && entry.batchId) {
-          const courseRegResult = await registerCourse(
-            existingStudent._id,
-            entry.courseId,
-            entry.batchId,
-            existingStudent.registration_no
+        // Existing student — check if courseCode and batchName provided
+        if (entry.courseCode && entry.batchName) {
+          const courseRegResult = await registerExistingStudent(
+            existingStudent,
+            entry.courseCode,
+            entry.batchName
           );
 
           if (courseRegResult.success) {
@@ -45,12 +54,14 @@ async function bulkUploadStudents(req, res) {
             });
           } else {
             results.failed.push({
-              type: 'duplicate_course',
+              type: 'duplicate_course_or_error',
               studentId: existingStudent._id,
+              registration_no: existingStudent.registration_no,
               reason: courseRegResult.reason
             });
           }
         } else {
+          // No course info to register — just record success for existing student
           results.success.push({
             type: 'existing_student_no_course',
             studentId: existingStudent._id,

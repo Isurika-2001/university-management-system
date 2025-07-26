@@ -29,6 +29,8 @@ const View = () => {
   const [selected, setSelected] = useState([]);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -176,6 +178,7 @@ const View = () => {
     if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
 
     try {
+      setIsUploading(true);
       const response = await fetch(`${apiRoutes.studentRoute + 'export'}?${params.toString()}`, {
         method: 'GET',
         headers: {
@@ -214,6 +217,8 @@ const View = () => {
       document.body.removeChild(link);
     } catch (error) {
       console.error('Export error:', error.message);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -227,6 +232,7 @@ const View = () => {
       if (!file) return;
 
       try {
+        setIsDownloading(true);
         const data = await file.arrayBuffer();
         const workbook = XLSX.read(data);
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -255,6 +261,8 @@ const View = () => {
       } catch (err) {
         console.error('Import error:', err.message);
         showErrorSwal('Failed to import Excel file');
+      } finally {
+        setIsDownloading(false);
       }
     };
 
@@ -270,10 +278,10 @@ const View = () => {
         </Box>
         {/* Right side: Export button */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-          <Button variant="contained" color="success" onClick={exportToCSV} startIcon={<UploadOutlined />}>
+          <Button variant="contained" disabled={isUploading} color="success" onClick={exportToCSV} startIcon={<UploadOutlined />}>
             Export
           </Button>
-          <Button variant="contained" color="secondary" onClick={importFromExcel} startIcon={<DownloadOutlined />}>
+          <Button variant="contained" disabled={isDownloading} color="secondary" onClick={importFromExcel} startIcon={<DownloadOutlined />}>
             Import
           </Button>
           <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
@@ -306,10 +314,7 @@ const View = () => {
             {data.map((student) => (
               <TableRow key={student._id} selected={isSelected(student._id)}>
                 <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={isSelected(student._id)}
-                    onChange={(event) => handleCheckboxClick(event, student._id)}
-                  />
+                  <Checkbox checked={isSelected(student._id)} onChange={(event) => handleCheckboxClick(event, student._id)} />
                 </TableCell>
                 <TableCell>{student.registration_no}</TableCell>
                 <TableCell>{student.firstName + ' ' + student.lastName}</TableCell>
