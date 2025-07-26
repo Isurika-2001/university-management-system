@@ -24,6 +24,7 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import ImportSummaryModal from './Import-summary-modal';
 import { CircularProgress } from '../../../node_modules/@mui/material/index';
+import { useLogout } from 'hooks/useLogout';
 
 const View = () => {
   const [page, setPage] = useState(0); // zero-based page index
@@ -43,6 +44,7 @@ const View = () => {
 
   const navigate = useNavigate();
   const { user } = useAuthContext();
+  const { logout } = useLogout();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -106,6 +108,10 @@ const View = () => {
         if (response.status === 500) {
           console.error('Internal Server Error.');
           // Optional: logout or alert user
+        }
+        if (response.status === 401) {
+          logout();
+          return;
         }
         setLoading(false);
         return;
