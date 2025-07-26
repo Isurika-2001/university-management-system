@@ -27,7 +27,7 @@ const DrawerContent = () => (
       }}
     >
       <Typography variant="caption" color="textSecondary">
-        Version 1.0.1
+        Version 1.0.2
       </Typography>
     </Box>
   </Box>

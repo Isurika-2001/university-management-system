@@ -12,11 +12,14 @@ async function getAllCourses(req, res) {
 }
 
 async function createCourse(req, res) {
-  const { name, description } = req.body;
+  const { name, code, description } = req.body;
 
   try {
     // Check if the course name is already taken
     const isDuplicate = await checkDuplicateCourse(name);
+    
+    // Check if the course code is already taken
+    const isDuplicateCode = await checkDuplicateCourseCode(code);
 
     if (isDuplicate) {
       return res.status(403).json({
@@ -25,7 +28,14 @@ async function createCourse(req, res) {
       });
     }
 
-    const course = new Course({ name, description });
+    if (isDuplicateCode) {
+      return res.status(403).json({
+        success: false,
+        message: "Course code is already taken",
+      });
+    }
+
+    const course = new Course({ name, code, description });
     const newCourse = await course.save();
 
     res.status(201).json({
@@ -48,6 +58,13 @@ async function createCourse(req, res) {
 async function checkDuplicateCourse(name) {
   const course = await Course.findOne
   ({ name });
+  return course ? true : false;
+}
+
+// seperate function to check if the name is already taken
+async function checkDuplicateCourseCode(code) {
+  const course = await Course.findOne
+  ({ code });
   return course ? true : false;
 }
 

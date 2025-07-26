@@ -7,9 +7,10 @@ const studentRoutes = require("./student");
 const courseRoutes = require("./course");
 const batchRoutes = require("./batch");
 const courseRegistrationRoutes = require("./course_registration");
-const user_typeRoutes = require("./user_type");
+const userTypeRoutes = require("./user_type");
 const userRoutes = require("./user");
 const authRoutes = require("./auth");
+const bulkUploadRoutes = require("./bulk_upload");
 
 // Public auth routes
 router.use("/auth", authRoutes);
@@ -20,7 +21,8 @@ router.use("/student", studentRoutes);
 router.use("/course", courseRoutes);
 router.use("/batch", batchRoutes);
 router.use("/course-registration", courseRegistrationRoutes);
-router.use("/user-type", user_typeRoutes);
+router.use("/user-type", userTypeRoutes);
 router.use("/user", userRoutes);
+router.use("/bulk-upload", bulkUploadRoutes);
 
 module.exports = router;

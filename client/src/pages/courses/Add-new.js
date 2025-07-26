@@ -43,11 +43,15 @@ const AddForm = () => {
 
   const initialValues = {
     name: '',
+    code: '',
     description: ''
   };
 
   const validationSchema = Yup.object().shape({
     name: Yup.string().required('Name is required'),
+    code: Yup.string()
+      .required('Course code is required')
+      .matches(/^[a-zA-Z0-9_]+$/, 'Course code can only contain letters, numbers, and underscores'),
     description: Yup.string().required('Description is required')
   });
 
@@ -56,7 +60,7 @@ const AddForm = () => {
     try {
       setSubmitting(true);
       const response = await fetch(apiRoutes.courseRoute, {
-        method: 'POST',   
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
@@ -106,6 +110,22 @@ const AddForm = () => {
                     fullWidth
                     error={touched.name && !!errors.name}
                     helperText={<ErrorMessage name="name" />}
+                    InputProps={{
+                      sx: { px: 2, py: 1 } // Padding added
+                    }}
+                    sx={{ mb: 3 }} // Margin bottom added
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Course Code"
+                    variant="outlined"
+                    type="text"
+                    name="code"
+                    fullWidth
+                    error={touched.code && !!errors.code}
+                    helperText={<ErrorMessage name="code" />}
                     InputProps={{
                       sx: { px: 2, py: 1 } // Padding added
                     }}

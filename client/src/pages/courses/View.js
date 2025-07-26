@@ -15,7 +15,7 @@ import {
   LinearProgress,
   TextField // Import TextField for input field
 } from '@mui/material';
-import { DownloadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
+import { UploadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from 'config';
@@ -204,7 +204,7 @@ const View = () => {
             text="white"
             disabled={selected.length === 0}
             onClick={exportToCSV}
-            startIcon={<DownloadOutlined />}
+            startIcon={<UploadOutlined />}
           >
             Export
           </Button>
@@ -235,6 +235,15 @@ const View = () => {
               </TableCell>
               <TableCell>
                 <TableSortLabel
+                  active={orderBy === 'code'}
+                  direction={orderBy === 'code' ? order : 'asc'}
+                  onClick={() => handleSort('code')}
+                >
+                  Course Code
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
                   active={orderBy === 'description'}
                   direction={orderBy === 'description' ? order : 'asc'}
                   onClick={() => handleSort('description')}
@@ -255,6 +264,7 @@ const View = () => {
                     <Checkbox checked={isSelected(course.id)} onChange={(event) => handleCheckboxClick(event, course.id)} />
                   </TableCell>
                   <TableCell>{course.name}</TableCell>
+                  <TableCell>{course.code}</TableCell>
                   <TableCell>{course.description}</TableCell>
                   <TableCell>
                     <Button
