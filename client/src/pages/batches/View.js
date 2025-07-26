@@ -11,95 +11,110 @@ import {
   Box,
   Checkbox,
   TablePagination,
-  TableSortLabel,
   LinearProgress,
-  TextField // Import TextField for input field
+  TextField,
+  MenuItem,
 } from '@mui/material';
-import { DownloadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
+import { UploadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from '../../config';
 import { useAuthContext } from 'context/useAuthContext';
 
 const View = () => {
+  const { user } = useAuthContext();
+  const navigate = useNavigate();
+
+  // Pagination and sorting state
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [selected, setSelected] = useState([]);
-  const [data, setData] = useState([]);
-  const [orderBy, setOrderBy] = useState('');
-  const [order, setOrder] = useState('asc');
-  const [filteredData, setFilteredData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-  const { user } = useAuthContext();
 
+  // Data state
+  const [data, setData] = useState([]);
+  const [totalRows, setTotalRows] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // Selection state
+  const [selected, setSelected] = useState([]);
+
+  // Filters and search
+  const [courseFilter, setCourseFilter] = useState('');
+  const [courses, setCourses] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  // Debounce searchTerm with 500ms delay
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPage(0); // reset page on search
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  // Fetch batches data when page, rowsPerPage, debouncedSearchTerm or courseFilter changes
   useEffect(() => {
     fetchData();
+  }, [page, rowsPerPage, debouncedSearchTerm, courseFilter]);
+
+  // Fetch courses for filter dropdown on mount
+  useEffect(() => {
+    fetchCourseData();
   }, []);
 
   const fetchData = async () => {
-    // Fetch data from API
+    setLoading(true);
     try {
-      const response = await fetch(apiRoutes.batchRoute, {
-        method: 'GET', 
+      const params = new URLSearchParams();
+      if (debouncedSearchTerm.trim() !== '') params.append('search', debouncedSearchTerm.trim());
+      if (courseFilter) params.append('courseId', courseFilter);
+      params.append('page', page + 1); // API is 1-based page index
+      params.append('limit', rowsPerPage);
+
+      const response = await fetch(`${apiRoutes.batchRoute}?${params.toString()}`, {
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
+          Authorization: `Bearer ${user.token}`,
         },
       });
 
-      if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          // logout();
-          return;
-        }
-        return;
-      }
+      if (!response.ok) throw new Error('Failed to fetch batches');
 
-      const data = await response.json();
-      console.log('Data:', data);
+      const result = await response.json();
 
-      setData(data);
-      setLoading(false);
+      setData(result.data || []);
+      setTotalRows(result.total || 0);
     } catch (error) {
-      console.error('Error fetching data:', error.message);
+      console.error(error);
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrderBy(property);
-    setOrder(isAsc ? 'desc' : 'asc');
-  };
-
-  const stableSort = (array, comparator) => {
-    const stabilizedThis = array.map((el, index) => [el, index]);
-    stabilizedThis.sort((a, b) => {
-      const order = comparator(a[0], b[0]);
-      if (order !== 0) return order;
-      return a[1] - b[1];
-    });
-    return stabilizedThis.map((el) => el[0]);
-  };
-
-  const getComparator = (order, orderBy) => {
-    return order === 'desc' ? (a, b) => descendingComparator(a, b, orderBy) : (a, b) => -descendingComparator(a, b, orderBy);
-  };
-
-  const descendingComparator = (a, b, orderBy) => {
-    if (b[orderBy] < a[orderBy]) {
-      return -1;
+  const fetchCourseData = async () => {
+    try {
+      const response = await fetch(apiRoutes.courseRoute, {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch courses');
+      const result = await response.json();
+      setCourses(result || []);
+    } catch (error) {
+      console.error(error);
     }
-    if (b[orderBy] > a[orderBy]) {
-      return 1;
-    }
-    return 0;
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleCourseFilterChange = (e) => {
+    setCourseFilter(e.target.value);
+    setPage(0); // reset page on filter change
   };
 
   const handleChangePage = (event, newPage) => {
@@ -113,11 +128,11 @@ const View = () => {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = data.map((batch) => batch.id);
+      const newSelecteds = data.map((batch) => batch._id);
       setSelected(newSelecteds);
-    } else {
-      setSelected([]);
+      return;
     }
+    setSelected([]);
   };
 
   const handleCheckboxClick = (event, id) => {
@@ -133,159 +148,132 @@ const View = () => {
     } else if (selectedIndex > 0) {
       newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
     }
+
     setSelected(newSelected);
   };
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
-
-  const handleSearch = (event) => {
-    const term = event.target.value.toLowerCase();
-    // Filter the data based on the search term
-    const filteredValues = data.filter((batch) => batch.name.toLowerCase().includes(term));
-    setFilteredData(filteredValues);
-  };
 
   const handleClickAddNew = () => {
     navigate('/app/batches/add');
   };
 
   const handleViewRow = (id) => {
-    // Navigate to detailed view of the row with provided id
     navigate('/app/batches/update?id=' + id);
   };
 
-  const exportToCSV = () => {
-    let exportData = [];
-
-    if (filteredData.length > 0) {
-      exportData = filteredData;
-    } else {
-      exportData = data.filter((batch) => selected.includes(batch.id));
-    }
-
-    const csvHeader = ['ID', 'Name', 'Age', 'Grade'].join(','); // Header row
-    const csvData = exportData.map((batch) => [batch.id, batch.name, batch.age, batch.grade].join(','));
-    // Combine header and data rows
-    const csvContent = csvHeader + '\n' + csvData.join('\n');
-    // Create a Blob object with CSV content
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    // Create a temporary anchor element to initiate the download
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = 'batch_data.csv';
-    // Trigger the download
-    document.body.appendChild(link);
-    link.click();
-    // Cleanup
-    document.body.removeChild(link);
-  };
+  // You can implement sorting here if you want client-side, 
+  // or send sort params to backend if it supports sorting
 
   return (
     <MainCard title="Batch List">
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 2,
-          flexDirection: 'row' // Ensure items are aligned horizontally
-        }}
-      >
-        <TextField label="Search" variant="outlined" onChange={handleSearch} />
-        <div>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+          <TextField label="Search" variant="outlined" value={searchTerm} onChange={handleSearchChange} sx={{ minWidth: 200 }} />
+
+          <TextField
+            label="Course Filter"
+            variant="outlined"
+            select
+            value={courseFilter}
+            onChange={handleCourseFilterChange}
+            sx={{ width: 200 }}
+          >
+            <MenuItem value="">All Courses</MenuItem>
+            {courses.map((course) => (
+              <MenuItem key={course._id} value={course._id}>
+                {course.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
           <Button
             variant="contained"
-            style={{
-              marginRight: '8px'
-            }}
             color="success"
-            text="white"
             disabled={selected.length === 0}
-            onClick={exportToCSV}
-            startIcon={<DownloadOutlined />}
+            onClick={() => alert('Export functionality to implement')}
+            startIcon={<UploadOutlined />}
           >
             Export
           </Button>
-          <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
+          <Button variant="contained" startIcon={<FileAddOutlined />} onClick={handleClickAddNew}>
             Add New
           </Button>
-        </div>
+        </Box>
       </Box>
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>
+              <TableCell padding="checkbox">
                 <Checkbox
                   indeterminate={selected.length > 0 && selected.length < data.length}
-                  checked={selected.length === data.length}
+                  checked={data.length > 0 && selected.length === data.length}
                   onChange={handleSelectAllClick}
+                  inputProps={{ 'aria-label': 'select all batches' }}
                 />
               </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'name'}
-                  direction={orderBy === 'name' ? order : 'asc'}
-                  onClick={() => handleSort('name')}
-                >
-                  Name
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'courseName'}
-                  direction={orderBy === 'courseName' ? order : 'asc'}
-                  onClick={() => handleSort('courseName')}
-                >
-                  Course
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>Action</TableCell> {/* Add column for actions */}
+              <TableCell>Name</TableCell>
+              <TableCell>Course</TableCell>
+              <TableCell>Action</TableCell>
             </TableRow>
           </TableHead>
-          {loading && <LinearProgress sx={{ width: '100%' }} />}
-          <TableBody>
-            {stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy))
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((batch) => (
-                <TableRow key={batch.id} selected={isSelected(batch.id)}>
-                  <TableCell padding="checkbox">
-                    <Checkbox checked={isSelected(batch.id)} onChange={(event) => handleCheckboxClick(event, batch.id)} />
-                  </TableCell>
-                  <TableCell>{batch.name}</TableCell>
-                  <TableCell>{batch.courseName}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outlined"
-                      style={{
-                        marginRight: '8px'
-                      }}
-                      color="primary"
-                      startIcon={<EditOutlined />}
-                      onClick={() => handleViewRow(student.id)}
-                      disabled
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      disabled
-                      startIcon={<DeleteOutlined />}
-                      onClick={() => handleViewRow(student.id)}
-                    >
-                      Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-          </TableBody>
+
+          {loading && (
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={4}>
+                  <LinearProgress />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          )}
+
+          {!loading && (
+            <TableBody>
+              {data.map((batch) => {
+                const isItemSelected = isSelected(batch._id);
+                return (
+                  <TableRow hover key={batch._id} role="checkbox" aria-checked={isItemSelected} selected={isItemSelected} tabIndex={-1}>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={isItemSelected}
+                        onChange={(event) => handleCheckboxClick(event, batch._id)}
+                        inputProps={{ 'aria-labelledby': `batch-checkbox-${batch._id}` }}
+                      />
+                    </TableCell>
+                    <TableCell>{batch.name}</TableCell>
+                    <TableCell>{batch.courseName}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        disabled
+                        startIcon={<EditOutlined />}
+                        onClick={() => handleViewRow(batch._id)}
+                        sx={{ mr: 1 }}
+                      >
+                        Edit
+                      </Button>
+                      <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} disabled>
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          )}
         </Table>
       </TableContainer>
+
       <TablePagination
         rowsPerPageOptions={[5, 10, 25]}
         component="div"
-        count={data.length}
+        count={totalRows}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}

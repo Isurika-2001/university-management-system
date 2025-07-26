@@ -15,7 +15,7 @@ export const authReducer = (state, action) => {
 
 export const AuthContextProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, { 
-    user: localStorage.getItem("user")? JSON.parse(localStorage.getItem('user')):null
+    user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null
   })
 
   useEffect(() => {

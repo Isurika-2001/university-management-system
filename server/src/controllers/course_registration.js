@@ -65,7 +65,15 @@ async function getAllCourseRegistrations(req, res) {
             { 'student.nic': searchRegex },
             { 'student.mobile': searchRegex },
             { 'student.homeContact': searchRegex },
-            { 'student.address': searchRegex }
+            { 'student.address': searchRegex },
+            {
+              $expr: {
+                $regexMatch: {
+                  input: { $concat: ['$student.firstName', ' ', '$student.lastName'] },
+                  regex: searchRegex
+                }
+              }
+            }
           ]
         }
       });
