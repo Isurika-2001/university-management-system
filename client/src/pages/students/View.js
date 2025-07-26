@@ -14,11 +14,14 @@ import {
   LinearProgress,
   TextField
 } from '@mui/material';
-import { DownloadOutlined, EditOutlined, FileAddOutlined } from '@ant-design/icons';
+import { UploadOutlined, DownloadOutlined, EditOutlined, FileAddOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from '../../config';
 import { useAuthContext } from 'context/useAuthContext';
+import * as XLSX from 'xlsx';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 const View = () => {
   const [page, setPage] = useState(0); // zero-based page index
@@ -34,6 +37,35 @@ const View = () => {
 
   const navigate = useNavigate();
   const { user } = useAuthContext();
+
+  const Toast = withReactContent(
+    Swal.mixin({
+      toast: true,
+      position: 'bottom',
+      customClass: {
+        popup: 'colored-toast'
+      },
+      background: 'primary',
+      showConfirmButton: false,
+      timer: 3500,
+      timerProgressBar: true
+    })
+  );
+
+  const showSuccessSwal = (e) => {
+    Toast.fire({
+      icon: 'success',
+      title: e
+    });
+  };
+
+  // error showErrorSwal
+  const showErrorSwal = (e) => {
+    Toast.fire({
+      icon: 'error',
+      title: e
+    });
+  };
 
   // Debounce searchTerm: update debouncedSearchTerm 500ms after user stops typing
   useEffect(() => {
@@ -185,6 +217,50 @@ const View = () => {
     }
   };
 
+  const importFromExcel = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx, .xls';
+
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        console.log('Parsed Excel Data:', jsonData);
+
+        // Send to backend API
+        const response = await fetch(`${apiRoutes.bulkUploadRoute}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`
+          },
+          body: JSON.stringify({ data: jsonData })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          showSuccessSwal(`Bulk upload completed:\nSuccess: ${result.summary.success}, Failed: ${result.summary.failed}`);
+          fetchData(); // Refresh the table
+        } else {
+          showErrorSwal(result.message);
+        }
+      } catch (err) {
+        console.error('Import error:', err.message);
+        showErrorSwal('Failed to import Excel file');
+      }
+    };
+
+    input.click(); // Trigger file selector
+  };
+
   return (
     <MainCard title="Student List">
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
@@ -194,8 +270,11 @@ const View = () => {
         </Box>
         {/* Right side: Export button */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-          <Button variant="contained" color="success" onClick={exportToCSV} startIcon={<DownloadOutlined />}>
+          <Button variant="contained" color="success" onClick={exportToCSV} startIcon={<UploadOutlined />}>
             Export
+          </Button>
+          <Button variant="contained" color="secondary" onClick={importFromExcel} startIcon={<DownloadOutlined />}>
+            Import
           </Button>
           <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
             Add New Student

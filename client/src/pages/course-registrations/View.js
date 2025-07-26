@@ -15,7 +15,7 @@ import {
   TextField,
   MenuItem
 } from '@mui/material';
-import { DownloadOutlined } from '@ant-design/icons';
+import { UploadOutlined } from '@ant-design/icons';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from '../../config';
 import { useAuthContext } from 'context/useAuthContext';
@@ -271,7 +271,7 @@ const View = () => {
         </Box>
 
         {/* Right side: Export button */}
-        <Button variant="contained" color="success" onClick={exportToCSV} startIcon={<DownloadOutlined />}>
+        <Button variant="contained" color="success" onClick={exportToCSV} startIcon={<UploadOutlined />}>
           Export
         </Button>
       </Box>

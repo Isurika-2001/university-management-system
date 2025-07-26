@@ -15,7 +15,7 @@ import {
   LinearProgress,
   TextField // Import TextField for input field
 } from '@mui/material';
-import { DownloadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
+import { UploadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from 'config';
@@ -204,7 +204,7 @@ const View = () => {
             text="white"
             disabled={selected.length === 0}
             onClick={exportToCSV}
-            startIcon={<DownloadOutlined />}
+            startIcon={<UploadOutlined />}
           >
             Export
           </Button>
