@@ -29,7 +29,17 @@ async function getAllStudents(req, res) {
           { nic: searchRegex },
           { mobile: searchRegex },
           { homeContact: searchRegex },
-          { address: searchRegex }
+          { address: searchRegex },
+
+          // Match concatenated "firstName lastName"
+          {
+            $expr: {
+              $regexMatch: {
+                input: { $concat: ['$firstName', ' ', '$lastName'] },
+                regex: searchRegex
+              }
+            }
+          }
         ]
       };
     }

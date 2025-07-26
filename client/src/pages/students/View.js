@@ -22,6 +22,8 @@ import { useAuthContext } from 'context/useAuthContext';
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import ImportSummaryModal from './Import-summary-modal';
+import { CircularProgress } from '../../../node_modules/@mui/material/index';
 
 const View = () => {
   const [page, setPage] = useState(0); // zero-based page index
@@ -31,6 +33,8 @@ const View = () => {
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [summaryData, setSummaryData] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -53,13 +57,6 @@ const View = () => {
       timerProgressBar: true
     })
   );
-
-  const showSuccessSwal = (e) => {
-    Toast.fire({
-      icon: 'success',
-      title: e
-    });
-  };
 
   // error showErrorSwal
   const showErrorSwal = (e) => {
@@ -253,7 +250,9 @@ const View = () => {
         const result = await response.json();
 
         if (response.ok) {
-          showSuccessSwal(`Bulk upload completed:\nSuccess: ${result.summary.success}, Failed: ${result.summary.failed}`);
+          setSummaryData(result);
+          console.log('result', result)
+          setShowModal(true);
           fetchData(); // Refresh the table
         } else {
           showErrorSwal(result.message);
@@ -270,84 +269,93 @@ const View = () => {
   };
 
   return (
-    <MainCard title="Student List">
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
-        {/* Left side: Filters */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-          <TextField label="Search" variant="outlined" onChange={handleSearch} value={searchTerm} sx={{ width: 300 }} />
+    <>
+      <MainCard title="Student List">
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+          {/* Left side: Filters */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+            <TextField label="Search" variant="outlined" onChange={handleSearch} value={searchTerm} sx={{ width: 300 }} />
+          </Box>
+          {/* Right side: Export button */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+            <Button variant="contained" disabled={isUploading} color="success" onClick={exportToCSV} startIcon={<UploadOutlined />}>
+              Export
+            </Button>
+            <Button
+              variant="contained"
+              disabled={isDownloading}
+              color="secondary"
+              onClick={importFromExcel}
+              startIcon={isDownloading ? <CircularProgress size={16} /> : <DownloadOutlined />}
+            >
+              Import
+            </Button>
+            <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
+              Add New Student
+            </Button>
+          </Box>
         </Box>
-        {/* Right side: Export button */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-          <Button variant="contained" disabled={isUploading} color="success" onClick={exportToCSV} startIcon={<UploadOutlined />}>
-            Export
-          </Button>
-          <Button variant="contained" disabled={isDownloading} color="secondary" onClick={importFromExcel} startIcon={<DownloadOutlined />}>
-            Import
-          </Button>
-          <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
-            Add New Student
-          </Button>
-        </Box>
-      </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  indeterminate={selected.length > 0 && selected.length < data.length}
-                  checked={data.length > 0 && selected.length === data.length}
-                  onChange={handleSelectAllClick}
-                />
-              </TableCell>
-              <TableCell>ID</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>NIC</TableCell>
-              <TableCell>Contact</TableCell>
-              <TableCell>Address</TableCell>
-              <TableCell>Action</TableCell>
-            </TableRow>
-          </TableHead>
-          {loading && <LinearProgress sx={{ width: '100%' }} />}
-          <TableBody>
-            {data.map((student) => (
-              <TableRow key={student._id} selected={isSelected(student._id)}>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
                 <TableCell padding="checkbox">
-                  <Checkbox checked={isSelected(student._id)} onChange={(event) => handleCheckboxClick(event, student._id)} />
+                  <Checkbox
+                    indeterminate={selected.length > 0 && selected.length < data.length}
+                    checked={data.length > 0 && selected.length === data.length}
+                    onChange={handleSelectAllClick}
+                  />
                 </TableCell>
-                <TableCell>{student.registration_no}</TableCell>
-                <TableCell>{student.firstName + ' ' + student.lastName}</TableCell>
-                <TableCell>{student.nic}</TableCell>
-                <TableCell>{student.mobile}</TableCell>
-                <TableCell>{student.address}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="outlined"
-                    style={{ marginRight: '8px' }}
-                    color="primary"
-                    startIcon={<EditOutlined />}
-                    onClick={() => handleViewRow(student._id)}
-                  >
-                    Edit
-                  </Button>
-                </TableCell>
+                <TableCell>ID</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>NIC</TableCell>
+                <TableCell>Contact</TableCell>
+                <TableCell>Address</TableCell>
+                <TableCell>Action</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            {loading && <LinearProgress sx={{ width: '100%' }} />}
+            <TableBody>
+              {data.map((student) => (
+                <TableRow key={student._id} selected={isSelected(student._id)}>
+                  <TableCell padding="checkbox">
+                    <Checkbox checked={isSelected(student._id)} onChange={(event) => handleCheckboxClick(event, student._id)} />
+                  </TableCell>
+                  <TableCell>{student.registration_no}</TableCell>
+                  <TableCell>{student.firstName + ' ' + student.lastName}</TableCell>
+                  <TableCell>{student.nic}</TableCell>
+                  <TableCell>{student.mobile}</TableCell>
+                  <TableCell>{student.address}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outlined"
+                      style={{ marginRight: '8px' }}
+                      color="primary"
+                      startIcon={<EditOutlined />}
+                      onClick={() => handleViewRow(student._id)}
+                    >
+                      Edit
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={totalCount}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </MainCard>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={totalCount}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+      </MainCard>
+      <ImportSummaryModal open={showModal} onClose={() => setShowModal(false)} importSummary={summaryData} />
+    </>
   );
 };
 

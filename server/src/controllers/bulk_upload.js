@@ -62,10 +62,11 @@ async function bulkUploadStudents(req, res) {
           }
         } else {
           // No course info to register — just record success for existing student
-          results.success.push({
+          results.failed.push({
             type: 'existing_student_no_course',
             studentId: existingStudent._id,
-            registration_no: existingStudent.registration_no
+            registration_no: existingStudent.registration_no,
+            reason: `Student already registered with ${existingStudent.registration_no}`
           });
         }
       }
