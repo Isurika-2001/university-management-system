@@ -172,7 +172,7 @@ const View = () => {
     navigate('/app/course-registrations/update?id=' + id);
   };
 
-  const handleClickAddNew = () => {
+  const handleClick = () => {
     navigate('/app/students/add');
   };
 
@@ -296,7 +296,7 @@ const View = () => {
             >
               Import
             </Button>
-            <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
+            <Button onClick={handleClick} variant="contained" startIcon={<FileAddOutlined />}>
               Add New Student
             </Button>
           </Box>
