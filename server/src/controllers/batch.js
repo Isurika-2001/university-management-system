@@ -124,9 +124,39 @@ async function checkDuplicateBatch(courseId, name) {
   return !!batch;
 }
 
+async function deleteBatch(req, res) {
+  const { id } = req.params;
+
+  try {
+    const deletedBatch = await Batch.findByIdAndDelete(id);
+
+    if (!deletedBatch) {
+      return res.status(404).json({
+        success: false,
+        message: "Batch not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Batch deleted successfully",
+      data: deletedBatch,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Error deleting batch",
+      error: error.message,
+    });
+  }
+}
+
 // Export the functions to make them accessible from other files
 module.exports = {
   getAllBatches,
   createBatch,
   getBatchesByCourseId,
+  deleteBatch
 };

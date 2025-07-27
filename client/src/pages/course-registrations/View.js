@@ -19,6 +19,7 @@ import { UploadOutlined } from '@ant-design/icons';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from '../../config';
 import { useAuthContext } from 'context/useAuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -38,6 +39,8 @@ const View = () => {
   const [batches, setBatches] = useState([]); // store batches
 
   const { user } = useAuthContext();
+  
+  const navigate = useNavigate();
 
   // Debounce search term
   useEffect(() => {
@@ -224,6 +227,10 @@ const View = () => {
     }
   };
 
+  const handleViewRow = (id) => {
+    navigate('/app/course-registrations/update?id=' + id);
+  };
+
   return (
     <MainCard title="Course Registration List">
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
@@ -300,9 +307,19 @@ const View = () => {
           {loading && <LinearProgress sx={{ width: '100%' }} />}
           <TableBody>
             {data.map((reg) => (
-              <TableRow key={reg._id} selected={isSelected(reg._id)}>
+              <TableRow
+                key={reg._id}
+                selected={isSelected(reg._id)}
+                onClick={() => handleViewRow(reg.student._id)}
+                hover
+                style={{ cursor: 'pointer' }}
+              >
                 <TableCell padding="checkbox">
-                  <Checkbox checked={isSelected(reg._id)} onChange={(e) => handleCheckboxClick(e, reg._id)} />
+                  <Checkbox
+                    checked={isSelected(reg._id)}
+                    onClick={(e) => e.stopPropagation()} // Prevent row click
+                    onChange={(e) => handleCheckboxClick(e, reg._id)}
+                  />
                 </TableCell>
                 <TableCell>{reg.courseReg_no}</TableCell>
                 <TableCell>{reg.student?.registration_no}</TableCell>
