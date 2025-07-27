@@ -20,6 +20,8 @@ import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from '../../config';
 import { useAuthContext } from 'context/useAuthContext';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 const View = () => {
   const { user } = useAuthContext();
@@ -41,7 +43,29 @@ const View = () => {
   const [courseFilter, setCourseFilter] = useState('');
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');  
+
+  const Toast = withReactContent(
+    Swal.mixin({
+      toast: true,
+      position: 'bottom',
+      customClass: {
+        popup: 'colored-toast'
+      },
+      background: 'primary',
+      showConfirmButton: false,
+      timer: 3500,
+      timerProgressBar: true
+    })
+  );
+
+  const showSuccessSwal = (msg) => {
+    Toast.fire({ icon: 'success', title: msg });
+  };
+
+  const showErrorSwal = (msg) => {
+    Toast.fire({ icon: 'error', title: msg });
+  };
 
   // Debounce searchTerm with 500ms delay
   useEffect(() => {
@@ -162,8 +186,41 @@ const View = () => {
     navigate('/app/batches/update?id=' + id);
   };
 
-  // You can implement sorting here if you want client-side, 
-  // or send sort params to backend if it supports sorting
+  const handleDeleteBatch = async (id) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(`${apiRoutes.batchRoute}/${id}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Remove from UI
+          setData((prev) => prev.filter((batch) => batch._id !== id));
+          showSuccessSwal('Batch has been deleted successfully');
+        } else {
+          showErrorSwal(data.message || 'Failed to delete batch');
+        }
+      } catch (error) {
+        console.error(error);
+        showErrorSwal('Something went wrong');
+      }
+    }
+  };
 
   return (
     <MainCard title="Batch List">
@@ -258,7 +315,7 @@ const View = () => {
                       >
                         Edit
                       </Button>
-                      <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} disabled>
+                      <Button onClick={() => handleDeleteBatch(batch._id)} variant="outlined" color="error" startIcon={<DeleteOutlined />}>
                         Delete
                       </Button>
                     </TableCell>
