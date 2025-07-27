@@ -100,7 +100,7 @@ export default function ThemeRoutes() {
           />
           <Route
             path="update"
-            element={permissions?.course?.includes('update-all') ? <UpdateCourseForm /> : <Navigate to="/app/access-denied" replace />}
+            element={permissions?.course?.includes('create') ? <UpdateCourseForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
 
