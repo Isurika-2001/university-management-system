@@ -274,8 +274,7 @@ const View = () => {
                       }}
                       color="primary"
                       startIcon={<EditOutlined />}
-                      onClick={() => handleViewRow(student.id)}
-                      disabled
+                      onClick={() => handleViewRow(course._id)}
                     >
                       Edit
                     </Button>
@@ -283,7 +282,7 @@ const View = () => {
                       variant="outlined"
                       color="error"
                       startIcon={<DeleteOutlined />}
-                      onClick={() => handleViewRow(student.id)}
+                      onClick={() => handleViewRow(course.id)}
                       disabled
                     >
                       Delete
