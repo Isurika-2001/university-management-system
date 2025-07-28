@@ -82,7 +82,85 @@ async function getUpcomingBatchDates(req, res) {
   }
 }
 
+// create a api to get totalRunningCourses, no of registrations over each running course
+// response be like 
+
+// {
+//     "success": true,
+//     "data": {
+//         "totalRunningCourses": 3,
+//         "registrations": [
+//             { 
+//                 "courseId": "course1",
+//                 "courseName": "MERN",  
+//                 "registrations": 80
+//             },
+//             {
+//                 "courseId": "course2",
+//                 "courseName": "DPE",
+//                 "registrations": 95
+//             },
+//             {
+//                 "courseId": "course3",
+//                 "courseName": "English",
+//                 "registrations": 70
+//             }
+//         ]
+//     }
+// }
+
+async function getCourseRegistrations(req, res) {
+  try {
+    const registrations = await CourseRegistration.aggregate([
+      {
+        $group: {
+          _id: "$courseId",
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: "courses",
+          localField: "_id",
+          foreignField: "_id",
+          as: "courseDetails"
+        }
+      },
+      {
+        $unwind: "$courseDetails"
+      },
+      {
+        $project: {
+          courseId: "$_id",
+          courseName: "$courseDetails.name",
+          registrations: "$count"
+        }
+      }
+    ]);
+
+    // Calculate total number of registrations
+    const totalRegistrations = registrations.reduce((sum, item) => sum + item.registrations, 0);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalRunningCourses: registrations.length,
+        totalRegistrations,
+        registrations
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching course registrations",
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   getEnrollmentSummaryStats,
-  getUpcomingBatchDates
+  getUpcomingBatchDates,
+  getCourseRegistrations
 };

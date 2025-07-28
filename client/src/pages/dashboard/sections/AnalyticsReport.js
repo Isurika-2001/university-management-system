@@ -17,7 +17,7 @@ const AnalyticsReport = () => (
           <Typography variant="h5">650</Typography>
         </ListItemButton>
         <ListItemButton divider>
-          <ListItemText primary="Monthly Enrollment Numbers" />
+          <ListItemText primary="This Month Enrollment Numbers" />
           <Typography variant="h5">50</Typography>
         </ListItemButton>
         <ListItemButton>

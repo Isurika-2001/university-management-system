@@ -5,11 +5,21 @@ const UpcomingEventsAndStudentSection = ({ events, topCourses }) => {
   const formatDate = (d) => new Date(d).toLocaleDateString();
 
   return (
-    <Grid item xs={12} md={12} container spacing={2}>
+    <Grid item xs={12} md={8} container spacing={2}>
       {/* Upcoming Events / Deadlines */}
-      <Grid item xs={12} md={6}>
-        <Typography variant="h5" gutterBottom>Upcoming Events / Deadlines</Typography>
-        <Card sx={{ mb: 2 }}>
+      <Grid
+        item
+        xs={12}
+        md={6}
+        sx={{
+          height: 350, // fixed height
+          overflowY: 'auto' // scroll if content overflows
+        }}
+      >
+        <Typography variant="h5" gutterBottom>
+          Upcoming Events / Deadlines
+        </Typography>
+        <Card sx={{ mb: 2, height: '100%' }}>
           <CardContent>
             <Typography variant="h6">Registration Deadlines</Typography>
             <List dense>
@@ -33,8 +43,10 @@ const UpcomingEventsAndStudentSection = ({ events, topCourses }) => {
 
       {/* Students Section */}
       <Grid item xs={12} md={6}>
-        <Typography variant="h5" gutterBottom>Students Section</Typography>
-        <Card>
+        <Typography variant="h5" gutterBottom>
+          Students Section
+        </Typography>
+        <Card sx={{ height: '100%' }}>
           <CardContent>
             <Typography variant="h6">Top Enrolled Courses</Typography>
             <List dense>

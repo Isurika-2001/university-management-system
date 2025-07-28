@@ -1,22 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Grid, Typography, Card, CardContent, Button } from '@mui/material';
+import { Box, Grid, Typography, Card, CardContent } from '@mui/material';
 import MainCard from 'components/MainCard';
 import { useAuthContext } from 'context/useAuthContext';
 import { apiRoutes } from 'config';
 
 const GeneralSummaryCards = () => {
   const { user } = useAuthContext();
-  const [showAll, setShowAll] = useState(false);
-  const [maxItems, setMaxItems] = useState(0);
   const [courseBatches, setCourseBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const hiddenContainerRef = useRef(null);
-
-  const maxVisibleHeight = 450; // adjust as needed
+  
+  const visibleContainerRef = useRef(null);
+  const [contentHeight, setContentHeight] = useState(0);
 
   useEffect(() => {
-    // Fetch batch data from API
     async function fetchBatches() {
       try {
         setLoading(true);
@@ -26,8 +23,8 @@ const GeneralSummaryCards = () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`
-          }
+            Authorization: `Bearer ${user.token}`,
+          },
         });
         const json = await response.json();
 
@@ -45,37 +42,21 @@ const GeneralSummaryCards = () => {
     }
 
     fetchBatches();
-  }, []);
+  }, [user.token]);
 
+  // Update contentHeight whenever courseBatches changes or window resizes
   useEffect(() => {
-    // Calculate how many items fit into the max height after batches load
-    const calculateMaxItems = () => {
-      const hiddenContainer = hiddenContainerRef.current;
-      if (!hiddenContainer) return;
-
-      const cards = hiddenContainer.querySelectorAll('.batch-card');
-      let totalHeight = 0;
-      let itemsThatFit = 0;
-
-      cards.forEach((card) => {
-        const cardHeight = card.offsetHeight + 16; // include mb:2 ~16px
-        if (totalHeight + cardHeight <= maxVisibleHeight || itemsThatFit === 0) {
-          totalHeight += cardHeight;
-          itemsThatFit += 1;
-        }
-      });
-
-      setMaxItems(itemsThatFit);
+    const updateContentHeight = () => {
+      if (visibleContainerRef.current) {
+        const height = visibleContainerRef.current.scrollHeight;
+        setContentHeight(height);
+      }
     };
 
-    if (courseBatches.length > 0) {
-      calculateMaxItems();
-      window.addEventListener('resize', calculateMaxItems);
-      return () => window.removeEventListener('resize', calculateMaxItems);
-    }
+    updateContentHeight();
+    window.addEventListener('resize', updateContentHeight);
+    return () => window.removeEventListener('resize', updateContentHeight);
   }, [courseBatches]);
-
-  const visibleBatches = showAll ? courseBatches : courseBatches.slice(0, maxItems);
 
   if (loading) {
     return (
@@ -88,64 +69,53 @@ const GeneralSummaryCards = () => {
   if (error) {
     return (
       <Grid item xs={12} md={5} lg={4}>
-        <Typography variant="h6" color="error">{error}</Typography>
+        <Typography variant="h6" color="error">
+          {error}
+        </Typography>
       </Grid>
     );
   }
 
   return (
-    <Grid item xs={12} md={5} lg={4}>
-      <Grid container alignItems="center" justifyContent="space-between">
+    <Grid item xs={12} md={12} lg={12}>
+      <Grid container alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Grid item>
           <Typography variant="h5">Upcoming Batch Dates</Typography>
         </Grid>
       </Grid>
 
-      <MainCard sx={{ mt: 2, minHeight: 500, maxHeight: 500 }} content={false}>
-        <Box
-          sx={{
-            p: 3,
-            pb: 0,
-            maxHeight: showAll ? 400 : 'none', // enable scroll on View More
-            overflowY: showAll ? 'auto' : 'visible',
-          }}
-        >
-          {visibleBatches.map((batch, index) => (
-            <Card key={index} sx={{ mb: 2 }} className="batch-card">
-              <CardContent>
-                <Typography variant="subtitle1">{batch.name}</Typography>
-                {batch.orientationDate && (
-                  <Typography variant="body2">Orientation Date: {new Date(batch.orientationDate).toLocaleDateString()}</Typography>
-                )}
-                {batch.startDate && <Typography variant="body2">Start Date: {new Date(batch.startDate).toLocaleDateString()}</Typography>}
-              </CardContent>
-            </Card>
-          ))}
-
-          {courseBatches.length > maxItems && (
-            <Box textAlign="center" mt={2}>
-              <Button variant="outlined" size="small" onClick={() => setShowAll(!showAll)}>
-                {showAll ? 'View Less' : 'View More'}
-              </Button>
-            </Box>
-          )}
+      <MainCard
+        sx={{
+          mt: 2,
+          pb: 3,
+          // Set maxHeight to 450 and show scroll if content exceeds 450
+          maxHeight: 450,
+          overflowY: contentHeight > 450 ? 'auto' : 'visible',
+          height: contentHeight > 450 ? 450 : 'auto',
+          transition: 'height 0.3s ease',
+        }}
+        content={false}
+      >
+        <Box sx={{ p: 3, pb: 0 }} ref={visibleContainerRef}>
+          <Grid container spacing={2}>
+            {courseBatches.map((batch, index) => (
+              <Grid item xs={12} sm={6} md={4} key={index}>
+                <Card className="batch-card" sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Typography variant="subtitle1">{batch.name}</Typography>
+                    {batch.orientationDate && (
+                      <Typography variant="body2">Orientation Date: {new Date(batch.orientationDate).toLocaleDateString()}</Typography>
+                    )}
+                    {batch.startDate && (
+                      <Typography variant="body2">Start Date: {new Date(batch.startDate).toLocaleDateString()}</Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
         </Box>
       </MainCard>
-
-      {/* Hidden container to measure rendered heights */}
-      <Box sx={{ position: 'absolute', visibility: 'hidden', height: 0, overflow: 'hidden' }} ref={hiddenContainerRef}>
-        {courseBatches.map((batch, index) => (
-          <Card key={index} sx={{ mb: 2 }} className="batch-card">
-            <CardContent>
-              <Typography variant="subtitle1">{batch.name}</Typography>
-              {batch.orientationDate && (
-                <Typography variant="body2">Orientation Date: {new Date(batch.orientationDate).toLocaleDateString()}</Typography>
-              )}
-              {batch.startDate && <Typography variant="body2">Start Date: {new Date(batch.startDate).toLocaleDateString()}</Typography>}
-            </CardContent>
-          </Card>
-        ))}
-      </Box>
     </Grid>
   );
 };
