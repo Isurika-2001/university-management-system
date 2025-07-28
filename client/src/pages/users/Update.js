@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Button, Grid, Divider, CircularProgress, MenuItem } from '@mui/material';
+import { Box, TextField, Button, Grid, Divider, CircularProgress, LinearProgress, MenuItem } from '@mui/material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
@@ -183,7 +183,7 @@ function UpdateUser() {
   if (loading) {
     return (
       <Box textAlign="center" mt={5}>
-        <CircularProgress />
+        <LinearProgress />
       </Box>
     );
   }
