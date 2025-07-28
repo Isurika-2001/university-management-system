@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
 import { useLocation } from 'react-router-dom';
+import dayjs from 'dayjs';
 
 const EditForm = () => {
   const location = useLocation();
@@ -45,7 +46,10 @@ const EditForm = () => {
   const validationSchema = Yup.object().shape({
     courseId: Yup.string().required('Course is required'),
     year: Yup.string().required('Year is required'),
-    number: Yup.string().required('Batch number is required')
+    number: Yup.string().required('Batch number is required'),
+    orientationDate: Yup.date().nullable(),
+    startDate: Yup.date().nullable(),
+    registrationDeadline: Yup.date().nullable()
   });
 
   useEffect(() => {
@@ -91,7 +95,10 @@ const EditForm = () => {
         setInitialValues({
           courseId: data.data.courseId,
           year: year,
-          number: number
+          number: number,
+          orientationDate: data.data.orientationDate ? dayjs(data.data.orientationDate).format('YYYY-MM-DD') : '',
+          startDate: data.data.startDate ? dayjs(data.data.startDate).format('YYYY-MM-DD') : '',
+          registrationDeadline: data.data.registrationDeadline ? dayjs(data.data.registrationDeadline).format('YYYY-MM-DD') : '',
         });
       } else {
         showErrorSwal(data.message || 'Batch not found');
@@ -111,7 +118,10 @@ const EditForm = () => {
       const updatedData = {
         courseId: values.courseId,
         year: values.year,
-        number: values.number
+        number: values.number,
+        orientationDate: values.orientationDate || null,
+        startDate: values.startDate || null,
+        registrationDeadline: values.registrationDeadline || null
       };
 
       const response = await fetch(`${apiRoutes.batchRoute}/${id}`, {
@@ -198,6 +208,57 @@ const EditForm = () => {
                     helperText={<ErrorMessage name="number" />}
                     InputProps={{ sx: { px: 2, py: 1 } }}
                     sx={{ mb: 3 }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Orientation Date"
+                    variant="outlined"
+                    name="orientationDate"
+                    InputLabelProps={{ shrink: true }}
+                    type="date"
+                    fullWidth
+                    error={touched.orientationDate && !!errors.orientationDate}
+                    helperText={<ErrorMessage name="orientationDate" />}
+                    InputProps={{
+                      sx: { px: 2, py: 1 } // Padding added
+                    }}
+                    sx={{ mb: 3 }} // Margin bottom added
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Start Date"
+                    variant="outlined"
+                    name="startDate"
+                    InputLabelProps={{ shrink: true }}
+                    type="date"
+                    fullWidth
+                    error={touched.startDate && !!errors.startDate}
+                    helperText={<ErrorMessage name="startDate" />}
+                    InputProps={{
+                      sx: { px: 2, py: 1 } // Padding added
+                    }}
+                    sx={{ mb: 3 }} // Margin bottom added
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Registration Deadline"
+                    variant="outlined"
+                    name="registrationDeadline"
+                    InputLabelProps={{ shrink: true }}
+                    type="date"
+                    fullWidth
+                    error={touched.registrationDeadline && !!errors.registrationDeadline}
+                    helperText={<ErrorMessage name="registrationDeadline" />}
+                    InputProps={{
+                      sx: { px: 2, py: 1 } // Padding added
+                    }}
+                    sx={{ mb: 3 }} // Margin bottom added
                   />
                 </Grid>
               </Grid>

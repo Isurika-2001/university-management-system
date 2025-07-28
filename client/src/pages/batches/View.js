@@ -22,6 +22,7 @@ import { apiRoutes } from '../../config';
 import { useAuthContext } from 'context/useAuthContext';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import dayjs from 'dayjs';
 
 const View = () => {
   const { user } = useAuthContext();
@@ -275,6 +276,9 @@ const View = () => {
               </TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Course</TableCell>
+              <TableCell>Orientation Date</TableCell>
+              <TableCell>Start Date</TableCell>
+              <TableCell>Registration Deadline</TableCell>
               <TableCell>Action</TableCell>
             </TableRow>
           </TableHead>
@@ -304,6 +308,9 @@ const View = () => {
                     </TableCell>
                     <TableCell>{batch.name}</TableCell>
                     <TableCell>{batch.courseName}</TableCell>
+                    <TableCell>{batch.orientationDate ? dayjs(batch.orientationDate).format('YYYY-MM-DD') : ''}</TableCell>
+                    <TableCell>{batch.startDate ? dayjs(batch.startDate).format('YYYY-MM-DD') : ''}</TableCell>
+                    <TableCell>{batch.registrationDeadline ? dayjs(batch.registrationDeadline).format('YYYY-MM-DD') : ''}</TableCell>
                     <TableCell>
                       <Button
                         variant="outlined"

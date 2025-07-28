@@ -1,21 +1,14 @@
-// Import any necessary modules or dependencies
 const Batch = require("../models/batch");
 
-// Define an async function to get all batches
+// Get all batches with search, filter, pagination
 async function getAllBatches(req, res) {
   try {
-    const {
-      search = '',
-      courseId,
-      page = 1,
-      limit = 10
-    } = req.query;
+    const { search = '', courseId, page = 1, limit = 10 } = req.query;
 
     const pageNum = Math.max(parseInt(page, 10), 1);
     const limitNum = Math.max(parseInt(limit, 10), 1);
     const skip = (pageNum - 1) * limitNum;
 
-    // Build filter object
     const filter = {};
 
     if (search.trim() !== '') {
@@ -23,24 +16,24 @@ async function getAllBatches(req, res) {
     }
 
     if (courseId) {
-      filter.courseId = courseId; // assume courseId is a string ID
+      filter.courseId = courseId;
     }
 
-    // Get total count for pagination
     const total = await Batch.countDocuments(filter);
 
-    // Query batches with filter, pagination and populate course name
     const batches = await Batch.find(filter)
       .populate('courseId', 'name')
       .skip(skip)
       .limit(limitNum);
 
-    // Format response with courseName
     const formattedBatches = batches.map(batch => ({
       _id: batch._id,
       name: batch.name,
       courseId: batch.courseId?._id || null,
       courseName: batch.courseId?.name || null,
+      orientationDate: batch.orientationDate,
+      startDate: batch.startDate,
+      registrationDeadline: batch.registrationDeadline
     }));
 
     res.status(200).json({
@@ -56,19 +49,21 @@ async function getAllBatches(req, res) {
   }
 }
 
-// Define an async function to get batches for a selected courseId
+// Get batches by courseId
 async function getBatchesByCourseId(req, res) {
   const { courseId } = req.params;
 
   try {
     const batches = await Batch.find({ courseId }).populate('courseId', 'name');
 
-    // Map course.name for each batch and add as courseName
     const formattedBatches = batches.map(batch => ({
       _id: batch._id,
       name: batch.name,
       courseId: batch.courseId?._id || null,
       courseName: batch.courseId?.name || null,
+      orientationDate: batch.orientationDate,
+      startDate: batch.startDate,
+      registrationDeadline: batch.registrationDeadline
     }));
 
     res.status(200).json(formattedBatches);
@@ -78,13 +73,13 @@ async function getBatchesByCourseId(req, res) {
   }
 }
 
+// Create new batch
 async function createBatch(req, res) {
-  const { courseId, year, number } = req.body;
+  const { courseId, year, number, orientationDate, startDate, registrationDeadline } = req.body;
 
   const name = `${year}.${number}`;
 
   try {
-    // Check for duplicate batch within the same course
     if (await checkDuplicateBatch(courseId, name)) {
       return res.status(403).json({
         success: false,
@@ -92,7 +87,14 @@ async function createBatch(req, res) {
       });
     }
 
-    const batch = new Batch({ courseId, name });
+    const batch = new Batch({
+      courseId,
+      name,
+      orientationDate,
+      startDate,
+      registrationDeadline
+    });
+
     const newBatch = await batch.save();
 
     res.status(201).json({
@@ -101,7 +103,7 @@ async function createBatch(req, res) {
       data: newBatch,
     });
   } catch (error) {
-    console.error(error); // log for debugging
+    console.error(error);
 
     if (error.code === 11000) {
       res.status(400).json({
@@ -112,12 +114,13 @@ async function createBatch(req, res) {
       res.status(500).json({
         success: false,
         message: "Error creating batch",
-        error: error.message, // optional detailed error for debugging
+        error: error.message,
       });
     }
   }
 }
 
+// Get batch by ID
 async function getBatchById(req, res) {
   const { id } = req.params;
 
@@ -146,12 +149,13 @@ async function getBatchById(req, res) {
   }
 }
 
-// updated checkDuplicateBatch to include courseId
+// Check for duplicate batch
 async function checkDuplicateBatch(courseId, name) {
   const batch = await Batch.findOne({ courseId, name });
   return !!batch;
 }
 
+// Delete batch
 async function deleteBatch(req, res) {
   const { id } = req.params;
 
@@ -172,7 +176,6 @@ async function deleteBatch(req, res) {
     });
   } catch (error) {
     console.error(error);
-
     res.status(500).json({
       success: false,
       message: "Error deleting batch",
@@ -181,9 +184,10 @@ async function deleteBatch(req, res) {
   }
 }
 
+// Update batch
 async function updateBatch(req, res) {
   const { id } = req.params;
-  const { courseId, year, number } = req.body;
+  const { courseId, year, number, orientationDate, startDate, registrationDeadline } = req.body;
 
   const name = `${year}.${number}`;
 
@@ -197,11 +201,10 @@ async function updateBatch(req, res) {
       });
     }
 
-    // Check for duplicate name in the same course, excluding current batch
     const duplicate = await Batch.findOne({
       courseId,
       name,
-      _id: { $ne: id }, // Exclude current batch
+      _id: { $ne: id },
     });
 
     if (duplicate) {
@@ -213,6 +216,9 @@ async function updateBatch(req, res) {
 
     existingBatch.courseId = courseId;
     existingBatch.name = name;
+    existingBatch.orientationDate = orientationDate;
+    existingBatch.startDate = startDate;
+    existingBatch.registrationDeadline = registrationDeadline;
 
     const updatedBatch = await existingBatch.save();
 
@@ -231,7 +237,6 @@ async function updateBatch(req, res) {
   }
 }
 
-// Export the functions to make them accessible from other files
 module.exports = {
   getAllBatches,
   createBatch,

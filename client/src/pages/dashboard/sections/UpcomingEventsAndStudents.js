@@ -27,14 +27,6 @@ const UpcomingEventsAndStudentSection = ({ events, topCourses }) => {
                 </ListItem>
               ))}
             </List>
-            <Typography variant="h6">Fee Due Dates</Typography>
-            <List dense>
-              {events.feeDueDates.map((date, i) => (
-                <ListItem key={i}>
-                  <ListItemText primary={formatDate(date)} />
-                </ListItem>
-              ))}
-            </List>
           </CardContent>
         </Card>
       </Grid>

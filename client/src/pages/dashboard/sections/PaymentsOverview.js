@@ -16,7 +16,7 @@ const PaymentOverview = () => (
           <Typography variant="h6" color="textSecondary">
             Number of Registrations
           </Typography>
-          <Typography variant="h3">LKR 72,650</Typography>
+          <Typography variant="h3">72,650</Typography>
         </Stack>
       </Box>
       <MonthlyBarChart />
