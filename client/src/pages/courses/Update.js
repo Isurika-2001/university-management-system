@@ -170,7 +170,7 @@ const UpdateCourseForm = () => {
     }
   };
 
-  if (!initialValues) return <CircularProgress />;
+  if (!initialValues) return <LinearProgress />;
 
   return (
     <>
