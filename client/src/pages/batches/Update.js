@@ -124,7 +124,7 @@ const EditForm = () => {
         registrationDeadline: values.registrationDeadline || null
       };
 
-      const response = await fetch(`${apiRoutes.batchRoute}/${id}`, {
+      const response = await fetch(`${apiRoutes.batchRoute}${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
