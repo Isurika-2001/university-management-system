@@ -2,8 +2,6 @@ const express = require("express");
 const router = express.Router();
 
 const authenticate = require("../middleware/authMiddleware");
-const { checkStudentsAssignedToCourse } = require("../middleware/studentMiddleware");
-const { checkStudentsAssignedToBatch } = require("../middleware/studentMiddleware");
 
 const studentRoutes = require("./student");
 const courseRoutes = require("./course");
@@ -13,6 +11,7 @@ const userTypeRoutes = require("./user_type");
 const userRoutes = require("./user");
 const authRoutes = require("./auth");
 const bulkUploadRoutes = require("./bulk_upload");
+const statsRoute = require("./stats");
 
 // Public auth routes
 router.use("/auth", authRoutes);
@@ -26,5 +25,6 @@ router.use("/course-registration", courseRegistrationRoutes);
 router.use("/user-type", userTypeRoutes);
 router.use("/user", userRoutes);
 router.use("/bulk-upload", bulkUploadRoutes);
+router.use("/stats", statsRoute);
 
 module.exports = router;
