@@ -1,25 +1,54 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Grid, Typography, Card, CardContent, Button } from '@mui/material';
 import MainCard from 'components/MainCard';
+import { useAuthContext } from 'context/useAuthContext';
+import { apiRoutes } from 'config';
 
 const GeneralSummaryCards = () => {
+  const { user } = useAuthContext();
   const [showAll, setShowAll] = useState(false);
   const [maxItems, setMaxItems] = useState(0);
+  const [courseBatches, setCourseBatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const hiddenContainerRef = useRef(null);
 
-  const courseBatches = [
-    { name: 'BTEC 2025-2', dates: ['2025-08-01', '2025-08-15'] },
-    { name: 'HND Computing 2025-2', dates: ['2025-09-05'] },
-    { name: 'MBA 2025-3', dates: ['2025-10-01', '2025-10-20'] },
-    { name: 'English Advanced 2025-1', dates: ['2025-07-25'] },
-    { name: 'BSc IT 2025-1', dates: ['2025-11-10'] },
-    { name: 'Business Management 2025-1', dates: ['2025-12-05'] },
-    { name: 'Psychology 2025-2', dates: ['2025-09-18'] }
-  ];
-
-  const maxVisibleHeight = 400; // adjust as needed
+  const maxVisibleHeight = 450; // adjust as needed
 
   useEffect(() => {
+    // Fetch batch data from API
+    async function fetchBatches() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(apiRoutes.statRoute + 'batchDates', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`
+          }
+        });
+        const json = await response.json();
+
+        if (json.success && Array.isArray(json.data)) {
+          setCourseBatches(json.data);
+        } else {
+          setError('Failed to load batch data');
+        }
+      } catch (err) {
+        setError('Error fetching batch data');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchBatches();
+  }, []);
+
+  useEffect(() => {
+    // Calculate how many items fit into the max height after batches load
     const calculateMaxItems = () => {
       const hiddenContainer = hiddenContainerRef.current;
       if (!hiddenContainer) return;
@@ -39,18 +68,36 @@ const GeneralSummaryCards = () => {
       setMaxItems(itemsThatFit);
     };
 
-    calculateMaxItems();
-    window.addEventListener('resize', calculateMaxItems);
-    return () => window.removeEventListener('resize', calculateMaxItems);
-  }, []);
+    if (courseBatches.length > 0) {
+      calculateMaxItems();
+      window.addEventListener('resize', calculateMaxItems);
+      return () => window.removeEventListener('resize', calculateMaxItems);
+    }
+  }, [courseBatches]);
 
   const visibleBatches = showAll ? courseBatches : courseBatches.slice(0, maxItems);
+
+  if (loading) {
+    return (
+      <Grid item xs={12} md={5} lg={4}>
+        <Typography variant="h6">Loading batch data...</Typography>
+      </Grid>
+    );
+  }
+
+  if (error) {
+    return (
+      <Grid item xs={12} md={5} lg={4}>
+        <Typography variant="h6" color="error">{error}</Typography>
+      </Grid>
+    );
+  }
 
   return (
     <Grid item xs={12} md={5} lg={4}>
       <Grid container alignItems="center" justifyContent="space-between">
         <Grid item>
-          <Typography variant="h5">Upcoming Batch Start Dates</Typography>
+          <Typography variant="h5">Upcoming Batch Dates</Typography>
         </Grid>
       </Grid>
 
@@ -60,18 +107,17 @@ const GeneralSummaryCards = () => {
             p: 3,
             pb: 0,
             maxHeight: showAll ? 400 : 'none', // enable scroll on View More
-            overflowY: showAll ? 'auto' : 'visible'
+            overflowY: showAll ? 'auto' : 'visible',
           }}
         >
           {visibleBatches.map((batch, index) => (
             <Card key={index} sx={{ mb: 2 }} className="batch-card">
               <CardContent>
                 <Typography variant="subtitle1">{batch.name}</Typography>
-                {batch.dates.map((date, i) => (
-                  <Typography key={i} variant="body2">
-                    {new Date(date).toLocaleDateString()}
-                  </Typography>
-                ))}
+                {batch.orientationDate && (
+                  <Typography variant="body2">Orientation Date: {new Date(batch.orientationDate).toLocaleDateString()}</Typography>
+                )}
+                {batch.startDate && <Typography variant="body2">Start Date: {new Date(batch.startDate).toLocaleDateString()}</Typography>}
               </CardContent>
             </Card>
           ))}
@@ -92,11 +138,10 @@ const GeneralSummaryCards = () => {
           <Card key={index} sx={{ mb: 2 }} className="batch-card">
             <CardContent>
               <Typography variant="subtitle1">{batch.name}</Typography>
-              {batch.dates.map((date, i) => (
-                <Typography key={i} variant="body2">
-                  {new Date(date).toLocaleDateString()}
-                </Typography>
-              ))}
+              {batch.orientationDate && (
+                <Typography variant="body2">Orientation Date: {new Date(batch.orientationDate).toLocaleDateString()}</Typography>
+              )}
+              {batch.startDate && <Typography variant="body2">Start Date: {new Date(batch.startDate).toLocaleDateString()}</Typography>}
             </CardContent>
           </Card>
         ))}

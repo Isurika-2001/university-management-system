@@ -52,7 +52,37 @@ async function getEnrollmentSummaryStats(req, res) {
   }
 }
 
+// get Upcoming Batch Dates (check only upcoming start dates or orientation dates, if both/one of them is available return batch name, start date, orientation date)
+async function getUpcomingBatchDates(req, res) {
+  try {
+    const batches = await Batch.find({
+      $or: [
+        { startDate: { $gte: new Date() } },
+        { orientationDate: { $gte: new Date() } }
+      ]
+    }).sort({ startDate: 1, orientationDate: 1 });
+
+    const upcomingBatches = batches.map(batch => ({
+      name: batch.name,
+      startDate: batch.startDate,
+      orientationDate: batch.orientationDate
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: upcomingBatches
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching upcoming batch dates",
+      error: error.message
+    });
+  }
+}
 
 module.exports = {
-  getEnrollmentSummaryStats
+  getEnrollmentSummaryStats,
+  getUpcomingBatchDates
 };
