@@ -20,6 +20,8 @@ import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from 'config';
 import { useAuthContext } from 'context/useAuthContext';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -33,6 +35,28 @@ const View = () => {
   const navigate = useNavigate();
   const { user } = useAuthContext();
 
+  const Toast = withReactContent(
+    Swal.mixin({
+      toast: true,
+      position: 'bottom',
+      customClass: {
+        popup: 'colored-toast'
+      },
+      background: 'primary',
+      showConfirmButton: false,
+      timer: 3500,
+      timerProgressBar: true
+    })
+  );
+
+  const showSuccessSwal = (msg) => {
+    Toast.fire({ icon: 'success', title: msg });
+  };
+
+  const showErrorSwal = (msg) => {
+    Toast.fire({ icon: 'error', title: msg });
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -41,7 +65,7 @@ const View = () => {
     // Fetch data from API
     try {
       const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',   
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
@@ -154,6 +178,42 @@ const View = () => {
   const handleViewRow = (id) => {
     // Navigate to detailed view of the row with provided id
     navigate('/app/courses/update?id=' + id);
+  };
+
+  const handleDelete = async (id) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(`${apiRoutes.courseRoute}${id}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Remove from UI
+          setData((prev) => prev.filter((batch) => batch._id !== id));
+          showSuccessSwal('Course has been deleted successfully');
+        } else {
+          showErrorSwal(data.message || 'Failed to delete course');
+        }
+      } catch (error) {
+        console.error(error);
+        showErrorSwal('Something went wrong');
+      }
+    }
   };
 
   const exportToCSV = () => {
@@ -272,19 +332,13 @@ const View = () => {
                       style={{
                         marginRight: '8px'
                       }}
-                      color="primary"
+                      color="warning"
                       startIcon={<EditOutlined />}
                       onClick={() => handleViewRow(course._id)}
                     >
                       Edit
                     </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={<DeleteOutlined />}
-                      onClick={() => handleViewRow(course.id)}
-                      disabled
-                    >
+                    <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={() => handleDelete(course._id)}>
                       Delete
                     </Button>
                   </TableCell>

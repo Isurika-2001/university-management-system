@@ -307,8 +307,7 @@ const View = () => {
                     <TableCell>
                       <Button
                         variant="outlined"
-                        color="primary"
-                        disabled
+                        color="warning"
                         startIcon={<EditOutlined />}
                         onClick={() => handleViewRow(batch._id)}
                         sx={{ mr: 1 }}

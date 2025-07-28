@@ -122,22 +122,24 @@ const View = () => {
 
       if (!response.ok) throw new Error('Error fetching batches');
 
-      const data = await response.json();
+      const result = await response.json(); // response is an object with `data` key
+      const batchArray = result.data;
 
       // Filter unique batch names
       const uniqueBatches = [];
       const namesSet = new Set();
 
-      data.forEach((batch) => {
+      batchArray.forEach((batch) => {
         if (!namesSet.has(batch.name)) {
           namesSet.add(batch.name);
           uniqueBatches.push(batch);
         }
       });
 
+      console.log('unique batches', uniqueBatches);
       setBatches(uniqueBatches);
     } catch (error) {
-      console.error(error.message);
+      console.error('Fetch batch error:', error.message);
     }
   };
 

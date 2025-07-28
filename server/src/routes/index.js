@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 
 const authenticate = require("../middleware/authMiddleware");
+const { checkStudentsAssignedToCourse } = require("../middleware/studentMiddleware");
+const { checkStudentsAssignedToBatch } = require("../middleware/studentMiddleware");
 
 const studentRoutes = require("./student");
 const courseRoutes = require("./course");

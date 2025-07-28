@@ -118,6 +118,34 @@ async function createBatch(req, res) {
   }
 }
 
+async function getBatchById(req, res) {
+  const { id } = req.params;
+
+  try {
+    const batch = await Batch.findById(id);
+
+    if (!batch) {
+      return res.status(404).json({
+        success: false,
+        message: "Batch not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Batch retrieved successfully",
+      data: batch,
+    });
+  } catch (error) {
+    console.error("Error retrieving batch:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving batch",
+      error: error.message,
+    });
+  }
+}
+
 // updated checkDuplicateBatch to include courseId
 async function checkDuplicateBatch(courseId, name) {
   const batch = await Batch.findOne({ courseId, name });
@@ -153,10 +181,62 @@ async function deleteBatch(req, res) {
   }
 }
 
+async function updateBatch(req, res) {
+  const { id } = req.params;
+  const { courseId, year, number } = req.body;
+
+  const name = `${year}.${number}`;
+
+  try {
+    const existingBatch = await Batch.findById(id);
+
+    if (!existingBatch) {
+      return res.status(404).json({
+        success: false,
+        message: "Batch not found",
+      });
+    }
+
+    // Check for duplicate name in the same course, excluding current batch
+    const duplicate = await Batch.findOne({
+      courseId,
+      name,
+      _id: { $ne: id }, // Exclude current batch
+    });
+
+    if (duplicate) {
+      return res.status(403).json({
+        success: false,
+        message: "Batch name already exists for this course",
+      });
+    }
+
+    existingBatch.courseId = courseId;
+    existingBatch.name = name;
+
+    const updatedBatch = await existingBatch.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Batch updated successfully",
+      data: updatedBatch,
+    });
+  } catch (error) {
+    console.error("Error updating batch:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating batch",
+      error: error.message,
+    });
+  }
+}
+
 // Export the functions to make them accessible from other files
 module.exports = {
   getAllBatches,
   createBatch,
   getBatchesByCourseId,
-  deleteBatch
+  deleteBatch,
+  getBatchById,
+  updateBatch
 };
