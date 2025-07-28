@@ -55,7 +55,7 @@ const UpdateCourseForm = () => {
     console.log('id', courseId);
     const fetchCourse = async () => {
       try {
-        const res = await fetch(`${apiRoutes.courseRoute}/${courseId}`, {
+        const res = await fetch(`${apiRoutes.courseRoute}${courseId}`, {
           headers: {
             Authorization: `Bearer ${user.token}`
           }
@@ -83,7 +83,7 @@ const UpdateCourseForm = () => {
   const handleSubmit = async (values) => {
     try {
       setSubmitting(true);
-      const response = await fetch(`${apiRoutes.courseRoute}/${courseId}`, {
+      const response = await fetch(`${apiRoutes.courseRoute}${courseId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -147,7 +147,7 @@ const UpdateCourseForm = () => {
 
     if (result.isConfirmed) {
       try {
-        const response = await fetch(`${apiRoutes.batchRoute}/${id}`, {
+        const response = await fetch(`${apiRoutes.batchRoute}${id}`, {
           method: 'DELETE',
           headers: {
             Authorization: `Bearer ${user.token}`
