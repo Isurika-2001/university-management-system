@@ -1,26 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { Grid, Typography } from '@mui/material';
 import AnalyticEcommerce from 'components/cards/statistics/AnalyticEcommerce';
+import { useAuthContext } from 'context/useAuthContext';
+import { apiRoutes } from 'config';
 
 const EnrollmentSummary = () => {
-  const finalCounts = {
-    Mern: 442236,
-    DPE: 78250,
-    English: 18800
-  };
+  const { user } = useAuthContext();
+  const [animatedCounts, setAnimatedCounts] = useState({
+    totalRegistrations: 0,
+    totalRunningCourses: 0,
+    totalCourses: 0,
+    totalRunningBatches: 0,
+    totalBatches: 0,
+    todaysRegistrations: 0,
+  });
 
-  const total = finalCounts.Mern + finalCounts.DPE + finalCounts.English;
-
-  const PTMern = Math.round((finalCounts.Mern / total) * 100);
-  const PTDPE = Math.round((finalCounts.DPE / total) * 100);
-  const PTEnglish = Math.round((finalCounts.English / total) * 100);
-
-  const [MernCount, setMernCount] = useState(0);
-  const [DPECount, setDPECount] = useState(0);
-  const [EnglishCount, setEnglishCount] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-
-  const animateCountIncrease = (setter, finalCount) => {
+  const animateCountIncrease = (key, finalCount) => {
     const increment = Math.ceil(finalCount / 100);
     let current = 0;
     const interval = setInterval(() => {
@@ -29,15 +24,35 @@ const EnrollmentSummary = () => {
         current = finalCount;
         clearInterval(interval);
       }
-      setter(current);
-    }, 50);
+      setAnimatedCounts((prev) => ({ ...prev, [key]: current }));
+    }, 20);
   };
 
   useEffect(() => {
-    animateCountIncrease(setMernCount, finalCounts.Mern);
-    animateCountIncrease(setDPECount, finalCounts.DPE);
-    animateCountIncrease(setEnglishCount, finalCounts.English);
-    animateCountIncrease(setTotalCount, total);
+    console.log('Fetching enrollment summary data...');
+    async function fetchData() {
+      try {
+        const response = await fetch(apiRoutes.statRoute + 'enrollment', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+        const json = await response.json();
+
+        if (json.success && json.data) {
+          Object.entries(json.data).forEach(([key, value]) => {
+            animateCountIncrease(key, value);
+          });
+        } else {
+          console.error('Failed to fetch enrollment summary:', json.message);
+        }
+      } catch (error) {
+        console.error('Error fetching enrollment summary:', error);
+      }
+    }
+    fetchData();
   }, []);
 
   return (
@@ -46,16 +61,22 @@ const EnrollmentSummary = () => {
         <Typography variant="h5">Enrollment Summary</Typography>
       </Grid>
       <Grid item xs={12} sm={6} md={4} lg={3}>
-        <AnalyticEcommerce title="Total Students Registered" count={MernCount.toLocaleString()} percentage={PTMern} color="warning" />
+        <AnalyticEcommerce title="Total Students Registered" count={animatedCounts.totalRegistrations.toLocaleString()} />
       </Grid>
       <Grid item xs={12} sm={6} md={4} lg={3}>
-        <AnalyticEcommerce title="Total Courses Offered" count={DPECount.toLocaleString()} percentage={PTDPE} color="warning" />
+        <AnalyticEcommerce
+          title="Total Courses Offered"
+          count={`${animatedCounts.totalRunningCourses.toLocaleString()} / ${animatedCounts.totalCourses.toLocaleString()}`}
+        />
       </Grid>
       <Grid item xs={12} sm={6} md={4} lg={3}>
-        <AnalyticEcommerce title="Total Batches Running" count={EnglishCount.toLocaleString()} percentage={PTEnglish} color="warning" />
+        <AnalyticEcommerce
+          title="Total Batches Running"
+          count={`${animatedCounts.totalRunningBatches.toLocaleString()} / ${animatedCounts.totalBatches.toLocaleString()}`}
+        />
       </Grid>
       <Grid item xs={12} sm={6} md={4} lg={3}>
-        <AnalyticEcommerce title="Today Registrations" count={totalCount.toLocaleString()} percentage={100} isLoss />
+        <AnalyticEcommerce title="Today's Course Registrations" count={animatedCounts.todaysRegistrations.toLocaleString()} />
       </Grid>
     </>
   );
