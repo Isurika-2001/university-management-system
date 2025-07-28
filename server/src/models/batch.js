@@ -1,7 +1,5 @@
 const mongoose = require("mongoose");
 
-// Import the required modules
-
 // Define the schema for the Batch model
 const batchSchema = new mongoose.Schema({
   courseId: {
@@ -13,6 +11,18 @@ const batchSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  orientationDate: {
+    type: Date,
+    required: false, // Set to true if it's mandatory
+  },
+  startDate: {
+    type: Date,
+    required: false,
+  },
+  registrationDeadline: {
+    type: Date,
+    required: false,
+  }
 });
 
 // Create the Batch model using the schema

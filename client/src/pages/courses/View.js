@@ -15,11 +15,13 @@ import {
   LinearProgress,
   TextField // Import TextField for input field
 } from '@mui/material';
-import { UploadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
+import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from 'config';
 import { useAuthContext } from 'context/useAuthContext';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -33,6 +35,28 @@ const View = () => {
   const navigate = useNavigate();
   const { user } = useAuthContext();
 
+  const Toast = withReactContent(
+    Swal.mixin({
+      toast: true,
+      position: 'bottom',
+      customClass: {
+        popup: 'colored-toast'
+      },
+      background: 'primary',
+      showConfirmButton: false,
+      timer: 3500,
+      timerProgressBar: true
+    })
+  );
+
+  const showSuccessSwal = (msg) => {
+    Toast.fire({ icon: 'success', title: msg });
+  };
+
+  const showErrorSwal = (msg) => {
+    Toast.fire({ icon: 'error', title: msg });
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -41,7 +65,7 @@ const View = () => {
     // Fetch data from API
     try {
       const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',   
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
@@ -156,31 +180,67 @@ const View = () => {
     navigate('/app/courses/update?id=' + id);
   };
 
-  const exportToCSV = () => {
-    let exportData = [];
+  const handleDelete = async (id) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    });
 
-    if (filteredData.length > 0) {
-      exportData = filteredData;
-    } else {
-      exportData = data.filter((course) => selected.includes(course.id));
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(`${apiRoutes.courseRoute}${id}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Remove from UI
+          setData((prev) => prev.filter((batch) => batch._id !== id));
+          showSuccessSwal('Course has been deleted successfully');
+        } else {
+          showErrorSwal(data.message || 'Failed to delete course');
+        }
+      } catch (error) {
+        console.error(error);
+        showErrorSwal('Something went wrong');
+      }
     }
-
-    const csvHeader = ['Name', 'Description'].join(','); // Header row
-    const csvData = exportData.map((course) => [course.name, course.description].join(','));
-    // Combine header and data rows
-    const csvContent = csvHeader + '\n' + csvData.join('\n');
-    // Create a Blob object with CSV content
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    // Create a temporary anchor element to initiate the download
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = 'course_data.csv';
-    // Trigger the download
-    document.body.appendChild(link);
-    link.click();
-    // Cleanup
-    document.body.removeChild(link);
   };
+
+  // const exportToCSV = () => {
+  //   let exportData = [];
+
+  //   if (filteredData.length > 0) {
+  //     exportData = filteredData;
+  //   } else {
+  //     exportData = data.filter((course) => selected.includes(course.id));
+  //   }
+
+  //   const csvHeader = ['Name', 'Description'].join(','); // Header row
+  //   const csvData = exportData.map((course) => [course.name, course.description].join(','));
+  //   // Combine header and data rows
+  //   const csvContent = csvHeader + '\n' + csvData.join('\n');
+  //   // Create a Blob object with CSV content
+  //   const blob = new Blob([csvContent], { type: 'text/csv' });
+  //   // Create a temporary anchor element to initiate the download
+  //   const link = document.createElement('a');
+  //   link.href = window.URL.createObjectURL(blob);
+  //   link.download = 'course_data.csv';
+  //   // Trigger the download
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   // Cleanup
+  //   document.body.removeChild(link);
+  // };
 
   return (
     <MainCard title="Course List">
@@ -195,7 +255,7 @@ const View = () => {
       >
         <TextField label="Search" variant="outlined" onChange={handleSearch} />
         <div>
-          <Button
+          {/* <Button
             variant="contained"
             style={{
               marginRight: '8px'
@@ -207,7 +267,7 @@ const View = () => {
             startIcon={<UploadOutlined />}
           >
             Export
-          </Button>
+          </Button> */}
           <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
             Add New
           </Button>
@@ -272,19 +332,13 @@ const View = () => {
                       style={{
                         marginRight: '8px'
                       }}
-                      color="primary"
+                      color="warning"
                       startIcon={<EditOutlined />}
                       onClick={() => handleViewRow(course._id)}
                     >
                       Edit
                     </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={<DeleteOutlined />}
-                      onClick={() => handleViewRow(course.id)}
-                      disabled
-                    >
+                    <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={() => handleDelete(course._id)}>
                       Delete
                     </Button>
                   </TableCell>

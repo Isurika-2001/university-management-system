@@ -1,103 +1,107 @@
 import { useEffect, useState } from 'react';
-
-// material-ui
 import { useTheme } from '@mui/material/styles';
-
-// third-party
 import ReactApexChart from 'react-apexcharts';
+import { useAuthContext } from 'context/useAuthContext';
+import { apiRoutes } from 'config';
 
-// chart options
-const areaChartOptions = {
-  chart: {
-    height: 340,
-    type: 'line',
-    toolbar: {
-      show: false
-    }
-  },
-  dataLabels: {
-    enabled: false
-  },
-  stroke: {
-    curve: 'smooth',
-    width: 1.5
-  },
-  grid: {
-    strokeDashArray: 4
-  },
-  xaxis: {
-    type: 'datetime',
-    categories: [
-      '2018-05-19T00:00:00.000Z',
-      '2018-06-19T00:00:00.000Z',
-      '2018-07-19T01:30:00.000Z',
-      '2018-08-19T02:30:00.000Z',
-      '2018-09-19T03:30:00.000Z',
-      '2018-10-19T04:30:00.000Z',
-      '2018-11-19T05:30:00.000Z',
-      '2018-12-19T06:30:00.000Z'
-    ],
-    labels: {
-      format: 'MMM'
-    },
-    axisBorder: {
-      show: false
-    },
-    axisTicks: {
-      show: false
-    }
-  },
-  yaxis: {
-    show: false
-  },
-  tooltip: {
-    x: {
-      format: 'MM'
-    }
-  }
-};
-
-// ==============================|| REPORT AREA CHART ||============================== //
-
-const ReportAreaChart = () => {
+const ReportAreaChart = ({ onStatsChange }) => {
   const theme = useTheme();
-
-  const { primary, secondary } = theme.palette.text;
+  const { user } = useAuthContext();
+  const { secondary } = theme.palette.text;
   const line = theme.palette.divider;
 
-  const [options, setOptions] = useState(areaChartOptions);
-
-  useEffect(() => {
-    setOptions((prevState) => ({
-      ...prevState,
-      colors: [theme.palette.warning.main],
-      xaxis: {
-        labels: {
-          style: {
-            colors: [secondary, secondary, secondary, secondary, secondary, secondary, secondary, secondary]
-          }
+  const [options, setOptions] = useState({
+    chart: {
+      height: 340,
+      type: 'line',
+      toolbar: { show: false }
+    },
+    dataLabels: { enabled: false },
+    stroke: {
+      curve: 'smooth',
+      width: 1.5
+    },
+    grid: { strokeDashArray: 4 },
+    xaxis: {
+      categories: [],
+      labels: {
+        style: {
+          colors: []
         }
       },
-      grid: {
-        borderColor: line
-      },
-      tooltip: {
-        theme: 'light'
-      },
-      legend: {
-        labels: {
-          colors: 'grey.500'
-        }
-      }
-    }));
-  }, [primary, secondary, line, theme]);
+      axisBorder: { show: false },
+      axisTicks: { show: false }
+    },
+    yaxis: { show: true },
+    tooltip: {
+      theme: 'light'
+    }
+  });
 
-  const [series] = useState([
+  const [series, setSeries] = useState([
     {
-      name: 'Series 1',
-      data: [58, 115, 28, 83, 63, 75, 35, 55]
+      name: 'Student Registrations',
+      data: []
     }
   ]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch(apiRoutes.statRoute + 'enrollmentTrends', {
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          }
+        });
+        const json = await res.json();
+
+        if (json.success && json.data && json.data.monthlyTrend) {
+          const { monthlyTrend, annualEnrollment, monthlyEnrollment, percentageOverAnnual } = json.data;
+
+          // Pass stats up to parent if callback is provided
+          if (onStatsChange) {
+            onStatsChange({ annualEnrollment, monthlyEnrollment, percentageOverAnnual });
+          }
+
+          // Map month numbers to names
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const categories = monthlyTrend.map((item) => monthNames[item.month - 1]);
+          const data = monthlyTrend.map((item) => item.count);
+
+          setSeries([
+            {
+              name: 'Student Registrations',
+              data
+            }
+          ]);
+
+          setOptions((prevState) => ({
+            ...prevState,
+            colors: [theme.palette.warning.main],
+            xaxis: {
+              ...prevState.xaxis,
+              categories,
+              labels: {
+                ...prevState.xaxis.labels,
+                style: {
+                  colors: Array(categories.length).fill(secondary)
+                }
+              }
+            },
+            grid: {
+              borderColor: line
+            }
+          }));
+        }
+      } catch (error) {
+        console.error('Chart data fetch error:', error);
+      }
+    };
+
+    if (user?.token) {
+      fetchData();
+    }
+  }, [theme, secondary, line, user?.token, onStatsChange]);
 
   return <ReactApexChart options={options} series={series} type="line" height={345} />;
 };

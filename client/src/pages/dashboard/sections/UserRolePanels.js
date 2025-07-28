@@ -6,7 +6,7 @@ const UserRolePanels = ({ role, data }) => {
 
   if (role === 'admin') {
     return (
-      <Grid item xs={12}>
+      <Grid item xs={4}>
         <Typography variant="h5" gutterBottom>Admin Panel</Typography>
         <Card>
           <CardContent>

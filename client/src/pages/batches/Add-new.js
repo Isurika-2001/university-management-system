@@ -44,13 +44,19 @@ const AddForm = () => {
   const initialValues = {
     courseId: '',
     year: '',
-    number: ''
+    number: '',
+    orientationDate: '',
+    startDate: '',
+    registrationDeadline: ''
   };
 
   const validationSchema = Yup.object().shape({
     courseId: Yup.string().required('Course is required'),
     year: Yup.string().required('Year is required'),
-    number: Yup.string().required('Batch number is required')
+    number: Yup.string().required('Batch number is required'),
+    orientationDate: Yup.date().nullable(),
+    startDate: Yup.date().nullable(),
+    registrationDeadline: Yup.date().nullable()
   });
 
   useEffect(() => {
@@ -62,7 +68,7 @@ const AddForm = () => {
     try {
       // Fetch course options
       const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',        
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
@@ -95,7 +101,7 @@ const AddForm = () => {
     try {
       setSubmitting(true);
       const response = await fetch(apiRoutes.batchRoute, {
-        method: 'POST',     
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
@@ -195,6 +201,57 @@ const AddForm = () => {
                     fullWidth
                     error={touched.number && !!errors.number}
                     helperText={<ErrorMessage name="number" />}
+                    InputProps={{
+                      sx: { px: 2, py: 1 } // Padding added
+                    }}
+                    sx={{ mb: 3 }} // Margin bottom added
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Orientation Date"
+                    variant="outlined"
+                    name="orientationDate"
+                    InputLabelProps={{ shrink: true }}
+                    type="date"
+                    fullWidth
+                    error={touched.orientationDate && !!errors.orientationDate}
+                    helperText={<ErrorMessage name="orientationDate" />}
+                    InputProps={{
+                      sx: { px: 2, py: 1 } // Padding added
+                    }}
+                    sx={{ mb: 3 }} // Margin bottom added
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Start Date"
+                    variant="outlined"
+                    name="startDate"
+                    InputLabelProps={{ shrink: true }}
+                    type="date"
+                    fullWidth
+                    error={touched.startDate && !!errors.startDate}
+                    helperText={<ErrorMessage name="startDate" />}
+                    InputProps={{
+                      sx: { px: 2, py: 1 } // Padding added
+                    }}
+                    sx={{ mb: 3 }} // Margin bottom added
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Registration Deadline"
+                    variant="outlined"
+                    name="registrationDeadline"
+                    InputLabelProps={{ shrink: true }}
+                    type="date"
+                    fullWidth
+                    error={touched.registrationDeadline && !!errors.registrationDeadline}
+                    helperText={<ErrorMessage name="registrationDeadline" />}
                     InputProps={{
                       sx: { px: 2, py: 1 } // Padding added
                     }}

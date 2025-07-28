@@ -1,95 +1,226 @@
-import React, { useState, useEffect } from 'react';
-import { TextField, Button, Grid, Divider, LinearProgress } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { TextField, Button, Grid, MenuItem, Select, Divider, LinearProgress, CircularProgress } from '@mui/material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
+import { apiRoutes } from 'config';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+import { useAuthContext } from 'context/useAuthContext';
 import { useLocation } from 'react-router-dom';
+import dayjs from 'dayjs';
 
-const UpdateForm = () => {
-  const [data, setData] = useState(null);
+const EditForm = () => {
   const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const [courseOptions, setCourseOptions] = useState([]);
+  const [initialValues, setInitialValues] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuthContext();
 
-  useEffect(() => {
-    // Function to extract id from URL params and fetch batch data
-    const fetchdata = async () => {
-      const searchParams = new URLSearchParams(location.search);
-      const id = searchParams.get('id');
-      // Fetch batch data based on the id
-      try {
-        if (id) {
-          console.log('id:', id);
-          const fetchedData = {
-            name: 'John Doe',
-            age: 20,
-            grade: 'A'
-          };
-          setData(fetchedData);
-        }
-      } catch (error) {
-        console.error('Error fetching batch data:', error);
-      }
-    };
+  const id = queryParams.get('id');
 
-    fetchdata();
-  }, [location.search]);
+  const Toast = withReactContent(
+    Swal.mixin({
+      toast: true,
+      position: 'bottom',
+      customClass: {
+        popup: 'colored-toast'
+      },
+      background: 'primary',
+      showConfirmButton: false,
+      timer: 3500,
+      timerProgressBar: true
+    })
+  );
 
-  const initialValues = {
-    name: data ? data.name : '',
-    age: data ? data.age : '',
-    grade: data ? data.grade : ''
+  const showSuccessSwal = (e) => {
+    Toast.fire({ icon: 'success', title: e });
+  };
+
+  const showErrorSwal = (e) => {
+    Toast.fire({ icon: 'error', title: e });
   };
 
   const validationSchema = Yup.object().shape({
-    name: Yup.string().required('Name is required'),
-    age: Yup.number().positive().integer().required('Age is required'),
-    grade: Yup.string().required('Grade is required')
+    courseId: Yup.string().required('Course is required'),
+    year: Yup.string().required('Year is required'),
+    number: Yup.string().required('Batch number is required'),
+    orientationDate: Yup.date().nullable(),
+    startDate: Yup.date().nullable(),
+    registrationDeadline: Yup.date().nullable()
   });
 
-  const handleSubmit = (values) => {
-    // Handle form submission, you can update the batch data here
-    console.log('Submitted:', values);
+  useEffect(() => {
+    fetchCourses();
+    fetchBatch();
+  }, []);
+
+  // Fetch courses for dropdown
+  async function fetchCourses() {
+    try {
+      const response = await fetch(apiRoutes.courseRoute, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        }
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setCourseOptions(data);
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    }
+  }
+
+  // Fetch existing batch data
+  async function fetchBatch() {
+    try {
+      const response = await fetch(`${apiRoutes.batchRoute}${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        const [year, number] = data.data.name.split('.');
+        setInitialValues({
+          courseId: data.data.courseId,
+          year: year,
+          number: number,
+          orientationDate: data.data.orientationDate ? dayjs(data.data.orientationDate).format('YYYY-MM-DD') : '',
+          startDate: data.data.startDate ? dayjs(data.data.startDate).format('YYYY-MM-DD') : '',
+          registrationDeadline: data.data.registrationDeadline ? dayjs(data.data.registrationDeadline).format('YYYY-MM-DD') : '',
+        });
+      } else {
+        showErrorSwal(data.message || 'Batch not found');
+      }
+    } catch (error) {
+      console.error('Error fetching batch:', error);
+      showErrorSwal('Error fetching batch details');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleSubmit = async (values) => {
+    try {
+      setSubmitting(true);
+
+      const updatedData = {
+        courseId: values.courseId,
+        year: values.year,
+        number: values.number,
+        orientationDate: values.orientationDate || null,
+        startDate: values.startDate || null,
+        registrationDeadline: values.registrationDeadline || null
+      };
+
+      const response = await fetch(`${apiRoutes.batchRoute}/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
+        body: JSON.stringify(updatedData)
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        showErrorSwal(responseData.message || 'Error updating batch');
+        return;
+      }
+
+      showSuccessSwal('Batch updated successfully');
+    } catch (error) {
+      console.error(error);
+      showErrorSwal('An error occurred while updating the batch');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  if (!data) {
-    return (
-      <div>
-        <LinearProgress />
-      </div>
-    ); 
+  if (loading || !initialValues) {
+    return <LinearProgress />;
   }
 
   return (
-    <MainCard title="Update Batch">
-      <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
+    <MainCard title="Edit Batch">
+      <Formik initialValues={initialValues} enableReinitialize validationSchema={validationSchema} onSubmit={handleSubmit}>
         {({ errors, touched }) => (
           <Form>
             <Grid container direction="column" justifyContent="center">
               <Grid container sx={{ p: 3 }} spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Field
-                    as={TextField}
-                    label="Name"
+                    as={Select}
+                    label="Course"
                     variant="outlined"
-                    name="name"
+                    displayEmpty
+                    name="courseId"
                     fullWidth
-                    error={touched.name && !!errors.name}
-                    helperText={<ErrorMessage name="name" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
-                    }}
-                    sx={{ mb: 3 }} // Margin bottom added
+                    error={touched.courseId && !!errors.courseId}
+                    helperText={<ErrorMessage name="courseId" />}
+                    InputProps={{ sx: { px: 2, py: 1 } }}
+                    sx={{ mb: 3, minHeight: '3.5rem' }}
+                  >
+                    <MenuItem value="" disabled>
+                      Course
+                    </MenuItem>
+                    {courseOptions.map((course) => (
+                      <MenuItem key={course._id} value={course._id}>
+                        {course.name}
+                      </MenuItem>
+                    ))}
+                  </Field>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Year"
+                    variant="outlined"
+                    name="year"
+                    fullWidth
+                    error={touched.year && !!errors.year}
+                    helperText={<ErrorMessage name="year" />}
+                    InputProps={{ sx: { px: 2, py: 1 } }}
+                    sx={{ mb: 3 }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Field
                     as={TextField}
-                    label="Age"
+                    label="Number"
                     variant="outlined"
                     type="number"
-                    name="age"
+                    name="number"
                     fullWidth
-                    error={touched.age && !!errors.age}
-                    helperText={<ErrorMessage name="age" />}
+                    error={touched.number && !!errors.number}
+                    helperText={<ErrorMessage name="number" />}
+                    InputProps={{ sx: { px: 2, py: 1 } }}
+                    sx={{ mb: 3 }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Orientation Date"
+                    variant="outlined"
+                    name="orientationDate"
+                    InputLabelProps={{ shrink: true }}
+                    type="date"
+                    fullWidth
+                    error={touched.orientationDate && !!errors.orientationDate}
+                    helperText={<ErrorMessage name="orientationDate" />}
                     InputProps={{
                       sx: { px: 2, py: 1 } // Padding added
                     }}
@@ -99,12 +230,31 @@ const UpdateForm = () => {
                 <Grid item xs={12} sm={6}>
                   <Field
                     as={TextField}
-                    label="Grade"
+                    label="Start Date"
                     variant="outlined"
-                    name="grade"
+                    name="startDate"
+                    InputLabelProps={{ shrink: true }}
+                    type="date"
                     fullWidth
-                    error={touched.grade && !!errors.grade}
-                    helperText={<ErrorMessage name="grade" />}
+                    error={touched.startDate && !!errors.startDate}
+                    helperText={<ErrorMessage name="startDate" />}
+                    InputProps={{
+                      sx: { px: 2, py: 1 } // Padding added
+                    }}
+                    sx={{ mb: 3 }} // Margin bottom added
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Registration Deadline"
+                    variant="outlined"
+                    name="registrationDeadline"
+                    InputLabelProps={{ shrink: true }}
+                    type="date"
+                    fullWidth
+                    error={touched.registrationDeadline && !!errors.registrationDeadline}
+                    helperText={<ErrorMessage name="registrationDeadline" />}
                     InputProps={{
                       sx: { px: 2, py: 1 } // Padding added
                     }}
@@ -114,7 +264,14 @@ const UpdateForm = () => {
               </Grid>
               <Divider sx={{ mt: 3, mb: 2 }} />
               <Grid item xs={12} sm={6} style={{ textAlign: 'right' }}>
-                <Button type="submit" variant="contained" color="primary" size="small">
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  disabled={submitting}
+                  endIcon={submitting ? <CircularProgress size={20} color="inherit" /> : null}
+                >
                   Update Batch
                 </Button>
               </Grid>
@@ -126,4 +283,4 @@ const UpdateForm = () => {
   );
 };
 
-export default UpdateForm;
+export default EditForm;

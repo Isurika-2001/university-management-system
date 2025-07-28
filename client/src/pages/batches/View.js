@@ -15,13 +15,14 @@ import {
   TextField,
   MenuItem,
 } from '@mui/material';
-import { UploadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from '../../config';
 import { useAuthContext } from 'context/useAuthContext';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import dayjs from 'dayjs';
 
 const View = () => {
   const { user } = useAuthContext();
@@ -246,7 +247,7 @@ const View = () => {
         </Box>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-          <Button
+          {/* <Button
             variant="contained"
             color="success"
             disabled={selected.length === 0}
@@ -254,7 +255,7 @@ const View = () => {
             startIcon={<UploadOutlined />}
           >
             Export
-          </Button>
+          </Button> */}
           <Button variant="contained" startIcon={<FileAddOutlined />} onClick={handleClickAddNew}>
             Add New
           </Button>
@@ -275,6 +276,9 @@ const View = () => {
               </TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Course</TableCell>
+              <TableCell>Orientation Date</TableCell>
+              <TableCell>Start Date</TableCell>
+              <TableCell>Registration Deadline</TableCell>
               <TableCell>Action</TableCell>
             </TableRow>
           </TableHead>
@@ -304,11 +308,13 @@ const View = () => {
                     </TableCell>
                     <TableCell>{batch.name}</TableCell>
                     <TableCell>{batch.courseName}</TableCell>
+                    <TableCell>{batch.orientationDate ? dayjs(batch.orientationDate).format('YYYY-MM-DD') : ''}</TableCell>
+                    <TableCell>{batch.startDate ? dayjs(batch.startDate).format('YYYY-MM-DD') : ''}</TableCell>
+                    <TableCell>{batch.registrationDeadline ? dayjs(batch.registrationDeadline).format('YYYY-MM-DD') : ''}</TableCell>
                     <TableCell>
                       <Button
                         variant="outlined"
-                        color="primary"
-                        disabled
+                        color="warning"
                         startIcon={<EditOutlined />}
                         onClick={() => handleViewRow(batch._id)}
                         sx={{ mr: 1 }}

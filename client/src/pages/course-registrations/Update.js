@@ -620,7 +620,7 @@ const UpdateForm = () => {
                   <TableCell>{registration.courseId.name}</TableCell>
                   <TableCell>{registration.batchId.name}</TableCell>
                   <TableCell>
-                    <Button onClick={handleDelete(registration._id)} variant="contained" color="error">
+                    <Button onClick={handleDelete(registration._id)} variant="outlined" color="error">
                       Delete
                     </Button>
                   </TableCell>

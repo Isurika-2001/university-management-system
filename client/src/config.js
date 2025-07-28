@@ -24,7 +24,8 @@ export const apiRoutes = {
   userTypeRoute: `${config.apiUrl}user-type/`,
   userRoute: `${config.apiUrl}user/`,
   authRoute: `${config.apiUrl}auth/`,
-  bulkUploadRoute: `${config.apiUrl}bulk-upload/`
+  bulkUploadRoute: `${config.apiUrl}bulk-upload/`,
+  statRoute: `${config.apiUrl}stats/`
 };
 
 export default config;

@@ -44,7 +44,7 @@ const AddForm = () => {
 
   useEffect(() => {
     fetchUserTypes();
-  }, [userTypes]);
+  }, []);
 
   const initialValues = {
     name: '',
