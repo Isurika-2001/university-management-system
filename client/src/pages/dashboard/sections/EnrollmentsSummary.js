@@ -3,10 +3,12 @@ import { Grid, Typography, Skeleton } from '@mui/material';
 import AnalyticEcommerce from 'components/cards/statistics/AnalyticEcommerce';
 import { useAuthContext } from 'context/useAuthContext';
 import { apiRoutes } from 'config';
+import { useLogout } from 'hooks/useLogout';
 
 const EnrollmentSummary = () => {
   const { user } = useAuthContext();
   const [loading, setLoading] = useState(true);
+  const { logout } = useLogout();
 
   const [animatedCounts, setAnimatedCounts] = useState({
     totalRegistrations: 0,
@@ -40,6 +42,20 @@ const EnrollmentSummary = () => {
             Authorization: `Bearer ${user.token}`
           }
         });
+
+        if (!response.ok) {
+          if (response.status === 500) {
+            console.error('Internal Server Error.');
+            // Optional: logout or alert user
+          }
+          if (response.status === 401) {
+            logout();
+            return;
+          }
+          setLoading(false);
+          return;
+        }
+
         const json = await response.json();
 
         if (json.success && json.data) {
