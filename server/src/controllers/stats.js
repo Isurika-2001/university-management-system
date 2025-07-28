@@ -82,33 +82,6 @@ async function getUpcomingBatchDates(req, res) {
   }
 }
 
-// create a api to get totalRunningCourses, no of registrations over each running course
-// response be like 
-
-// {
-//     "success": true,
-//     "data": {
-//         "totalRunningCourses": 3,
-//         "registrations": [
-//             { 
-//                 "courseId": "course1",
-//                 "courseName": "MERN",  
-//                 "registrations": 80
-//             },
-//             {
-//                 "courseId": "course2",
-//                 "courseName": "DPE",
-//                 "registrations": 95
-//             },
-//             {
-//                 "courseId": "course3",
-//                 "courseName": "English",
-//                 "registrations": 70
-//             }
-//         ]
-//     }
-// }
-
 async function getCourseRegistrations(req, res) {
   try {
     const registrations = await CourseRegistration.aggregate([
@@ -159,8 +132,82 @@ async function getCourseRegistrations(req, res) {
   }
 }
 
+// Get annual, monthly, and trend-wise enrollment summary
+async function getEnrollmentNumbers(req, res) {
+  try {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const startOfYear = new Date(currentYear, 0, 1);
+    const endOfYear = new Date(currentYear + 1, 0, 1);
+
+    // Get annual enrollment numbers
+    const annualEnrollment = await CourseRegistration.countDocuments({
+      createdAt: { $gte: startOfYear, $lt: endOfYear }
+    });
+
+    // Get this month's enrollment numbers
+    const startOfMonth = new Date(currentYear, now.getMonth(), 1);
+    const endOfMonth = new Date(currentYear, now.getMonth() + 1, 1);
+
+    const monthlyEnrollment = await CourseRegistration.countDocuments({
+      createdAt: { $gte: startOfMonth, $lt: endOfMonth }
+    });
+
+    const percentageOverAnnual =
+      annualEnrollment > 0
+        ? ((monthlyEnrollment / annualEnrollment) * 100).toFixed(2)
+        : "0.00";
+
+    // Monthly enrollment trend from Jan to current month
+    const enrollmentTrend = await CourseRegistration.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startOfYear, $lt: endOfYear }
+        }
+      },
+      {
+        $group: {
+          _id: { month: { $month: "$createdAt" } },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { "_id.month": 1 }
+      }
+    ]);
+
+    // Format trend with 0s for missing months
+    const trendData = Array.from({ length: now.getMonth() + 1 }, (_, i) => {
+      const month = i + 1;
+      const found = enrollmentTrend.find((m) => m._id.month === month);
+      return {
+        month,
+        count: found ? found.count : 0
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        annualEnrollment,
+        monthlyEnrollment,
+        percentageOverAnnual,
+        monthlyTrend: trendData
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching enrollment numbers",
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   getEnrollmentSummaryStats,
   getUpcomingBatchDates,
-  getCourseRegistrations
+  getCourseRegistrations,
+  getEnrollmentNumbers
 };

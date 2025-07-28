@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import ReactApexChart from 'react-apexcharts';
-import { useAuthContext } from 'context/useAuthContext'; // assuming you have auth context
-import { apiRoutes } from 'config'; // your API routes
+import { useAuthContext } from 'context/useAuthContext';
+import { apiRoutes } from 'config';
 
 const MonthlyBarChart = ({ onTotalChange }) => {
   const theme = useTheme();
