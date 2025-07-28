@@ -199,7 +199,7 @@ const View = () => {
 
     if (result.isConfirmed) {
       try {
-        const response = await fetch(`${apiRoutes.batchRoute}/${id}`, {
+        const response = await fetch(`${apiRoutes.batchRoute}${id}`, {
           method: 'DELETE',
           headers: {
             Authorization: `Bearer ${user.token}`
