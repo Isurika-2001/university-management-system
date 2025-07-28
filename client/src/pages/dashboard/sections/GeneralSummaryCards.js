@@ -102,12 +102,19 @@ const GeneralSummaryCards = () => {
               <Grid item xs={12} sm={6} md={4} key={index}>
                 <Card className="batch-card" sx={{ height: '100%' }}>
                   <CardContent>
-                    <Typography variant="subtitle1">{batch.name}</Typography>
+                    <Typography variant="subtitle1">
+                      {batch.courseName} - {batch.name}
+                    </Typography>
                     {batch.orientationDate && (
                       <Typography variant="body2">Orientation Date: {new Date(batch.orientationDate).toLocaleDateString()}</Typography>
                     )}
                     {batch.startDate && (
                       <Typography variant="body2">Start Date: {new Date(batch.startDate).toLocaleDateString()}</Typography>
+                    )}
+                    {batch.registrationDeadline && (
+                      <Typography variant="body2">
+                        Registration Deadline: {new Date(batch.registrationDeadline).toLocaleDateString()}
+                      </Typography>
                     )}
                   </CardContent>
                 </Card>

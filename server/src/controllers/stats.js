@@ -58,14 +58,19 @@ async function getUpcomingBatchDates(req, res) {
     const batches = await Batch.find({
       $or: [
         { startDate: { $gte: new Date() } },
-        { orientationDate: { $gte: new Date() } }
+        { orientationDate: { $gte: new Date() } },
+        { registrationDeadline: { $gte: new Date() } }
       ]
-    }).sort({ startDate: 1, orientationDate: 1 });
+    })
+    .populate('courseId', 'name') // populate courseId field but only get 'name' field of course
+    .sort({ startDate: 1, orientationDate: 1 });
 
     const upcomingBatches = batches.map(batch => ({
       name: batch.name,
       startDate: batch.startDate,
-      orientationDate: batch.orientationDate
+      orientationDate: batch.orientationDate,
+      registrationDeadline: batch.registrationDeadline,
+      courseName: batch.courseId ? batch.courseId.name : null
     }));
 
     res.status(200).json({
