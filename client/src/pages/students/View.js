@@ -290,7 +290,7 @@ const View = () => {
             <Button
               variant="contained"
               disabled={isDownloading}
-              color="secondary"
+              color="info"
               onClick={importFromExcel}
               startIcon={isDownloading ? <CircularProgress size={16} /> : <DownloadOutlined />}
             >
@@ -337,7 +337,7 @@ const View = () => {
                     <Button
                       variant="outlined"
                       style={{ marginRight: '8px' }}
-                      color="primary"
+                      color="warning"
                       startIcon={<EditOutlined />}
                       onClick={() => handleViewRow(student._id)}
                     >

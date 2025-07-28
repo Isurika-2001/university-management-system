@@ -176,9 +176,153 @@ async function getUserById(req, res) {
   }
 }
 
+async function editUser(req, res) {
+  try {
+    const { id } = req.params;
+    const { name, email, user_type } = req.body;
+
+    // Check if user exists
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Check if user_type exists
+    const userTypeDoc = await User_type.findById(user_type);
+    if (!userTypeDoc) {
+      return res.status(400).json({
+        success: false,
+        message: `User type not found: ${user_type}`,
+      });
+    }
+
+    // If email is changing, check for duplication
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+    }
+
+    // Update fields
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.user_type = userTypeDoc._id;
+
+    const updatedUser = await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      data: {
+        userId: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        user_type: userTypeDoc.name,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating user",
+      error: error.message,
+    });
+  }
+}
+
+async function disableUser(req, res) {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.status = false;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "User disabled successfully",
+    });
+  } catch (error) {
+    console.error("Error disabling user:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error disabling user",
+      error: error.message,
+    });
+  }
+}
+
+async function updatePassword(req, res) {
+  try {
+    const { id } = req.params;
+    const { password, confirmPassword } = req.body;
+
+    // Validate required fields
+    if (!password || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Password and Confirm Password are required",
+      });
+    }
+
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match",
+      });
+    }
+
+    // Check if user exists
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update password
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "User password updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating password:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   getUsers,
   createUser,
   login,
   getUserById,
+  editUser,
+  disableUser,
+  updatePassword
 };

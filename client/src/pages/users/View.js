@@ -13,13 +13,16 @@ import {
   TablePagination,
   TableSortLabel,
   LinearProgress,
-  TextField // Import TextField for input field
+  TextField,
+  CircularProgress
 } from '@mui/material';
-import { UploadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
+import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from 'config';
 import { useAuthContext } from 'context/useAuthContext';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -30,18 +33,45 @@ const View = () => {
   const [order, setOrder] = useState('asc');
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuthContext();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const Toast = withReactContent(
+    Swal.mixin({
+      toast: true,
+      position: 'bottom',
+      customClass: {
+        popup: 'colored-toast'
+      },
+      background: 'primary',
+      showConfirmButton: false,
+      timer: 3500,
+      timerProgressBar: true
+    })
+  );
+
+  // error showErrorSwal
+  const showErrorSwal = (e) => {
+    Toast.fire({
+      icon: 'error',
+      title: e
+    });
+  };
+
+  // error showErrorSwal
+  const showSuccessSwal = (e) => {
+    Toast.fire({
+      icon: 'success',
+      title: e
+    });
+  };
 
   const fetchData = async () => {
     // Fetch data from API
     try {
       const response = await fetch(apiRoutes.userRoute, {
-        method: 'GET',   
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
@@ -150,31 +180,61 @@ const View = () => {
     navigate('/app/users/update?id=' + id);
   };
 
-  const exportToCSV = () => {
-    let exportData = [];
+  // const exportToCSV = () => {
+  //   let exportData = [];
 
-    if (filteredData.length > 0) {
-      exportData = filteredData;
-    } else {
-      exportData = data.filter((user) => selected.includes(user.id));
+  //   if (filteredData.length > 0) {
+  //     exportData = filteredData;
+  //   } else {
+  //     exportData = data.filter((user) => selected.includes(user.id));
+  //   }
+
+  //   const csvHeader = ['Name', 'Email', 'Role'].join(','); // Header row
+  //   const csvData = exportData.map((user) => [user.name, user.email, user.user_type].join(','));
+  //   // Combine header and data rows
+  //   const csvContent = csvHeader + '\n' + csvData.join('\n');
+  //   // Create a Blob object with CSV content
+  //   const blob = new Blob([csvContent], { type: 'text/csv' });
+  //   // Create a temporary anchor element to initiate the download
+  //   const link = document.createElement('a');
+  //   link.href = window.URL.createObjectURL(blob);
+  //   link.download = 'user_data.csv';
+  //   // Trigger the download
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   // Cleanup
+  //   document.body.removeChild(link);
+  // };
+
+  const handleDelete = async (id) => {
+    setDeleting(true);
+    try {
+      const response = await fetch(`${apiRoutes.userRoute}disable/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showSuccessSwal(data.message || 'User updated successfully');
+      } else {
+        showErrorSwal(data.message || 'Failed to update user');
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      showErrorSwal('Error updating user');
+    } finally {
+      setDeleting(false);
     }
-
-    const csvHeader = ['Name', 'Email', 'Role'].join(','); // Header row
-    const csvData = exportData.map((user) => [user.name, user.email, user.user_type].join(','));
-    // Combine header and data rows
-    const csvContent = csvHeader + '\n' + csvData.join('\n');
-    // Create a Blob object with CSV content
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    // Create a temporary anchor element to initiate the download
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = 'user_data.csv';
-    // Trigger the download
-    document.body.appendChild(link);
-    link.click();
-    // Cleanup
-    document.body.removeChild(link);
   };
+
+  useEffect(() => {
+    fetchData();
+  }, [handleDelete]);
 
   return (
     <MainCard title="User List">
@@ -189,7 +249,7 @@ const View = () => {
       >
         <TextField label="Search" variant="outlined" onChange={handleSearch} />
         <div>
-          <Button
+          {/* <Button
             variant="contained"
             style={{
               marginRight: '8px'
@@ -201,7 +261,7 @@ const View = () => {
             startIcon={<UploadOutlined />}
           >
             Export
-          </Button>
+          </Button> */}
           <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
             Add New
           </Button>
@@ -253,9 +313,9 @@ const View = () => {
             {stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy))
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((user) => (
-                <TableRow key={user.id} selected={isSelected(user.id)}>
+                <TableRow key={user._id} selected={isSelected(user._id)}>
                   <TableCell padding="checkbox">
-                    <Checkbox checked={isSelected(user.id)} onChange={(event) => handleCheckboxClick(event, user.id)} />
+                    <Checkbox checked={isSelected(user._id)} onChange={(event) => handleCheckboxClick(event, user._id)} />
                   </TableCell>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -266,19 +326,17 @@ const View = () => {
                       style={{
                         marginRight: '8px'
                       }}
-                      color="primary"
+                      color="warning"
                       startIcon={<EditOutlined />}
-                      onClick={() => handleViewRow(student.id)}
-                      disabled
+                      onClick={() => handleViewRow(user._id)}
                     >
                       Edit
                     </Button>
                     <Button
-                      disabled
                       variant="outlined"
                       color="error"
-                      startIcon={<DeleteOutlined />}
-                      onClick={() => handleViewRow(student.id)}
+                      startIcon={deleting ? <CircularProgress size={16} /> : <DeleteOutlined />}
+                      onClick={() => handleDelete(user._id)}
                     >
                       Delete
                     </Button>

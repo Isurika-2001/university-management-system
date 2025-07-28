@@ -125,7 +125,7 @@ export default function ThemeRoutes() {
             element={permissions?.user?.includes('create') ? <AddUserForm /> : <Navigate to="/app/access-denied" replace />}
           />
           <Route
-            path="updae"
+            path="update"
             element={permissions?.user?.includes('update-all') ? <UpdateUserForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
