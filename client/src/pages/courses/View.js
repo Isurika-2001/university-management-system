@@ -15,7 +15,7 @@ import {
   LinearProgress,
   TextField // Import TextField for input field
 } from '@mui/material';
-import { UploadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
+import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from 'config';
@@ -216,31 +216,31 @@ const View = () => {
     }
   };
 
-  const exportToCSV = () => {
-    let exportData = [];
+  // const exportToCSV = () => {
+  //   let exportData = [];
 
-    if (filteredData.length > 0) {
-      exportData = filteredData;
-    } else {
-      exportData = data.filter((course) => selected.includes(course.id));
-    }
+  //   if (filteredData.length > 0) {
+  //     exportData = filteredData;
+  //   } else {
+  //     exportData = data.filter((course) => selected.includes(course.id));
+  //   }
 
-    const csvHeader = ['Name', 'Description'].join(','); // Header row
-    const csvData = exportData.map((course) => [course.name, course.description].join(','));
-    // Combine header and data rows
-    const csvContent = csvHeader + '\n' + csvData.join('\n');
-    // Create a Blob object with CSV content
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    // Create a temporary anchor element to initiate the download
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = 'course_data.csv';
-    // Trigger the download
-    document.body.appendChild(link);
-    link.click();
-    // Cleanup
-    document.body.removeChild(link);
-  };
+  //   const csvHeader = ['Name', 'Description'].join(','); // Header row
+  //   const csvData = exportData.map((course) => [course.name, course.description].join(','));
+  //   // Combine header and data rows
+  //   const csvContent = csvHeader + '\n' + csvData.join('\n');
+  //   // Create a Blob object with CSV content
+  //   const blob = new Blob([csvContent], { type: 'text/csv' });
+  //   // Create a temporary anchor element to initiate the download
+  //   const link = document.createElement('a');
+  //   link.href = window.URL.createObjectURL(blob);
+  //   link.download = 'course_data.csv';
+  //   // Trigger the download
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   // Cleanup
+  //   document.body.removeChild(link);
+  // };
 
   return (
     <MainCard title="Course List">
@@ -255,7 +255,7 @@ const View = () => {
       >
         <TextField label="Search" variant="outlined" onChange={handleSearch} />
         <div>
-          <Button
+          {/* <Button
             variant="contained"
             style={{
               marginRight: '8px'
@@ -267,7 +267,7 @@ const View = () => {
             startIcon={<UploadOutlined />}
           >
             Export
-          </Button>
+          </Button> */}
           <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
             Add New
           </Button>

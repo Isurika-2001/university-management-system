@@ -15,7 +15,7 @@ import {
   TextField,
   MenuItem,
 } from '@mui/material';
-import { UploadOutlined, FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from '../../config';
@@ -247,7 +247,7 @@ const View = () => {
         </Box>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-          <Button
+          {/* <Button
             variant="contained"
             color="success"
             disabled={selected.length === 0}
@@ -255,7 +255,7 @@ const View = () => {
             startIcon={<UploadOutlined />}
           >
             Export
-          </Button>
+          </Button> */}
           <Button variant="contained" startIcon={<FileAddOutlined />} onClick={handleClickAddNew}>
             Add New
           </Button>
