@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Grid, Typography } from '@mui/material';
+import { Grid, Typography, Skeleton } from '@mui/material';
 import AnalyticEcommerce from 'components/cards/statistics/AnalyticEcommerce';
 import { useAuthContext } from 'context/useAuthContext';
 import { apiRoutes } from 'config';
 
 const EnrollmentSummary = () => {
   const { user } = useAuthContext();
+  const [loading, setLoading] = useState(true);
+
   const [animatedCounts, setAnimatedCounts] = useState({
     totalRegistrations: 0,
     totalRunningCourses: 0,
@@ -29,7 +31,6 @@ const EnrollmentSummary = () => {
   };
 
   useEffect(() => {
-    console.log('Fetching enrollment summary data...');
     async function fetchData() {
       try {
         const response = await fetch(apiRoutes.statRoute + 'enrollment', {
@@ -50,34 +51,67 @@ const EnrollmentSummary = () => {
         }
       } catch (error) {
         console.error('Error fetching enrollment summary:', error);
+      } finally {
+        setLoading(false);
       }
     }
     fetchData();
   }, []);
+
+  const renderSkeletonCard = () => (
+    <Grid item xs={12} sm={6} md={4} lg={3}>
+      <Skeleton
+        variant="rectangular"
+        height={100}
+        sx={{
+          borderRadius: 2,
+          animation: 'blinker 1s linear infinite',
+          backgroundColor: (theme) => theme.palette.primary.main,
+          '@keyframes blinker': {
+            '50%': {
+              opacity: 0.4
+            }
+          }
+        }}
+      />
+    </Grid>
+  );
 
   return (
     <>
       <Grid item xs={12} sx={{ mb: -2.25 }}>
         <Typography variant="h5">Enrollment Summary</Typography>
       </Grid>
-      <Grid item xs={12} sm={6} md={4} lg={3}>
-        <AnalyticEcommerce title="Total Students Registered" count={animatedCounts.totalRegistrations.toLocaleString()} />
-      </Grid>
-      <Grid item xs={12} sm={6} md={4} lg={3}>
-        <AnalyticEcommerce
-          title="Total Courses Offered"
-          count={`${animatedCounts.totalRunningCourses.toLocaleString()} / ${animatedCounts.totalCourses.toLocaleString()}`}
-        />
-      </Grid>
-      <Grid item xs={12} sm={6} md={4} lg={3}>
-        <AnalyticEcommerce
-          title="Total Batches Running"
-          count={`${animatedCounts.totalRunningBatches.toLocaleString()} / ${animatedCounts.totalBatches.toLocaleString()}`}
-        />
-      </Grid>
-      <Grid item xs={12} sm={6} md={4} lg={3}>
-        <AnalyticEcommerce title="Today's Course Registrations" count={animatedCounts.todaysRegistrations.toLocaleString()} />
-      </Grid>
+
+      {loading ? (
+        <>
+          {renderSkeletonCard()}
+          {renderSkeletonCard()}
+          {renderSkeletonCard()}
+          {renderSkeletonCard()}
+        </>
+      ) : (
+        <>
+          <Grid item xs={12} sm={6} md={4} lg={3}>
+            <AnalyticEcommerce title="Total Students Registered" count={animatedCounts.totalRegistrations.toLocaleString()} />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4} lg={3}>
+            <AnalyticEcommerce
+              title="Total Courses Offered"
+              count={`${animatedCounts.totalRunningCourses.toLocaleString()} / ${animatedCounts.totalCourses.toLocaleString()}`}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4} lg={3}>
+            <AnalyticEcommerce
+              title="Total Batches Running"
+              count={`${animatedCounts.totalRunningBatches.toLocaleString()} / ${animatedCounts.totalBatches.toLocaleString()}`}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4} lg={3}>
+            <AnalyticEcommerce title="Today's Course Registrations" count={animatedCounts.todaysRegistrations.toLocaleString()} />
+          </Grid>
+        </>
+      )}
     </>
   );
 };
