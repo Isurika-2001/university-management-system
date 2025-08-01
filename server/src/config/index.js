@@ -4,6 +4,7 @@ const config = {
   // Server configuration
   port: process.env.PORT || 5000,
   nodeEnv: process.env.NODE_ENV || 'development',
+  version: process.env.VERSION || '1.0.0',
   
   // Database configuration
   mongoUri: process.env.MONGO_URI,

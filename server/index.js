@@ -54,7 +54,7 @@ app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "Welcome to University Management System API",
-    version: "1.0.0",
+    version: config.version,
     endpoints: {
       auth: "/api/auth",
       users: "/api/users",
