@@ -210,9 +210,34 @@ async function getEnrollmentNumbers(req, res) {
   }
 }
 
+// Get recent students for dashboard
+async function getRecentStudents(req, res) {
+  try {
+    const { limit = 3 } = req.query;
+    
+    const recentStudents = await Student.find()
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .select('firstName lastName email registration_no createdAt updatedAt');
+
+    res.status(200).json({
+      success: true,
+      data: recentStudents
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching recent students",
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   getEnrollmentSummaryStats,
   getUpcomingBatchDates,
   getCourseRegistrations,
-  getEnrollmentNumbers
+  getEnrollmentNumbers,
+  getRecentStudents
 };

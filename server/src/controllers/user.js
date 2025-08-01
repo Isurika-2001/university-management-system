@@ -3,6 +3,8 @@ const User = require("../models/user");
 const User_type = require("../models/user_type");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const ActivityLogger = require("../utils/activityLogger");
+const { getRequestInfo } = require("../middleware/requestInfo");
 
 async function getUsers(req, res) {
   // fetch all users with user_type populated
@@ -20,6 +22,7 @@ async function getUsers(req, res) {
 async function createUser(req, res) {
   try {
     const { name, password, email, user_type } = req.body;
+    const requestInfo = getRequestInfo(req);
 
     // Check if user_type exists in the user_type collection
     const user_type_document = await User_type.findOne({ name: user_type });
@@ -55,6 +58,9 @@ async function createUser(req, res) {
     // Save user
     const newUser = await user.save();
 
+    // Log the user creation
+    await ActivityLogger.logUserCreate(req.user, newUser, requestInfo.ipAddress, requestInfo.userAgent);
+
     res.status(201).json({
       success: true,
       message: "User created successfully",
@@ -79,6 +85,7 @@ async function createUser(req, res) {
 async function login(req, res) {
   try {
     const { email, password } = req.body;
+    const requestInfo = getRequestInfo(req);
 
     // Find user by email and populate user_type
     const user = await User.findOne({ email }).populate({
@@ -87,6 +94,9 @@ async function login(req, res) {
     });
 
     if (!user) {
+      // Log failed login attempt
+      await ActivityLogger.logLogin({ email }, requestInfo.ipAddress, requestInfo.userAgent, 'FAILED', 'Invalid email');
+      
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
@@ -96,6 +106,9 @@ async function login(req, res) {
     // Verify password
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
+      // Log failed login attempt
+      await ActivityLogger.logLogin(user, requestInfo.ipAddress, requestInfo.userAgent, 'FAILED', 'Invalid password');
+      
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
@@ -104,6 +117,9 @@ async function login(req, res) {
 
     // Check user status
     if (!user.status) {
+      // Log failed login attempt
+      await ActivityLogger.logLogin(user, requestInfo.ipAddress, requestInfo.userAgent, 'FAILED', 'User disabled');
+      
       return res.status(403).json({
         success: false,
         message: "Permission denied. Please contact admin.",
@@ -134,6 +150,9 @@ async function login(req, res) {
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
+
+    // Log successful login
+    await ActivityLogger.logLogin(user, requestInfo.ipAddress, requestInfo.userAgent);
 
     // Respond with expected structure
     res.status(200).json({

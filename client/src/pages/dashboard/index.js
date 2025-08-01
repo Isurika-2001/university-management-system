@@ -4,6 +4,8 @@ import { Grid } from '@mui/material';
 import EnrollmentSummary from './sections/EnrollmentsSummary';
 import PaymentOverview from './sections/PaymentsOverview';
 import AnalyticsReport from './sections/AnalyticsReport';
+import RecentStudents from './sections/RecentStudents';
+import RecentLogins from './sections/RecentLogins';
 
 import GeneralSummaryCards from './sections/GeneralSummaryCards';
 const DashboardDefault = () => {
@@ -13,6 +15,8 @@ const DashboardDefault = () => {
       <EnrollmentSummary />
       <PaymentOverview />
       <AnalyticsReport />
+      <RecentStudents />
+      <RecentLogins />
 
       <GeneralSummaryCards />
     </Grid>
