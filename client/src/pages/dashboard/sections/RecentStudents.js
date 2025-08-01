@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 // Using simple icons instead of Material-UI icons to avoid import issues
 const SchoolIcon = () => <span style={{ fontSize: '20px' }}>🎓</span>;
+const TimeIcon = () => <span style={{ fontSize: '16px' }}>⏰</span>;
 import MainCard from 'components/MainCard';
 import { useAuthContext } from 'context/useAuthContext';
 import { apiRoutes } from 'config';
@@ -24,6 +25,15 @@ const RecentActivities = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Check if user has permission to view recent student registrations
+    const hasPermission = user?.permissions?.student?.includes('update-all');
+    
+    // If user doesn't have permission, don't fetch data
+    if (!hasPermission) {
+      setLoading(false);
+      return;
+    }
+
     async function fetchRecentActivities() {
       try {
         setLoading(true);
@@ -38,6 +48,7 @@ const RecentActivities = () => {
           },
         });
         const studentData = await studentResponse.json();
+        console.log(studentData);
 
         if (studentData.success) {
           setRecentStudents(studentData.data || []);
@@ -52,7 +63,26 @@ const RecentActivities = () => {
     }
 
     fetchRecentActivities();
-  }, [user.token]);
+  }, [user.token, user?.permissions?.student]);
+
+  const formatTimeAgo = (timestamp) => {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffInMinutes = Math.floor((now - time) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+  };
+
+  // Check if user has permission to view recent student registrations
+  const hasPermission = user?.permissions?.student?.includes('update-all');
+
+  // If user doesn't have permission, don't render the component
+  if (!hasPermission) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -87,8 +117,8 @@ const RecentActivities = () => {
           <Typography variant="h5">Recent Student Registrations</Typography>
         </Grid>
       </Grid>
-      <MainCard sx={{ mt: 2, minHeight: 500 }} content={false}>
-        <Box sx={{ p: 2, pt: 0 }}>
+      <MainCard sx={{ mt: 2 }} content={false}>
+        <Box sx={{ p: 2, pt: 0, maxHeight: 450, overflow: 'auto' }}>
           <List>
             {recentStudents.length > 0 ? (
               recentStudents.map((student, index) => (
@@ -115,6 +145,12 @@ const RecentActivities = () => {
                               {student.email}
                             </Typography>
                           )}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                            <TimeIcon />
+                            <Typography variant="caption" color="text.secondary">
+                              {formatTimeAgo(student.createdAt)}
+                            </Typography>
+                          </Box>
                         </Box>
                       }
                     />

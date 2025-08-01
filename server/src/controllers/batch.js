@@ -3,7 +3,7 @@ const Batch = require("../models/batch");
 // Get all batches with search, filter, pagination
 async function getAllBatches(req, res) {
   try {
-    const { search = '', courseId, page = 1, limit = 10 } = req.query;
+    const { search = '', courseId, page = 1, limit = 10, sortBy = 'name', sortOrder = 'asc' } = req.query;
 
     const pageNum = Math.max(parseInt(page, 10), 1);
     const limitNum = Math.max(parseInt(limit, 10), 1);
@@ -21,28 +21,140 @@ async function getAllBatches(req, res) {
 
     const total = await Batch.countDocuments(filter);
 
-    const batches = await Batch.find(filter)
-      .populate('courseId', 'name')
-      .skip(skip)
-      .limit(limitNum);
+    // Build sort object
+    const sortObj = {};
+    const sortOrderNum = sortOrder === 'desc' ? -1 : 1;
+    
+    // Map frontend sort fields to database fields
+    const sortFieldMap = {
+      'name': 'name',
+      'courseName': 'courseId',
+      'orientationDate': 'orientationDate',
+      'startDate': 'startDate',
+      'registrationDeadline': 'registrationDeadline'
+    };
 
-    const formattedBatches = batches.map(batch => ({
-      _id: batch._id,
-      name: batch.name,
-      courseId: batch.courseId?._id || null,
-      courseName: batch.courseId?.name || null,
-      orientationDate: batch.orientationDate,
-      startDate: batch.startDate,
-      registrationDeadline: batch.registrationDeadline
-    }));
-
-    res.status(200).json({
-      total,
-      page: pageNum,
-      limit: limitNum,
-      totalPages: Math.ceil(total / limitNum),
-      data: formattedBatches,
+    const sortField = sortFieldMap[sortBy] || 'name';
+    sortObj[sortField] = sortOrderNum;
+    
+    // Debug logging
+    console.log('Batch sorting debug:', {
+      sortBy,
+      sortOrder,
+      sortField,
+      sortObj,
+      availableFields: Object.keys(sortFieldMap)
     });
+
+    // For course name sorting, we need to use aggregation to sort by populated field
+    if (sortBy === 'courseName') {
+      const aggregationPipeline = [
+        { $match: filter },
+        {
+          $lookup: {
+            from: 'courses',
+            localField: 'courseId',
+            foreignField: '_id',
+            as: 'course'
+          }
+        },
+        { $unwind: '$course' },
+        { $sort: { 'course.name': sortOrderNum } },
+        { $skip: skip },
+        { $limit: limitNum },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            courseId: '$course._id',
+            courseName: '$course.name',
+            orientationDate: 1,
+            startDate: 1,
+            registrationDeadline: 1
+          }
+        }
+      ];
+
+      const batches = await Batch.aggregate(aggregationPipeline);
+      
+      res.status(200).json({
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+        data: batches,
+      });
+    } else if (sortBy === 'name') {
+      // For batch name sorting, treat as numbers (e.g., "2024.1", "2024.2")
+      const aggregationPipeline = [
+        { $match: filter },
+        {
+          $lookup: {
+            from: 'courses',
+            localField: 'courseId',
+            foreignField: '_id',
+            as: 'course'
+          }
+        },
+        { $unwind: '$course' },
+        {
+          $addFields: {
+            nameParts: { $split: ['$name', '.'] },
+            yearPart: { $toInt: { $arrayElemAt: [{ $split: ['$name', '.'] }, 0] } },
+            numberPart: { $toInt: { $arrayElemAt: [{ $split: ['$name', '.'] }, 1] } }
+          }
+        },
+        { $sort: { yearPart: sortOrderNum, numberPart: sortOrderNum } },
+        { $skip: skip },
+        { $limit: limitNum },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            courseId: '$course._id',
+            courseName: '$course.name',
+            orientationDate: 1,
+            startDate: 1,
+            registrationDeadline: 1
+          }
+        }
+      ];
+
+      const batches = await Batch.aggregate(aggregationPipeline);
+      
+      res.status(200).json({
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+        data: batches,
+      });
+    } else {
+      // For other sorting (date fields), use regular find with populate
+      const batches = await Batch.find(filter)
+        .populate('courseId', 'name')
+        .sort(sortObj)
+        .skip(skip)
+        .limit(limitNum);
+
+      const formattedBatches = batches.map(batch => ({
+        _id: batch._id,
+        name: batch.name,
+        courseId: batch.courseId?._id || null,
+        courseName: batch.courseId?.name || null,
+        orientationDate: batch.orientationDate,
+        startDate: batch.startDate,
+        registrationDeadline: batch.registrationDeadline
+      }));
+
+            res.status(200).json({
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+        data: formattedBatches,
+      });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });

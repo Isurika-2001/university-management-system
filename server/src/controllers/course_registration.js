@@ -7,7 +7,7 @@ const { getRequestInfo } = require("../middleware/requestInfo");
 
 async function getAllCourseRegistrations(req, res) {
   try {
-    const { search = '', courseId, batchId, page = 1, limit = 10 } = req.query;
+    const { search = '', courseId, batchId, page = 1, limit = 10, sortBy = 'courseReg_no', sortOrder = 'asc' } = req.query;
 
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 10;
@@ -81,10 +81,67 @@ async function getAllCourseRegistrations(req, res) {
       });
     }
 
+    // Add sorting stage
+    const sortStage = {};
+    const sortOrderNum = sortOrder === 'desc' ? -1 : 1;
+    
+    // Map frontend sort fields to database fields
+    const sortFieldMap = {
+      'courseReg_no': 'courseReg_no',
+      'student.registration_no': 'student.registration_no',
+      'studentName': { $concat: ['$student.firstName', ' ', '$student.lastName'] },
+      'student.nic': 'student.nic',
+      'course.name': { $toLower: '$course.name' }, // Case-insensitive sorting
+      'batch.name': { $toLower: '$batch.name' }, // Case-insensitive sorting
+      'student.mobile': 'student.mobile',
+      'student.address': 'student.address'
+    };
+
+    const sortField = sortFieldMap[sortBy] || 'courseReg_no';
+    
+    // Debug logging
+    console.log('Sorting debug:', {
+      sortBy,
+      sortOrder,
+      sortField,
+      availableFields: Object.keys(sortFieldMap)
+    });
+
+    // Handle complex sorting fields
+    if (sortBy === 'studentName') {
+      // For student name, we need to add a computed field and sort by it
+      aggregationPipeline.push({
+        $addFields: {
+          fullName: { $concat: ['$student.firstName', ' ', '$student.lastName'] }
+        }
+      });
+      sortStage['fullName'] = sortOrderNum;
+    } else if (sortBy === 'course.name') {
+      // For course name, add computed field for case-insensitive sorting
+      aggregationPipeline.push({
+        $addFields: {
+          courseNameLower: { $toLower: '$course.name' }
+        }
+      });
+      sortStage['courseNameLower'] = sortOrderNum;
+    } else if (sortBy === 'batch.name') {
+      // For batch name, add computed field for case-insensitive sorting
+      aggregationPipeline.push({
+        $addFields: {
+          batchNameLower: { $toLower: '$batch.name' }
+        }
+      });
+      sortStage['batchNameLower'] = sortOrderNum;
+    } else {
+      // For simple fields, use direct sorting
+      sortStage[sortField] = sortOrderNum;
+    }
+
     const totalCountPipeline = [...aggregationPipeline, { $count: 'total' }];
 
     const resultsPipeline = [
       ...aggregationPipeline,
+      { $sort: sortStage },
       { $skip: skip },
       { $limit: limitNum }
     ];
