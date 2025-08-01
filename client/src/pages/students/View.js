@@ -12,9 +12,10 @@ import {
   Checkbox,
   TablePagination,
   LinearProgress,
-  TextField
+  TextField,
+  IconButton,
 } from '@mui/material';
-import { UploadOutlined, DownloadOutlined, EditOutlined, FileAddOutlined } from '@ant-design/icons';
+import { UploadOutlined, DownloadOutlined, EditOutlined, FileAddOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { apiRoutes } from '../../config';
@@ -41,6 +42,10 @@ const View = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
   const [totalCount, setTotalCount] = useState(0);
+
+  // Sorting state
+  const [sortBy, setSortBy] = useState('registration_no');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -79,10 +84,10 @@ const View = () => {
     };
   }, [searchTerm]);
 
-  // Fetch data whenever page, rowsPerPage or debouncedSearchTerm changes
+  // Fetch data whenever page, rowsPerPage, debouncedSearchTerm, sortBy, or sortOrder changes
   useEffect(() => {
     fetchData();
-  }, [page, rowsPerPage, debouncedSearchTerm]);
+  }, [page, rowsPerPage, debouncedSearchTerm, sortBy, sortOrder]);
 
   async function fetchData() {
     setLoading(true);
@@ -90,6 +95,8 @@ const View = () => {
     const params = new URLSearchParams();
     params.append('page', page + 1); // backend page 1-based
     params.append('limit', rowsPerPage);
+    params.append('sortBy', sortBy);
+    params.append('sortOrder', sortOrder);
 
     if (debouncedSearchTerm) {
       params.append('search', debouncedSearchTerm);
@@ -132,6 +139,18 @@ const View = () => {
     setPage(0); // Reset to first page when search term changes
   };
 
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      // If clicking the same column, toggle sort order
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // If clicking a different column, set it as sortBy and default to asc
+      setSortBy(column);
+      setSortOrder('asc');
+    }
+    setPage(0); // Reset to first page when sorting changes
+  };
+
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -168,6 +187,13 @@ const View = () => {
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
 
+  const renderSortIcon = (column) => {
+    if (sortBy !== column) {
+      return null;
+    }
+    return sortOrder === 'asc' ? <ArrowUpOutlined /> : <ArrowDownOutlined />;
+  };
+
   const handleViewRow = (id) => {
     navigate('/app/course-registrations/update?id=' + id);
   };
@@ -179,6 +205,8 @@ const View = () => {
   const exportToCSV = async () => {
     const params = new URLSearchParams();
     if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+    params.append('sortBy', sortBy);
+    params.append('sortOrder', sortOrder);
 
     try {
       setIsUploading(true);
@@ -313,11 +341,86 @@ const View = () => {
                     onChange={handleSelectAllClick}
                   />
                 </TableCell>
-                <TableCell>ID</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>NIC</TableCell>
-                <TableCell>Contact</TableCell>
-                <TableCell>Address</TableCell>
+                <TableCell>
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      cursor: 'pointer',
+                      '&:hover': { opacity: 0.7 }
+                    }} 
+                    onClick={() => handleSort('registration_no')}
+                  >
+                    ID
+                    <IconButton size="small" sx={{ ml: 0.5, color: sortBy === 'registration_no' ? 'primary.main' : 'inherit' }}>
+                      {renderSortIcon('registration_no')}
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      cursor: 'pointer',
+                      '&:hover': { opacity: 0.7 }
+                    }} 
+                    onClick={() => handleSort('fullName')}
+                  >
+                    Name
+                    <IconButton size="small" sx={{ ml: 0.5, color: sortBy === 'fullName' ? 'primary.main' : 'inherit' }}>
+                      {renderSortIcon('fullName')}
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      cursor: 'pointer',
+                      '&:hover': { opacity: 0.7 }
+                    }} 
+                    onClick={() => handleSort('nic')}
+                  >
+                    NIC
+                    <IconButton size="small" sx={{ ml: 0.5, color: sortBy === 'nic' ? 'primary.main' : 'inherit' }}>
+                      {renderSortIcon('nic')}
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      cursor: 'pointer',
+                      '&:hover': { opacity: 0.7 }
+                    }} 
+                    onClick={() => handleSort('mobile')}
+                  >
+                    Contact
+                    <IconButton size="small" sx={{ ml: 0.5, color: sortBy === 'mobile' ? 'primary.main' : 'inherit' }}>
+                      {renderSortIcon('mobile')}
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      cursor: 'pointer',
+                      '&:hover': { opacity: 0.7 }
+                    }} 
+                    onClick={() => handleSort('address')}
+                  >
+                    Address
+                    <IconButton size="small" sx={{ ml: 0.5, color: sortBy === 'address' ? 'primary.main' : 'inherit' }}>
+                      {renderSortIcon('address')}
+                    </IconButton>
+                  </Box>
+                </TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
@@ -328,7 +431,7 @@ const View = () => {
                   <TableCell padding="checkbox">
                     <Checkbox checked={isSelected(student._id)} onChange={(event) => handleCheckboxClick(event, student._id)} />
                   </TableCell>
-                  <TableCell>{student.registration_no}</TableCell>
+                  <TableCell>{student.registration_no || student.registrationNo}</TableCell>
                   <TableCell>{student.firstName + ' ' + student.lastName}</TableCell>
                   <TableCell>{student.nic}</TableCell>
                   <TableCell>{student.mobile}</TableCell>

@@ -7,7 +7,7 @@ const { getRequestInfo } = require("../middleware/requestInfo");
 
 async function getAllCourseRegistrations(req, res) {
   try {
-    const { search = '', courseId, batchId, page = 1, limit = 10 } = req.query;
+    const { search = '', courseId, batchId, page = 1, limit = 10, sortBy = 'courseReg_no', sortOrder = 'asc' } = req.query;
 
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 10;
@@ -81,10 +81,30 @@ async function getAllCourseRegistrations(req, res) {
       });
     }
 
+    // Add sorting stage
+    const sortStage = {};
+    const sortOrderNum = sortOrder === 'desc' ? -1 : 1;
+    
+    // Map frontend sort fields to database fields
+    const sortFieldMap = {
+      'courseReg_no': 'courseReg_no',
+      'studentId': 'student.registration_no',
+      'name': { $concat: ['$student.firstName', ' ', '$student.lastName'] },
+      'nic': 'student.nic',
+      'course': 'course.name',
+      'batch': 'batch.name',
+      'contact': 'student.mobile',
+      'address': 'student.address'
+    };
+
+    const sortField = sortFieldMap[sortBy] || 'courseReg_no';
+    sortStage[sortField] = sortOrderNum;
+
     const totalCountPipeline = [...aggregationPipeline, { $count: 'total' }];
 
     const resultsPipeline = [
       ...aggregationPipeline,
+      { $sort: sortStage },
       { $skip: skip },
       { $limit: limitNum }
     ];

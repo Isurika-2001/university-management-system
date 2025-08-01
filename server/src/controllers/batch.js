@@ -3,7 +3,7 @@ const Batch = require("../models/batch");
 // Get all batches with search, filter, pagination
 async function getAllBatches(req, res) {
   try {
-    const { search = '', courseId, page = 1, limit = 10 } = req.query;
+    const { search = '', courseId, page = 1, limit = 10, sortBy = 'name', sortOrder = 'asc' } = req.query;
 
     const pageNum = Math.max(parseInt(page, 10), 1);
     const limitNum = Math.max(parseInt(limit, 10), 1);
@@ -21,8 +21,25 @@ async function getAllBatches(req, res) {
 
     const total = await Batch.countDocuments(filter);
 
+    // Build sort object
+    const sortObj = {};
+    const sortOrderNum = sortOrder === 'desc' ? -1 : 1;
+    
+    // Map frontend sort fields to database fields
+    const sortFieldMap = {
+      'name': 'name',
+      'course': 'courseId',
+      'orientationDate': 'orientationDate',
+      'startDate': 'startDate',
+      'registrationDeadline': 'registrationDeadline'
+    };
+
+    const sortField = sortFieldMap[sortBy] || 'name';
+    sortObj[sortField] = sortOrderNum;
+
     const batches = await Batch.find(filter)
       .populate('courseId', 'name')
+      .sort(sortObj)
       .skip(skip)
       .limit(limitNum);
 
