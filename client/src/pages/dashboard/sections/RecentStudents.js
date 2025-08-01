@@ -25,6 +25,15 @@ const RecentActivities = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Check if user has permission to view recent student registrations
+    const hasPermission = user?.permissions?.student?.includes('update-all');
+    
+    // If user doesn't have permission, don't fetch data
+    if (!hasPermission) {
+      setLoading(false);
+      return;
+    }
+
     async function fetchRecentActivities() {
       try {
         setLoading(true);
@@ -54,7 +63,7 @@ const RecentActivities = () => {
     }
 
     fetchRecentActivities();
-  }, [user.token]);
+  }, [user.token, user?.permissions?.student]);
 
   const formatTimeAgo = (timestamp) => {
     const now = new Date();
@@ -66,6 +75,14 @@ const RecentActivities = () => {
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
+
+  // Check if user has permission to view recent student registrations
+  const hasPermission = user?.permissions?.student?.includes('update-all');
+
+  // If user doesn't have permission, don't render the component
+  if (!hasPermission) {
+    return null;
+  }
 
   if (loading) {
     return (

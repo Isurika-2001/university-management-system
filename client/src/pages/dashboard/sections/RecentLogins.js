@@ -26,6 +26,15 @@ const RecentActivities = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Check if user has permission to view recent logins
+    const hasPermission = user?.permissions?.user?.includes('read-all');
+    
+    // If user doesn't have permission, don't fetch data
+    if (!hasPermission) {
+      setLoading(false);
+      return;
+    }
+
     async function fetchRecentActivities() {
       try {
         setLoading(true);
@@ -54,7 +63,7 @@ const RecentActivities = () => {
     }
 
     fetchRecentActivities();
-  }, [user.token]);
+  }, [user.token, user?.permissions?.user]);
 
   const formatTimeAgo = (timestamp) => {
     const now = new Date();
@@ -79,6 +88,14 @@ const RecentActivities = () => {
         return 'default';
     }
   };
+
+  // Check if user has permission to view recent logins
+  const hasPermission = user?.permissions?.user?.includes('read-all');
+
+  // If user doesn't have permission, don't render the component
+  if (!hasPermission) {
+    return null;
+  }
 
   if (loading) {
     return (

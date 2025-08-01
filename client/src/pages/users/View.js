@@ -14,7 +14,11 @@ import {
   TableSortLabel,
   LinearProgress,
   TextField,
-  CircularProgress
+  CircularProgress,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material';
 import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +27,7 @@ import { apiRoutes } from 'config';
 import { useAuthContext } from 'context/useAuthContext';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { formatUserTypes, formatUserTypeName } from '../../utils/userTypeUtils';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -34,6 +39,10 @@ const View = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  
+  // User type filter state
+  const [userTypes, setUserTypes] = useState([]);
+  const [selectedUserType, setSelectedUserType] = useState('');
   const navigate = useNavigate();
   const { user } = useAuthContext();
 
@@ -95,6 +104,28 @@ const View = () => {
     } catch (error) {
       console.error('Error fetching data:', error.message);
       setLoading(false);
+    }
+  };
+
+  const fetchUserTypes = async () => {
+    try {
+      const response = await fetch(apiRoutes.userTypeRoute, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
+      });
+
+      if (!response.ok) {
+        console.error('Error fetching user types');
+        return;
+      }
+
+             const data = await response.json();
+       setUserTypes(formatUserTypes(data));
+    } catch (error) {
+      console.error('Error fetching user types:', error.message);
     }
   };
 
@@ -166,8 +197,33 @@ const View = () => {
 
   const handleSearch = (event) => {
     const term = event.target.value.toLowerCase();
-    // Filter the data based on the search term
-    const filteredValues = data.filter((user) => user.name.toLowerCase().includes(term) || user.email.toLowerCase().includes(term));
+    applyFilters(term, selectedUserType);
+  };
+
+  const handleUserTypeFilter = (event) => {
+    const userType = event.target.value;
+    setSelectedUserType(userType);
+    applyFilters('', userType);
+  };
+
+  const applyFilters = (searchTerm = '', userType = '') => {
+    let filteredValues = data;
+
+    // Apply search filter
+    if (searchTerm) {
+      filteredValues = filteredValues.filter((user) => 
+        user.name.toLowerCase().includes(searchTerm) || 
+        user.email.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Apply user type filter
+    if (userType) {
+      filteredValues = filteredValues.filter((user) => 
+        user.user_type && user.user_type._id === userType
+      );
+    }
+
     setFilteredData(filteredValues);
   };
 
@@ -221,6 +277,11 @@ const View = () => {
 
       if (response.ok) {
         showSuccessSwal(data.message || 'User updated successfully');
+        // Update local state immediately
+        setData(prevData => prevData.filter(user => user._id !== id));
+        setFilteredData(prevFilteredData => prevFilteredData.filter(user => user._id !== id));
+        // Also refetch data to ensure consistency
+        fetchData();
       } else {
         showErrorSwal(data.message || 'Failed to update user');
       }
@@ -233,9 +294,10 @@ const View = () => {
   };
 
   useEffect(() => {
-    fetchData();
-  }, [handleDelete]);
-
+    fetchUserTypes();
+    fetchData()
+  }, []);
+  
   return (
     <MainCard title="User List">
       <Box
@@ -247,7 +309,31 @@ const View = () => {
           flexDirection: 'row' // Ensure items are aligned horizontally
         }}
       >
-        <TextField label="Search" variant="outlined" onChange={handleSearch} />
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <TextField 
+            label="Search" 
+            variant="outlined" 
+            onChange={handleSearch}
+            placeholder="Search by name or email"
+          />
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Filter by Role</InputLabel>
+            <Select
+              value={selectedUserType}
+              label="Filter by Role"
+              onChange={handleUserTypeFilter}
+            >
+              <MenuItem value="">
+                <em>All Roles</em>
+              </MenuItem>
+                             {userTypes.map((userType) => (
+                 <MenuItem key={userType._id} value={userType._id}>
+                   {userType.displayName}
+                 </MenuItem>
+               ))}
+            </Select>
+          </FormControl>
+        </Box>
         <div>
           {/* <Button
             variant="contained"
@@ -319,7 +405,7 @@ const View = () => {
                   </TableCell>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.user_type.name}</TableCell>
+                                     <TableCell>{formatUserTypeName(user.user_type.name)}</TableCell>
                   <TableCell>
                     <Button
                       variant="outlined"

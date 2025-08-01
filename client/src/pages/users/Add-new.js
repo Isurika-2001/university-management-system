@@ -7,6 +7,7 @@ import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
+import { formatUserTypes } from '../../utils/userTypeUtils';
 
 const AddForm = () => {
   const [submitting, setSubmitting] = useState(false);
@@ -86,7 +87,7 @@ const AddForm = () => {
         }
         return;
       }
-      setUserTypes(data);
+      setUserTypes(formatUserTypes(data));
     } catch (error) {
       console.error('Error fetching batches:', error);
       return [];
@@ -202,8 +203,8 @@ const AddForm = () => {
                     sx={{ mb: 3 }} // Margin bottom added
                   >
                     {userTypes.map((option) => (
-                      <MenuItem key={option.id} value={option.name}>
-                        {option.name}
+                      <MenuItem key={option._id} value={option.name}>
+                        {option.displayName}
                       </MenuItem>
                     ))}
                   </Field>
