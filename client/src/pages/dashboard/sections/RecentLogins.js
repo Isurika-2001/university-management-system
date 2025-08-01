@@ -113,8 +113,8 @@ const RecentActivities = () => {
           <Typography variant="h5">Recent Logins</Typography>
         </Grid>
       </Grid>
-      <MainCard sx={{ mt: 2, minHeight: 500 }} content={false}>
-        <Box sx={{ p: 2, pt: 0 }}>
+      <MainCard sx={{ mt: 2 }} content={false}>
+        <Box sx={{ p: 2, pt: 0, maxHeight: 450, overflow: 'auto' }}>
           <List>
             {recentLogins.length > 0 ? (
               recentLogins.map((login, index) => (
