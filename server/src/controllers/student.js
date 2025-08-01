@@ -11,7 +11,7 @@ const { getNextSequenceValue } = require('../utilities/counter');
 
 async function getAllStudents(req, res) {
   try {
-    const { search = '', page = 1, limit = 10 } = req.query;
+    const { search = '', page = 1, limit = 10, sortBy = 'registration_no', sortOrder = 'asc' } = req.query;
 
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 10;
@@ -46,11 +46,42 @@ async function getAllStudents(req, res) {
       };
     }
 
+    // Build sort object
+    const sortDirection = sortOrder === 'desc' ? -1 : 1;
+    let sortObject = {};
+
+    // Handle special case for full name sorting
+    if (sortBy === 'fullName') {
+      sortObject = {
+        firstName: sortDirection,
+        lastName: sortDirection
+      };
+    } else {
+      sortObject[sortBy] = sortDirection;
+    }
+
     const totalStudents = await Student.countDocuments(filter);
 
-    const students = await Student.find(filter)
-      .skip(skip)
-      .limit(limitNum);
+    let students;
+    if (sortBy === 'fullName') {
+      // For full name sorting, we need to use aggregation
+      students = await Student.aggregate([
+        { $match: filter },
+        {
+          $addFields: {
+            fullName: { $concat: ['$firstName', ' ', '$lastName'] }
+          }
+        },
+        { $sort: { fullName: sortDirection } },
+        { $skip: skip },
+        { $limit: limitNum }
+      ]);
+    } else {
+      students = await Student.find(filter)
+        .sort(sortObject)
+        .skip(skip)
+        .limit(limitNum);
+    }
 
     res.status(200).json({
       total: totalStudents,
@@ -344,11 +375,11 @@ async function checkDuplicateCourseRegistration(studentId, courseId, batchId) {
 
 async function exportStudents(req, res) {
   try {
-    const { search = '' } = req.query;
+    const { search = '', sortBy = 'registration_no', sortOrder = 'asc' } = req.query;
     const requestInfo = getRequestInfo(req);
 
     console.log('--- Export Students Request ---');
-    console.log('Received Query Params:', { search });
+    console.log('Received Query Params:', { search, sortBy, sortOrder });
 
     let filter = {};
 
@@ -370,7 +401,35 @@ async function exportStudents(req, res) {
 
     console.log('MongoDB Filter:', filter);
 
-    const students = await Student.find(filter);
+    // Build sort object
+    const sortDirection = sortOrder === 'desc' ? -1 : 1;
+    let sortObject = {};
+
+    // Handle special case for full name sorting
+    if (sortBy === 'fullName') {
+      sortObject = {
+        firstName: sortDirection,
+        lastName: sortDirection
+      };
+    } else {
+      sortObject[sortBy] = sortDirection;
+    }
+
+    let students;
+    if (sortBy === 'fullName') {
+      // For full name sorting, we need to use aggregation
+      students = await Student.aggregate([
+        { $match: filter },
+        {
+          $addFields: {
+            fullName: { $concat: ['$firstName', ' ', '$lastName'] }
+          }
+        },
+        { $sort: { fullName: sortDirection } }
+      ]);
+    } else {
+      students = await Student.find(filter).sort(sortObject);
+    }
 
     console.log('Students fetched from DB:', students.length);
 

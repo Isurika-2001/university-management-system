@@ -1,23 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Table,
-  TableContainer,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  Paper,
-  Button,
-  Box,
-  Checkbox,
-  TablePagination,
-  LinearProgress,
-  TextField,
-  MenuItem,
-} from '@mui/material';
+import { Button } from '@mui/material';
 import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import MainCard from 'components/MainCard';
+import DataTable from 'components/DataTable';
 import { apiRoutes } from '../../config';
 import { useAuthContext } from 'context/useAuthContext';
 import Swal from 'sweetalert2';
@@ -44,7 +29,11 @@ const View = () => {
   const [courseFilter, setCourseFilter] = useState('');
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');  
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  // Sorting state
+  const [orderBy, setOrderBy] = useState('name');
+  const [order, setOrder] = useState('asc');
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -68,22 +57,18 @@ const View = () => {
     Toast.fire({ icon: 'error', title: msg });
   };
 
-  // Debounce searchTerm with 500ms delay
+  // Debounce search term
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-      setPage(0); // reset page on search
     }, 500);
-
-    return () => {
-      clearTimeout(handler);
-    };
+    return () => clearTimeout(handler);
   }, [searchTerm]);
 
-  // Fetch batches data when page, rowsPerPage, debouncedSearchTerm or courseFilter changes
+  // Fetch batches data when page, rowsPerPage, debouncedSearchTerm, courseFilter, or sorting changes
   useEffect(() => {
     fetchData();
-  }, [page, rowsPerPage, debouncedSearchTerm, courseFilter]);
+  }, [page, rowsPerPage, debouncedSearchTerm, courseFilter, orderBy, order]);
 
   // Fetch courses for filter dropdown on mount
   useEffect(() => {
@@ -98,6 +83,8 @@ const View = () => {
       if (courseFilter) params.append('courseId', courseFilter);
       params.append('page', page + 1); // API is 1-based page index
       params.append('limit', rowsPerPage);
+      params.append('sortBy', orderBy);
+      params.append('sortOrder', order);
 
       const response = await fetch(`${apiRoutes.batchRoute}?${params.toString()}`, {
         headers: {
@@ -133,13 +120,21 @@ const View = () => {
     }
   };
 
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
+  const handleSearch = (searchValue) => {
+    setSearchTerm(searchValue);
   };
 
-  const handleCourseFilterChange = (e) => {
-    setCourseFilter(e.target.value);
-    setPage(0); // reset page on filter change
+  const handleSort = (property, sortOrder) => {
+    setOrderBy(property);
+    setOrder(sortOrder);
+    setPage(0);
+  };
+
+  const handleFilterChange = (filterKey, value) => {
+    if (filterKey === 'courseId') {
+      setCourseFilter(value);
+    }
+    setPage(0);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -151,40 +146,16 @@ const View = () => {
     setPage(0);
   };
 
-  const handleSelectAllClick = (event) => {
-    if (event.target.checked) {
-      const newSelecteds = data.map((batch) => batch._id);
-      setSelected(newSelecteds);
-      return;
-    }
-    setSelected([]);
-  };
-
-  const handleCheckboxClick = (event, id) => {
-    const selectedIndex = selected.indexOf(id);
-    let newSelected = [];
-
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, id);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
-    }
-
+  const handleSelectionChange = (newSelected) => {
     setSelected(newSelected);
   };
-
-  const isSelected = (id) => selected.indexOf(id) !== -1;
 
   const handleClickAddNew = () => {
     navigate('/app/batches/add');
   };
 
-  const handleViewRow = (id) => {
-    navigate('/app/batches/update?id=' + id);
+  const handleRowClick = (row) => {
+    navigate('/app/batches/update?id=' + row._id);
   };
 
   const handleDeleteBatch = async (id) => {
@@ -223,126 +194,113 @@ const View = () => {
     }
   };
 
-  return (
-    <MainCard title="Batch List">
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-          <TextField label="Search" variant="outlined" value={searchTerm} onChange={handleSearchChange} sx={{ minWidth: 200 }} />
-
-          <TextField
-            label="Course Filter"
+  // Define columns for the DataTable
+  const columns = [
+    { key: 'name', label: 'Name' },
+    { key: 'courseName', label: 'Course' },
+    { 
+      key: 'orientationDate', 
+      label: 'Orientation Date',
+      render: (value) => value ? dayjs(value).format('YYYY-MM-DD') : ''
+    },
+    { 
+      key: 'startDate', 
+      label: 'Start Date',
+      render: (value) => value ? dayjs(value).format('YYYY-MM-DD') : ''
+    },
+    { 
+      key: 'registrationDeadline', 
+      label: 'Registration Deadline',
+      render: (value) => value ? dayjs(value).format('YYYY-MM-DD') : ''
+    },
+    {
+      key: 'actions',
+      label: 'Action',
+      render: (value, row) => (
+        <>
+          <Button
             variant="outlined"
-            select
-            value={courseFilter}
-            onChange={handleCourseFilterChange}
-            sx={{ width: 200 }}
+            color="warning"
+            startIcon={<EditOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRowClick(row);
+            }}
+            sx={{ mr: 1 }}
           >
-            <MenuItem value="">All Courses</MenuItem>
-            {courses.map((course) => (
-              <MenuItem key={course._id} value={course._id}>
-                {course.name}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Box>
-
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-          {/* <Button
-            variant="contained"
-            color="success"
-            disabled={selected.length === 0}
-            onClick={() => alert('Export functionality to implement')}
-            startIcon={<UploadOutlined />}
-          >
-            Export
-          </Button> */}
-          <Button variant="contained" startIcon={<FileAddOutlined />} onClick={handleClickAddNew}>
-            Add New
+            Edit
           </Button>
-        </Box>
-      </Box>
+          <Button 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteBatch(row._id);
+            }} 
+            variant="outlined" 
+            color="error" 
+            startIcon={<DeleteOutlined />}
+          >
+            Delete
+          </Button>
+        </>
+      )
+    }
+  ];
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  indeterminate={selected.length > 0 && selected.length < data.length}
-                  checked={data.length > 0 && selected.length === data.length}
-                  onChange={handleSelectAllClick}
-                  inputProps={{ 'aria-label': 'select all batches' }}
-                />
-              </TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Course</TableCell>
-              <TableCell>Orientation Date</TableCell>
-              <TableCell>Start Date</TableCell>
-              <TableCell>Registration Deadline</TableCell>
-              <TableCell>Action</TableCell>
-            </TableRow>
-          </TableHead>
+  // Define filters
+  const filters = [
+    {
+      key: 'courseId',
+      label: 'Course Filter',
+      allLabel: 'All Courses',
+      options: courses.map(course => ({ value: course._id, label: course.name }))
+    }
+  ];
 
-          {loading && (
-            <TableBody>
-              <TableRow>
-                <TableCell colSpan={4}>
-                  <LinearProgress />
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          )}
+  // Define actions
+  const actions = [
+    {
+      label: 'Add New',
+      icon: <FileAddOutlined />,
+      onClick: handleClickAddNew,
+      variant: 'contained',
+      color: 'primary'
+    }
+  ];
 
-          {!loading && (
-            <TableBody>
-              {data.map((batch) => {
-                const isItemSelected = isSelected(batch._id);
-                return (
-                  <TableRow hover key={batch._id} role="checkbox" aria-checked={isItemSelected} selected={isItemSelected} tabIndex={-1}>
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={isItemSelected}
-                        onChange={(event) => handleCheckboxClick(event, batch._id)}
-                        inputProps={{ 'aria-labelledby': `batch-checkbox-${batch._id}` }}
-                      />
-                    </TableCell>
-                    <TableCell>{batch.name}</TableCell>
-                    <TableCell>{batch.courseName}</TableCell>
-                    <TableCell>{batch.orientationDate ? dayjs(batch.orientationDate).format('YYYY-MM-DD') : ''}</TableCell>
-                    <TableCell>{batch.startDate ? dayjs(batch.startDate).format('YYYY-MM-DD') : ''}</TableCell>
-                    <TableCell>{batch.registrationDeadline ? dayjs(batch.registrationDeadline).format('YYYY-MM-DD') : ''}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outlined"
-                        color="warning"
-                        startIcon={<EditOutlined />}
-                        onClick={() => handleViewRow(batch._id)}
-                        sx={{ mr: 1 }}
-                      >
-                        Edit
-                      </Button>
-                      <Button onClick={() => handleDeleteBatch(batch._id)} variant="outlined" color="error" startIcon={<DeleteOutlined />}>
-                        Delete
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          )}
-        </Table>
-      </TableContainer>
+  // Define sortable columns
+  const sortableColumns = ['name', 'courseName', 'orientationDate', 'startDate', 'registrationDeadline'];
 
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={totalRows}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </MainCard>
+  return (
+    <DataTable
+      title="Batch List"
+      data={data}
+      loading={loading}
+      totalCount={totalRows}
+      page={page}
+      rowsPerPage={rowsPerPage}
+      onPageChange={handleChangePage}
+      onRowsPerPageChange={handleChangeRowsPerPage}
+      onSearch={handleSearch}
+      onSort={handleSort}
+      orderBy={orderBy}
+      order={order}
+      sortableColumns={sortableColumns}
+      filters={filters}
+      filterValues={{ courseId: courseFilter }}
+      onFilterChange={handleFilterChange}
+      columns={columns}
+      onRowClick={handleRowClick}
+      onSelectionChange={handleSelectionChange}
+      selected={selected}
+      actions={actions}
+      searchPlaceholder="Search"
+      showSearch={true}
+      showFilters={true}
+      showActions={true}
+      showPagination={true}
+      showSelection={true}
+      emptyMessage="No batches found"
+    />
   );
 };
 

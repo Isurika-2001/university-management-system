@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
 import { useLocation } from 'react-router-dom';
+import { formatUserTypes } from '../../utils/userTypeUtils';
 
 function UpdateUser() {
   const location = useLocation();
@@ -84,7 +85,7 @@ function UpdateUser() {
       });
       const data = await response.json();
       if (response.ok) {
-        setUserTypes(data);
+        setUserTypes(formatUserTypes(data));
       } else {
         console.error('Failed to fetch user types');
       }
@@ -235,7 +236,7 @@ function UpdateUser() {
                     >
                       {userTypes.map((option) => (
                         <MenuItem key={option._id} value={option._id}>
-                          {option.name}
+                          {option.displayName}
                         </MenuItem>
                       ))}
                     </Field>
