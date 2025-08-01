@@ -3,6 +3,8 @@
 const Student = require("../models/student");
 const Counter = require("../models/counter");
 const CourseRegistration = require("../models/course_registration");
+const ActivityLogger = require("../utils/activityLogger");
+const { getRequestInfo } = require("../middleware/requestInfo");
 
 // utility calling
 const { getNextSequenceValue } = require('../utilities/counter'); 
@@ -93,6 +95,8 @@ async function createStudent(req, res) {
     batchId,
   } = req.body;
 
+  const requestInfo = getRequestInfo(req);
+
   try {
     // Check if the student is already registered in the system
     const isDuplicate = await checkDuplicateRegistration(nic);
@@ -164,6 +168,9 @@ async function createStudent(req, res) {
       courseSequenceValue
     );
 
+    // Log the student creation
+    await ActivityLogger.logStudentCreate(req.user, newStudent, requestInfo.ipAddress, requestInfo.userAgent);
+
     res.status(201).json({
       success: true,
       message: "New student registered for the course",
@@ -187,6 +194,7 @@ async function createStudent(req, res) {
 async function updateStudent(req, res) {
   const studentId = req.params.id;
   const { firstName, lastName, dob, nic, address, mobile, homeContact, email } = req.body;
+  const requestInfo = getRequestInfo(req);
 
   try {
     const student = await Student.findById(studentId);
@@ -198,6 +206,9 @@ async function updateStudent(req, res) {
       });
     }
 
+    // Store original values for logging
+    const originalStudent = { ...student.toObject() };
+
     student.firstName = firstName;
     student.lastName = lastName;
     student.dob = dob;
@@ -208,6 +219,20 @@ async function updateStudent(req, res) {
     student.email = email;
 
     await student.save();
+
+    // Log the student update
+    const changes = {
+      firstName: { from: originalStudent.firstName, to: firstName },
+      lastName: { from: originalStudent.lastName, to: lastName },
+      dob: { from: originalStudent.dob, to: dob },
+      nic: { from: originalStudent.nic, to: nic },
+      address: { from: originalStudent.address, to: address },
+      mobile: { from: originalStudent.mobile, to: mobile },
+      homeContact: { from: originalStudent.homeContact, to: homeContact },
+      email: { from: originalStudent.email, to: email }
+    };
+
+    await ActivityLogger.logStudentUpdate(req.user, student, changes, requestInfo.ipAddress, requestInfo.userAgent);
 
     res.status(200).json({
       success: true,
@@ -320,6 +345,7 @@ async function checkDuplicateCourseRegistration(studentId, courseId, batchId) {
 async function exportStudents(req, res) {
   try {
     const { search = '' } = req.query;
+    const requestInfo = getRequestInfo(req);
 
     console.log('--- Export Students Request ---');
     console.log('Received Query Params:', { search });
@@ -361,6 +387,9 @@ async function exportStudents(req, res) {
     }));
 
     console.log('Final export data count:', exportData.length);
+
+    // Log the export activity
+    await ActivityLogger.logStudentExport(req.user, exportData.length, requestInfo.ipAddress, requestInfo.userAgent);
 
     res.status(200).json({
       total: exportData.length,

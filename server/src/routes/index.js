@@ -12,6 +12,7 @@ const userRoutes = require("./user");
 const authRoutes = require("./auth");
 const bulkUploadRoutes = require("./bulk_upload");
 const statsRoute = require("./stats");
+const activityLogRoutes = require("./activity_log");
 
 // Public auth routes
 router.use("/auth", authRoutes);
@@ -26,5 +27,6 @@ router.use("/user-type", userTypeRoutes);
 router.use("/user", userRoutes);
 router.use("/bulk-upload", bulkUploadRoutes);
 router.use("/stats", statsRoute);
+router.use("/activity-logs", activityLogRoutes);
 
 module.exports = router;
