@@ -2,6 +2,8 @@
 
 const CourseRegistration = require("../models/course_registration");
 const mongoose = require('mongoose');
+const ActivityLogger = require("../utils/activityLogger");
+const { getRequestInfo } = require("../middleware/requestInfo");
 
 async function getAllCourseRegistrations(req, res) {
   try {
@@ -145,6 +147,7 @@ async function getAllCourseRegistrationsByStudentId(req, res) {
 async function exportCourseRegistrations(req, res) {
   try {
     const { search = '', courseId, batchId } = req.query;
+    const requestInfo = getRequestInfo(req);
 
     console.log('--- Export Course Registrations Request ---');
     console.log('Received Query Params:', { search, courseId, batchId });
@@ -205,6 +208,9 @@ async function exportCourseRegistrations(req, res) {
     }));
 
     console.log('Final export data count:', exportData.length);
+
+    // Log the export activity
+    await ActivityLogger.logCourseRegistrationExport(req.user, exportData.length, requestInfo.ipAddress, requestInfo.userAgent);
 
     res.status(200).json({
       total: exportData.length,

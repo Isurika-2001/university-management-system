@@ -3,9 +3,12 @@ const {
   createStudentAndRegister,
   registerExistingStudent
 } = require('../utilities/bulk_upload_helper');
+const ActivityLogger = require("../utils/activityLogger");
+const { getRequestInfo } = require("../middleware/requestInfo");
 
 async function bulkUploadStudents(req, res) {
   const studentsData = req.body.data; // Array of student objects from parsed Excel
+  const requestInfo = getRequestInfo(req);
 
   const results = {
     success: [],
@@ -79,6 +82,20 @@ async function bulkUploadStudents(req, res) {
       });
     }
   }
+
+  // Log the bulk upload activity
+  const status = results.failed.length === 0 ? 'SUCCESS' : 'PENDING';
+  const errorMessage = results.failed.length > 0 ? `${results.failed.length} records failed` : null;
+  
+  await ActivityLogger.logBulkUpload(
+    req.user, 
+    results.success.length, 
+    'bulk_upload.csv', 
+    requestInfo.ipAddress, 
+    requestInfo.userAgent, 
+    status, 
+    errorMessage
+  );
 
   res.status(200).json({
     message: "Bulk upload processed",

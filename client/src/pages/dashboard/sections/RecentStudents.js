@@ -1,0 +1,143 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Box, 
+  Grid, 
+  Typography, 
+  Avatar, 
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Divider,
+  Skeleton
+} from '@mui/material';
+// Using simple icons instead of Material-UI icons to avoid import issues
+const SchoolIcon = () => <span style={{ fontSize: '20px' }}>🎓</span>;
+import MainCard from 'components/MainCard';
+import { useAuthContext } from 'context/useAuthContext';
+import { apiRoutes } from 'config';
+
+const RecentActivities = () => {
+  const { user } = useAuthContext();
+  const [recentStudents, setRecentStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchRecentActivities() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch recent students
+        const studentResponse = await fetch(`${apiRoutes.statRoute}recentStudents?limit=5`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+        const studentData = await studentResponse.json();
+
+        if (studentData.success) {
+          setRecentStudents(studentData.data || []);
+        }
+
+      } catch (err) {
+        setError('Error fetching recent activities');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchRecentActivities();
+  }, [user.token]);
+
+  if (loading) {
+    return (
+      <Grid item xs={12} md={6} lg={6}>
+        <MainCard sx={{ mt: 2, minHeight: 500 }}>
+          <Box sx={{ p: 2 }}>
+            <Skeleton variant="rectangular" height={60} sx={{ mb: 2 }} />
+            <Skeleton variant="rectangular" height={60} sx={{ mb: 2 }} />
+            <Skeleton variant="rectangular" height={60} />
+          </Box>
+        </MainCard>
+      </Grid>
+    );
+  }
+
+  if (error) {
+    return (
+      <Grid item xs={12} md={6} lg={6}>
+        <MainCard title="Newly Added Students">
+          <Box sx={{ p: 2 }}>
+            <Typography color="error">{error}</Typography>
+          </Box>
+        </MainCard>
+      </Grid>
+    );
+  }
+
+  return (
+    <Grid item xs={12} md={12} lg={6}>
+      <Grid container alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Grid item>
+          <Typography variant="h5">Recent Student Registrations</Typography>
+        </Grid>
+      </Grid>
+      <MainCard sx={{ mt: 2, minHeight: 500 }} content={false}>
+        <Box sx={{ p: 2, pt: 0 }}>
+          <List>
+            {recentStudents.length > 0 ? (
+              recentStudents.map((student, index) => (
+                <React.Fragment key={student._id || index}>
+                  <ListItem alignItems="flex-start" sx={{ px: 0 }}>
+                    <ListItemAvatar>
+                      <Avatar sx={{ bgcolor: 'secondary.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <SchoolIcon />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Typography variant="subtitle2">
+                          {student.firstName} {student.lastName}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            ID: {student.registration_no || student.studentId}
+                          </Typography>
+                          {student.email && (
+                            <Typography variant="body2" color="text.secondary">
+                              {student.email}
+                            </Typography>
+                          )}
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  {index < recentStudents.length - 1 && <Divider variant="inset" component="li" />}
+                </React.Fragment>
+              ))
+            ) : (
+              <ListItem>
+                <ListItemText
+                  primary={
+                    <Typography variant="body2" color="text.secondary">
+                      No newly added students
+                    </Typography>
+                  }
+                />
+              </ListItem>
+            )}
+          </List>
+        </Box>
+      </MainCard>
+    </Grid>
+  );
+};
+
+export default RecentActivities; 
