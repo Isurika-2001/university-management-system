@@ -14,22 +14,20 @@ const logger = winston.createLogger({
   format: logFormat,
   defaultMeta: { service: 'university-management-system' },
   transports: [
-    // Write all logs with importance level of `error` or less to `error.log`
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    // Write all logs with importance level of `info` or less to `combined.log`
-    new winston.transports.File({ filename: 'logs/combined.log' }),
+    // Always add console transport for Vercel compatibility
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    })
   ],
 });
 
-// If we're not in production then log to the `console` with the format:
-// `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
+// Only add file transports if not in production (Vercel environment)
 if (config.nodeEnv !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }));
+  logger.add(new winston.transports.File({ filename: 'logs/error.log', level: 'error' }));
+  logger.add(new winston.transports.File({ filename: 'logs/combined.log' }));
 }
 
 module.exports = logger; 
