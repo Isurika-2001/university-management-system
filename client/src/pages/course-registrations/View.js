@@ -253,7 +253,7 @@ const View = () => {
   ];
 
   // Define sortable columns
-  const sortableColumns = ['courseReg_no', 'studentId', 'name', 'nic', 'course', 'batch', 'contact', 'address'];
+  const sortableColumns = ['courseReg_no', 'student.registration_no', 'studentName', 'student.nic', 'course.name', 'batch.name', 'student.mobile', 'student.address'];
 
   return (
     <DataTable

@@ -268,7 +268,7 @@ const View = () => {
   ];
 
   // Define sortable columns
-  const sortableColumns = ['name', 'course', 'orientationDate', 'startDate', 'registrationDeadline'];
+  const sortableColumns = ['name', 'courseName', 'orientationDate', 'startDate', 'registrationDeadline'];
 
   return (
     <DataTable

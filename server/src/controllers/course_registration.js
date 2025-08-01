@@ -88,17 +88,54 @@ async function getAllCourseRegistrations(req, res) {
     // Map frontend sort fields to database fields
     const sortFieldMap = {
       'courseReg_no': 'courseReg_no',
-      'studentId': 'student.registration_no',
-      'name': { $concat: ['$student.firstName', ' ', '$student.lastName'] },
-      'nic': 'student.nic',
-      'course': 'course.name',
-      'batch': 'batch.name',
-      'contact': 'student.mobile',
-      'address': 'student.address'
+      'student.registration_no': 'student.registration_no',
+      'studentName': { $concat: ['$student.firstName', ' ', '$student.lastName'] },
+      'student.nic': 'student.nic',
+      'course.name': { $toLower: '$course.name' }, // Case-insensitive sorting
+      'batch.name': { $toLower: '$batch.name' }, // Case-insensitive sorting
+      'student.mobile': 'student.mobile',
+      'student.address': 'student.address'
     };
 
     const sortField = sortFieldMap[sortBy] || 'courseReg_no';
-    sortStage[sortField] = sortOrderNum;
+    
+    // Debug logging
+    console.log('Sorting debug:', {
+      sortBy,
+      sortOrder,
+      sortField,
+      availableFields: Object.keys(sortFieldMap)
+    });
+
+    // Handle complex sorting fields
+    if (sortBy === 'studentName') {
+      // For student name, we need to add a computed field and sort by it
+      aggregationPipeline.push({
+        $addFields: {
+          fullName: { $concat: ['$student.firstName', ' ', '$student.lastName'] }
+        }
+      });
+      sortStage['fullName'] = sortOrderNum;
+    } else if (sortBy === 'course.name') {
+      // For course name, add computed field for case-insensitive sorting
+      aggregationPipeline.push({
+        $addFields: {
+          courseNameLower: { $toLower: '$course.name' }
+        }
+      });
+      sortStage['courseNameLower'] = sortOrderNum;
+    } else if (sortBy === 'batch.name') {
+      // For batch name, add computed field for case-insensitive sorting
+      aggregationPipeline.push({
+        $addFields: {
+          batchNameLower: { $toLower: '$batch.name' }
+        }
+      });
+      sortStage['batchNameLower'] = sortOrderNum;
+    } else {
+      // For simple fields, use direct sorting
+      sortStage[sortField] = sortOrderNum;
+    }
 
     const totalCountPipeline = [...aggregationPipeline, { $count: 'total' }];
 
