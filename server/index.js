@@ -17,16 +17,16 @@ const routes = require('./src/routes/index');
 
 const app = express();
 
-// Security middleware
-securityMiddleware(app);
-
-// CORS configuration
+// CORS configuration (must come before rate limiting)
 app.use(cors({
   origin: config.corsOrigin,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
+
+// Security middleware (after CORS)
+securityMiddleware(app);
 
 // Body parsing middleware
 app.use(bodyParser.json({ limit: '10mb' }));
