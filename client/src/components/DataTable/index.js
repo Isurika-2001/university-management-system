@@ -63,19 +63,23 @@ const DataTable = ({
   actionButtonProps = {}
 }) => {
   const [searchTerm, setSearchTerm] = useState(searchValue);
+  const isInitialRender = React.useRef(true);
 
-  // Debounce search term - only trigger when searchTerm changes from user input
+  // Debounce search term - trigger on any search term change (including empty)
   useEffect(() => {
-    // Skip the initial render and only trigger on actual search term changes
-    if (searchTerm !== searchValue && searchTerm !== '') {
-      const handler = setTimeout(() => {
-        if (onSearch) {
-          onSearch(searchTerm);
-        }
-      }, searchDebounceMs);
-      return () => clearTimeout(handler);
+    // Skip the initial render
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
     }
-  }, [searchTerm, searchDebounceMs, onSearch, searchValue]);
+
+    const handler = setTimeout(() => {
+      if (onSearch) {
+        onSearch(searchTerm);
+      }
+    }, searchDebounceMs);
+    return () => clearTimeout(handler);
+  }, [searchTerm, searchDebounceMs, onSearch]);
 
   // Sync with external search value
   useEffect(() => {
