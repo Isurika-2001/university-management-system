@@ -8,10 +8,12 @@ import { FileAddOutlined } from '@ant-design/icons';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import { useLocation } from 'react-router-dom';
-import { apiRoutes } from '../../config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { useAuthContext } from 'context/useAuthContext';
+import { studentsAPI } from '../../api/students';
+import { courseRegistrationsAPI } from '../../api/courseRegistrations';
+import { coursesAPI } from '../../api/courses';
+import { batchesAPI } from '../../api/batches';
 
 const UpdateForm = () => {
   const [data, setData] = useState(null);
@@ -20,7 +22,6 @@ const UpdateForm = () => {
   const [batchOptions, setBatchOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuthContext();
 
   const [open, setOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState('');
@@ -79,34 +80,13 @@ const UpdateForm = () => {
     const id = searchParams.get('id');
     // Fetch student data based on the id
     try {
-      const response = await fetch(apiRoutes.studentRoute + id, {
-        method: 'GET',   
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          // logout();
-          return;
-        }
-        return;
-      }
+      const data = await studentsAPI.getById(id);
       setData(data);
       console.log(data);
-      setLoading(false);
     } catch (error) {
-      console.error('Error fetching courses:', error);
-      return [];
+      console.error('Error fetching student:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -116,30 +96,7 @@ const UpdateForm = () => {
     const id = searchParams.get('id');
     try {
       setLoading(true);
-      // Fetch course registrations
-      const response = await fetch(apiRoutes.courseRegistrationRoute + 'student/' + id, {
-        method: 'GET',   
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          // logout();
-
-          return;
-        }
-        return;
-      }
+      const data = await courseRegistrationsAPI.getByStudentId(id);
       setCourseRegistrations(data);
       setLoading(false);
       console.log(data);
@@ -152,29 +109,7 @@ const UpdateForm = () => {
   // fetch course options
   async function fetchCourses() {
     try {
-      // Fetch course options
-      const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',   
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          // logout();
-          return;
-        }
-        return;
-      }
+      const data = await coursesAPI.getAll();
       setCouseOptions(data);
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -190,25 +125,7 @@ const UpdateForm = () => {
     }
 
     try {
-      // Fetch batch options for the selected course
-      const response = await fetch(apiRoutes.batchRoute + `course/${selectedCourse}`, {
-        method: 'GET',   
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          return;
-        }
-        return;
-      }
-
+      const data = await batchesAPI.getByCourseId(selectedCourse);
       setBatchOptions(data);
     } catch (error) {
       console.error('Error fetching batches:', error);
@@ -251,38 +168,12 @@ const UpdateForm = () => {
     console.log('Submitting:', values, id);
     try {
       setSubmitting(true);
-      const response = await fetch(apiRoutes.studentRoute + id, {
-        method: 'PUT',   
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-        body: JSON.stringify(values)
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        // display error message
-        const errorMessage = responseData.message;
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          return;
-        } else if (response.status === 403) {
-          showErrorSwal(errorMessage); // Show error message from response body
-        }
-        return;
-      } else {
-        const successMessage = responseData.message; // Get success message from response body
-
-        setOpen(false);
-        showSuccessSwal(successMessage); // Show success message from response body
-      }
-
+      const responseData = await studentsAPI.update(id, values);
+      showSuccessSwal(responseData.message || 'Student updated successfully');
       console.log('Student updated successfully');
     } catch (error) {
       console.error(error);
-      showErrorSwal(error);
+      showErrorSwal(error.message || 'Failed to update student');
     } finally {
       setSubmitting(false);
     }
@@ -357,38 +248,15 @@ const UpdateForm = () => {
 
     try {
       setSubmitting(true);
-      const response = await fetch(apiRoutes.studentRoute + 'course_registration/' + id, {
-        method: 'POST',   
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-        body: JSON.stringify(values)
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        // display error message
-        const errorMessage = responseData.message;
-        if (response.status === 500) {
-          console.error(errorMessage);
-          return;
-        } else if (response.status === 403) {
-          showErrorSwal(errorMessage); // Show error message from response body
-        }
-        return;
-      } else {
-        const successMessage = responseData.message; // Get success message from response body
-        showSuccessSwal(successMessage); // Show success message from response body
-        // Close the dialog
-        handleClose();
-      }
+      const responseData = await courseRegistrationsAPI.createForStudent(id, values);
+      showSuccessSwal(responseData.message || 'Course registration added successfully');
+      // Close the dialog
+      handleClose();
       fetchCourseRegistrations();
-      console.log('Student updated successfully');
+      console.log('Course registration added successfully');
     } catch (error) {
       console.error(error);
-      showErrorSwal(error);
+      showErrorSwal(error.message || 'Failed to add course registration');
     } finally {
       setSubmitting(false);
     }
@@ -396,35 +264,13 @@ const UpdateForm = () => {
 
   const handleDelete = (id) => async () => {
     try {
-      const response = await fetch(apiRoutes.studentRoute + 'course_registration/' + id, {
-        method: 'DELETE',   
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        // display error message
-        const errorMessage = responseData.message;
-        if (response.status === 500) {
-          console.error(errorMessage);
-          return;
-        } else if (response.status === 403) {
-          showErrorSwal(errorMessage); // Show error message from response body
-        }
-        return;
-      } else {
-        const successMessage = responseData.message; // Get success message from response body
-        showSuccessSwal(successMessage); // Show success message from response body
-      }
+      const responseData = await courseRegistrationsAPI.delete(id);
+      showSuccessSwal(responseData.message || 'Course registration deleted successfully');
       fetchCourseRegistrations();
       console.log('Course registration deleted successfully');
     } catch (error) {
       console.error(error);
-      showErrorSwal(error);
+      showErrorSwal(error.message || 'Failed to delete course registration');
     }
   }
 

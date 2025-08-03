@@ -1,16 +1,15 @@
 import { useAuthContext } from 'context/useAuthContext';
+import { handleLogout } from '../utils/authUtils';
 
 export const useLogout = () => {
   const { dispatch } = useAuthContext();
-  //const { dispatch: dispatchWorkouts } = useWorkoutsContext()
 
   const logout = () => {
-    // remove user from storage
-    localStorage.removeItem('user');
-
-    // dispatch logout action
+    // Clear auth context
     dispatch({ type: 'LOGOUT' });
-    //dispatchWorkouts({ type: 'SET_WORKOUTS', payload: null })
+    
+    // Use centralized logout function
+    handleLogout();
   };
 
   return { logout };

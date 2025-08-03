@@ -3,12 +3,12 @@ import { TextField, Button, Grid, MenuItem, Select, Divider, LinearProgress, Cir
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { useAuthContext } from 'context/useAuthContext';
 import { useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { batchesAPI } from '../../api/batches';
+import { coursesAPI } from '../../api/courses';
 
 const EditForm = () => {
   const location = useLocation();
@@ -17,7 +17,6 @@ const EditForm = () => {
   const [initialValues, setInitialValues] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const { user } = useAuthContext();
 
   const id = queryParams.get('id');
 
@@ -60,18 +59,8 @@ const EditForm = () => {
   // Fetch courses for dropdown
   async function fetchCourses() {
     try {
-      const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setCourseOptions(data);
-      }
+      const data = await coursesAPI.getAll();
+      setCourseOptions(data);
     } catch (error) {
       console.error('Error fetching courses:', error);
     }
@@ -80,29 +69,16 @@ const EditForm = () => {
   // Fetch existing batch data
   async function fetchBatch() {
     try {
-      const response = await fetch(`${apiRoutes.batchRoute}${id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
+      const data = await batchesAPI.getById(id);
+      const [year, number] = data.data.name.split('.');
+      setInitialValues({
+        courseId: data.data.courseId,
+        year: year,
+        number: number,
+        orientationDate: data.data.orientationDate ? dayjs(data.data.orientationDate).format('YYYY-MM-DD') : '',
+        startDate: data.data.startDate ? dayjs(data.data.startDate).format('YYYY-MM-DD') : '',
+        registrationDeadline: data.data.registrationDeadline ? dayjs(data.data.registrationDeadline).format('YYYY-MM-DD') : '',
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        const [year, number] = data.data.name.split('.');
-        setInitialValues({
-          courseId: data.data.courseId,
-          year: year,
-          number: number,
-          orientationDate: data.data.orientationDate ? dayjs(data.data.orientationDate).format('YYYY-MM-DD') : '',
-          startDate: data.data.startDate ? dayjs(data.data.startDate).format('YYYY-MM-DD') : '',
-          registrationDeadline: data.data.registrationDeadline ? dayjs(data.data.registrationDeadline).format('YYYY-MM-DD') : '',
-        });
-      } else {
-        showErrorSwal(data.message || 'Batch not found');
-      }
     } catch (error) {
       console.error('Error fetching batch:', error);
       showErrorSwal('Error fetching batch details');
@@ -124,26 +100,11 @@ const EditForm = () => {
         registrationDeadline: values.registrationDeadline || null
       };
 
-      const response = await fetch(`${apiRoutes.batchRoute}${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-        body: JSON.stringify(updatedData)
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        showErrorSwal(responseData.message || 'Error updating batch');
-        return;
-      }
-
+      await batchesAPI.update(id, updatedData);
       showSuccessSwal('Batch updated successfully');
     } catch (error) {
       console.error(error);
-      showErrorSwal('An error occurred while updating the batch');
+      showErrorSwal(error.message || 'An error occurred while updating the batch');
     } finally {
       setSubmitting(false);
     }

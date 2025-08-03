@@ -3,16 +3,14 @@ import { TextField, Button, Grid, Divider, CircularProgress, MenuItem } from '@m
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { useAuthContext } from 'context/useAuthContext';
 import { formatUserTypes } from '../../utils/userTypeUtils';
+import { usersAPI } from '../../api/users';
 
 const AddForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [userTypes, setUserTypes] = useState([]);
-  const { user } = useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -64,32 +62,10 @@ const AddForm = () => {
   // fetch user types
   async function fetchUserTypes() {
     try {
-      // Fetch batch options
-      const response = await fetch(apiRoutes.userTypeRoute, {
-        method: 'GET',   
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          // logout();
-          return;
-        }
-        return;
-      }
+      const data = await usersAPI.getUserTypes();
       setUserTypes(formatUserTypes(data));
     } catch (error) {
-      console.error('Error fetching batches:', error);
+      console.error('Error fetching user types:', error);
       return [];
     }
   }
@@ -98,36 +74,12 @@ const AddForm = () => {
     console.log('Submitted:', values);
     try {
       setSubmitting(true);
-      const response = await fetch(apiRoutes.userRoute, {
-        method: 'POST',   
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-        body: JSON.stringify(values)
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        // display error message
-        const errorMessage = responseData.message;
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          return;
-        } else if (response.status === 403) {
-          showErrorSwal(errorMessage); // Show error message from response body
-        }
-        return;
-      } else {
-        const successMessage = responseData.message; // Get success message from response body
-        showSuccessSwal(successMessage); // Show success message from response body
-      }
-
-      console.log('Student added successfully');
+      const responseData = await usersAPI.create(values);
+      showSuccessSwal(responseData.message || 'User added successfully');
+      console.log('User added successfully');
     } catch (error) {
       console.error(error);
-      showErrorSwal(error);
+      showErrorSwal(error.message || 'Failed to add user');
     } finally {
       setSubmitting(false);
     }

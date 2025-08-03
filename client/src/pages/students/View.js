@@ -18,14 +18,13 @@ import {
 import { UploadOutlined, DownloadOutlined, EditOutlined, FileAddOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
-import { apiRoutes } from '../../config';
 import { useAuthContext } from 'context/useAuthContext';
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import ImportSummaryModal from './Import-summary-modal';
 import { CircularProgress } from '../../../node_modules/@mui/material/index';
-import { useLogout } from 'hooks/useLogout';
+import { studentsAPI } from '../../api/students';
 
 const View = () => {
   const [page, setPage] = useState(0); // zero-based page index
@@ -49,7 +48,6 @@ const View = () => {
 
   const navigate = useNavigate();
   const { user } = useAuthContext();
-  const { logout } = useLogout();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -92,39 +90,16 @@ const View = () => {
   async function fetchData() {
     setLoading(true);
 
-    const params = new URLSearchParams();
-    params.append('page', page + 1); // backend page 1-based
-    params.append('limit', rowsPerPage);
-    params.append('sortBy', sortBy);
-    params.append('sortOrder', sortOrder);
-
-    if (debouncedSearchTerm) {
-      params.append('search', debouncedSearchTerm);
-    }
-
     try {
-      const response = await fetch(`${apiRoutes.studentRoute}?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      });
+      const params = {
+        page: page + 1, // backend page 1-based
+        limit: rowsPerPage,
+        sortBy: sortBy,
+        sortOrder: sortOrder,
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm })
+      };
 
-      if (!response.ok) {
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          // Optional: logout or alert user
-        }
-        if (response.status === 401) {
-          logout();
-          return;
-        }
-        setLoading(false);
-        return;
-      }
-
-      const json = await response.json();
+      const json = await studentsAPI.getAll(params);
       setData(json.data);
       setTotalCount(json.total);
       setLoading(false);

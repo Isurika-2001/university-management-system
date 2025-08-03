@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { UploadOutlined } from '@ant-design/icons';
 import DataTable from 'components/DataTable';
-import { apiRoutes } from '../../config';
 import { useAuthContext } from 'context/useAuthContext';
 import { useNavigate } from 'react-router-dom';
+import { courseRegistrationsAPI } from '../../api/courseRegistrations';
+import { coursesAPI } from '../../api/courses';
+import { batchesAPI } from '../../api/batches';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -49,27 +51,18 @@ const View = () => {
 
   async function fetchData() {
     setLoading(true);
-    const params = new URLSearchParams();
-    params.append('page', page + 1);
-    params.append('limit', rowsPerPage);
-    if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
-    if (courseFilter) params.append('courseId', courseFilter);
-    if (batchFilter) params.append('batchId', batchFilter);
-    params.append('sortBy', orderBy);
-    params.append('sortOrder', order);
-
     try {
-      const response = await fetch(`${apiRoutes.courseRegistrationRoute}?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      });
+      const params = {
+        page: page + 1,
+        limit: rowsPerPage,
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+        ...(courseFilter && { courseId: courseFilter }),
+        ...(batchFilter && { batchId: batchFilter }),
+        sortBy: orderBy,
+        sortOrder: order
+      };
 
-      if (!response.ok) throw new Error('Error fetching registrations');
-
-      const json = await response.json();
+      const json = await courseRegistrationsAPI.getAll(params);
       setData(json.data || []);
       setTotalCount(json.total || 0);
     } catch (error) {
@@ -81,16 +74,7 @@ const View = () => {
 
   const fetchCourseData = async () => {
     try {
-      const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Error fetching courses');
-      const data = await response.json();
+      const data = await coursesAPI.getAll();
       setCourses(data || []);
     } catch (error) {
       console.error(error.message);
@@ -99,17 +83,7 @@ const View = () => {
 
   const fetchBatchData = async () => {
     try {
-      const response = await fetch(apiRoutes.batchRoute, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Error fetching batches');
-
-      const result = await response.json();
+      const result = await batchesAPI.getAll();
       const batchArray = result.data;
 
       // Filter unique batch names

@@ -16,7 +16,7 @@ const SchoolIcon = () => <span style={{ fontSize: '20px' }}>🎓</span>;
 const TimeIcon = () => <span style={{ fontSize: '16px' }}>⏰</span>;
 import MainCard from 'components/MainCard';
 import { useAuthContext } from 'context/useAuthContext';
-import { apiRoutes } from 'config';
+import { statsAPI } from '../../../api/stats';
 
 const RecentActivities = () => {
   const { user } = useAuthContext();
@@ -40,14 +40,7 @@ const RecentActivities = () => {
         setError(null);
 
         // Fetch recent students
-        const studentResponse = await fetch(`${apiRoutes.statRoute}recentStudents?limit=5`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
-          },
-        });
-        const studentData = await studentResponse.json();
+        const studentData = await statsAPI.getRecentActivities({ limit: 5 });
         console.log(studentData);
 
         if (studentData.success) {
