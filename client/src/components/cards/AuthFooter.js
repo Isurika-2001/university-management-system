@@ -17,7 +17,7 @@ const AuthFooter = () => {
         <Typography variant="subtitle2" color="secondary" component="span">
           &copy; Student Registration System By&nbsp;
           <Typography component={Link} variant="subtitle2" href="https://codedthemes.com" target="_blank" underline="hover">
-            Isurika Samarakoon
+            Concord Tech Solutions
           </Typography>
         </Typography>
       </Stack>
