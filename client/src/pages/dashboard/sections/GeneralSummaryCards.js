@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Grid, Typography, Card, CardContent } from '@mui/material';
 import MainCard from 'components/MainCard';
-import { useAuthContext } from 'context/useAuthContext';
-import { apiRoutes } from 'config';
+import { statsAPI } from '../../../api/stats';
 
 const GeneralSummaryCards = () => {
-  const { user } = useAuthContext();
   const [courseBatches, setCourseBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,15 +17,7 @@ const GeneralSummaryCards = () => {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(apiRoutes.statRoute + 'batchDates', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
-          },
-        });
-        const json = await response.json();
-
+        const json = await statsAPI.getDashboardStats();
         if (json.success && Array.isArray(json.data)) {
           setCourseBatches(json.data);
         } else {
@@ -42,7 +32,7 @@ const GeneralSummaryCards = () => {
     }
 
     fetchBatches();
-  }, [user.token]);
+  }, []);
 
   // Update contentHeight whenever courseBatches changes or window resizes
   useEffect(() => {

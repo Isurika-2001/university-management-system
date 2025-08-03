@@ -17,7 +17,7 @@ const PersonIcon = () => <span style={{ fontSize: '20px' }}>👤</span>;
 const TimeIcon = () => <span style={{ fontSize: '16px' }}>⏰</span>;
 import MainCard from 'components/MainCard';
 import { useAuthContext } from 'context/useAuthContext';
-import { apiRoutes } from 'config';
+import { statsAPI } from '../../../api/stats';
 
 const RecentActivities = () => {
   const { user } = useAuthContext();
@@ -41,14 +41,7 @@ const RecentActivities = () => {
         setError(null);
 
         // Fetch recent logins
-        const loginResponse = await fetch(`${apiRoutes.activityLogsRoute}?action=LOGIN&limit=5&page=1`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
-          },
-        });
-        const loginData = await loginResponse.json();
+        const loginData = await statsAPI.getRecentActivities({ action: 'LOGIN', limit: 5, page: 1 });
 
         if (loginData.success) {
           setRecentLogins(loginData.data.logs || []);

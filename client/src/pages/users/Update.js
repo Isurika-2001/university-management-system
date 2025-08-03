@@ -3,12 +3,12 @@ import { Box, TextField, Button, Grid, Divider, CircularProgress, LinearProgress
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
 import { useLocation } from 'react-router-dom';
 import { formatUserTypes } from '../../utils/userTypeUtils';
+import { usersAPI } from '../../api/users';
 
 function UpdateUser() {
   const location = useLocation();
@@ -76,19 +76,8 @@ function UpdateUser() {
 
   const fetchUserTypes = async () => {
     try {
-      const response = await fetch(apiRoutes.userTypeRoute, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setUserTypes(formatUserTypes(data));
-      } else {
-        console.error('Failed to fetch user types');
-      }
+      const data = await usersAPI.getUserTypes();
+      setUserTypes(formatUserTypes(data));
     } catch (error) {
       console.error('Error fetching user types:', error);
     }
@@ -96,25 +85,12 @@ function UpdateUser() {
 
   const fetchUserById = async () => {
     try {
-      const response = await fetch(`${apiRoutes.userRoute}${id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
+      const data = await usersAPI.getById(id);
+      setInitialValues({
+        name: data.name,
+        email: data.email,
+        user_type: data.user_type // Using ID directly
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setInitialValues({
-          name: data.name,
-          email: data.email,
-          user_type: data.user_type // Using ID directly
-        });
-      } else {
-        showErrorSwal(data.message || 'User not found');
-      }
     } catch (error) {
       console.error('Error fetching user:', error);
       showErrorSwal('Error fetching user details');
@@ -126,25 +102,11 @@ function UpdateUser() {
   const handleSubmit = async (values) => {
     setSubmitting(true);
     try {
-      const response = await fetch(`${apiRoutes.userRoute}${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-        body: JSON.stringify(values)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        showSuccessSwal(data.message || 'User updated successfully');
-      } else {
-        showErrorSwal(data.message || 'Failed to update user');
-      }
+      const data = await usersAPI.update(id, values);
+      showSuccessSwal(data.message || 'User updated successfully');
     } catch (error) {
       console.error('Error updating user:', error);
-      showErrorSwal('Error updating user');
+      showErrorSwal(error.message || 'Error updating user');
     } finally {
       setSubmitting(false);
     }

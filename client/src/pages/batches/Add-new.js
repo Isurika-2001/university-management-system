@@ -3,15 +3,14 @@ import { TextField, Button, Grid, MenuItem, Select, Divider, CircularProgress } 
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { useAuthContext } from 'context/useAuthContext';
+import { batchesAPI } from '../../api/batches';
+import { coursesAPI } from '../../api/courses';
 
 const AddForm = () => {
   const [courseOptions, setCouseOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const { user } = useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -66,29 +65,7 @@ const AddForm = () => {
   // fetch course options
   async function fetchCourses() {
     try {
-      // Fetch course options
-      const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          // logout();
-          return;
-        }
-        return;
-      }
+      const data = await coursesAPI.getAll();
       setCouseOptions(data);
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -100,36 +77,12 @@ const AddForm = () => {
     console.log('Submitted:', values);
     try {
       setSubmitting(true);
-      const response = await fetch(apiRoutes.batchRoute, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-        body: JSON.stringify(values)
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        // display error message
-        const errorMessage = responseData.message;
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          return;
-        } else if (response.status === 403) {
-          showErrorSwal(errorMessage); // Show error message from response body
-        }
-        return;
-      } else {
-        const successMessage = responseData.message; // Get success message from response body
-        showSuccessSwal(successMessage); // Show success message from response body
-      }
-
-      console.log('Student added successfully');
+      const responseData = await batchesAPI.create(values);
+      showSuccessSwal(responseData.message || 'Batch added successfully');
+      console.log('Batch added successfully');
     } catch (error) {
       console.error(error);
-      showErrorSwal(error);
+      showErrorSwal(error.message || 'Failed to add batch');
     } finally {
       setSubmitting(false);
     }
