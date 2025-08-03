@@ -3,14 +3,13 @@ import { Button } from '@mui/material';
 import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import DataTable from 'components/DataTable';
-import { apiRoutes } from '../../config';
-import { useAuthContext } from 'context/useAuthContext';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import dayjs from 'dayjs';
+import { batchesAPI } from '../../api/batches';
+import { coursesAPI } from '../../api/courses';
 
 const View = () => {
-  const { user } = useAuthContext();
   const navigate = useNavigate();
 
   // Pagination and sorting state
@@ -78,23 +77,16 @@ const View = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (debouncedSearchTerm.trim() !== '') params.append('search', debouncedSearchTerm.trim());
-      if (courseFilter) params.append('courseId', courseFilter);
-      params.append('page', page + 1); // API is 1-based page index
-      params.append('limit', rowsPerPage);
-      params.append('sortBy', orderBy);
-      params.append('sortOrder', order);
+      const params = {
+        ...(debouncedSearchTerm.trim() !== '' && { search: debouncedSearchTerm.trim() }),
+        ...(courseFilter && { courseId: courseFilter }),
+        page: page + 1, // API is 1-based page index
+        limit: rowsPerPage,
+        sortBy: orderBy,
+        sortOrder: order
+      };
 
-      const response = await fetch(`${apiRoutes.batchRoute}?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch batches');
-
-      const result = await response.json();
+      const result = await batchesAPI.getAll(params);
 
       setData(result.data || []);
       setTotalRows(result.total || 0);
@@ -107,13 +99,7 @@ const View = () => {
 
   const fetchCourseData = async () => {
     try {
-      const response = await fetch(apiRoutes.courseRoute, {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
-      if (!response.ok) throw new Error('Failed to fetch courses');
-      const result = await response.json();
+      const result = await coursesAPI.getAll();
       setCourses(result || []);
     } catch (error) {
       console.error(error);
@@ -171,25 +157,13 @@ const View = () => {
 
     if (result.isConfirmed) {
       try {
-        const response = await fetch(`${apiRoutes.batchRoute}${id}`, {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${user.token}`
-          }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          // Remove from UI
-          setData((prev) => prev.filter((batch) => batch._id !== id));
-          showSuccessSwal('Batch has been deleted successfully');
-        } else {
-          showErrorSwal(data.message || 'Failed to delete batch');
-        }
+        await batchesAPI.delete(id);
+        // Remove from UI
+        setData((prev) => prev.filter((batch) => batch._id !== id));
+        showSuccessSwal('Batch has been deleted successfully');
       } catch (error) {
         console.error(error);
-        showErrorSwal('Something went wrong');
+        showErrorSwal(error.message || 'Something went wrong');
       }
     }
   };

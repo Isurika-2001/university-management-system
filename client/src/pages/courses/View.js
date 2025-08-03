@@ -18,10 +18,10 @@ import {
 import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
-import { apiRoutes } from 'config';
 import { useAuthContext } from 'context/useAuthContext';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { coursesAPI } from '../../api/courses';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -62,32 +62,9 @@ const View = () => {
   }, []);
 
   const fetchData = async () => {
-    // Fetch data from API
     try {
-      const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-      });
-
-      if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          // logout();
-          return;
-        }
-        return;
-      }
-
-      const data = await response.json();
+      const data = await coursesAPI.getAll();
       console.log('Data:', data);
-
       setData(data);
       setLoading(false);
     } catch (error) {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuthContext } from '../context/useAuthContext';
-import { apiRoutes } from 'config';
+import { authAPI } from '../api/auth';
 
 export const useLogin = () => {
   const [error, setError] = useState(null);
@@ -12,20 +12,7 @@ export const useLogin = () => {
     setError(null);
 
     try {
-      const response = await fetch(apiRoutes.authRoute + 'login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values)
-      });
-
-      const json = await response.json();
-
-      if (!response.ok) {
-        setIsLoading(false);
-        setError(json.message || 'Login failed');
-        console.log(json.message || 'Login failed');
-        return { success: false, message: json.message || 'Login failed' }; // return failure
-      }
+      const json = await authAPI.login(values);
 
       // Save the user to local storage
       localStorage.setItem('user', JSON.stringify(json));
