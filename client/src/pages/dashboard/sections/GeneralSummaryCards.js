@@ -17,7 +17,7 @@ const GeneralSummaryCards = () => {
         setLoading(true);
         setError(null);
 
-        const json = await statsAPI.getDashboardStats();
+        const json = await statsAPI.getBatchStats();
         if (json.success && Array.isArray(json.data)) {
           setCourseBatches(json.data);
         } else {

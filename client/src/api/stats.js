@@ -6,6 +6,11 @@ export const statsAPI = {
     return api.get(apiRoutes.statRoute + 'dashboard');
   },
 
+  // get batch statistics
+  getBatchStats: async (params = {}) => {
+    return api.get(apiRoutes.statRoute + 'batchDates', params);
+  },
+
   // Get enrollment statistics
   getEnrollmentStats: async (params = {}) => {
     return api.get(apiRoutes.statRoute + 'enrollments', params);
@@ -29,5 +34,10 @@ export const statsAPI = {
   // Get recent activities
   getRecentActivities: async (params = {}) => {
     return api.get(apiRoutes.activityLogsRoute, params);
+  },
+
+  // get recent students
+  getRecentStudents: async (params = {}) => {
+    return api.get(apiRoutes.statRoute + 'recentStudents', params);
   }
 }; 
