@@ -40,7 +40,7 @@ const RecentActivities = () => {
         setError(null);
 
         // Fetch recent students
-        const studentData = await statsAPI.getRecentActivities({ limit: 5 });
+        const studentData = await statsAPI.getRecentStudents({ limit: 5 });
         console.log(studentData);
 
         if (studentData.success) {
