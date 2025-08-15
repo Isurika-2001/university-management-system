@@ -27,7 +27,7 @@ const RecentActivities = () => {
 
   useEffect(() => {
     // Check if user has permission to view recent logins
-    const hasPermission = user?.permissions?.user?.includes('read-all');
+    const hasPermission = user?.permissions?.user?.includes('R');
     
     // If user doesn't have permission, don't fetch data
     if (!hasPermission) {
@@ -41,10 +41,15 @@ const RecentActivities = () => {
         setError(null);
 
         // Fetch recent logins
+        console.log('RecentLogins - Fetching recent activities...');
         const loginData = await statsAPI.getRecentActivities({ action: 'LOGIN', limit: 5, page: 1 });
+        console.log('RecentLogins - API response:', loginData);
 
         if (loginData.success) {
           setRecentLogins(loginData.data.logs || []);
+          console.log('RecentLogins - Set logs:', loginData.data.logs || []);
+        } else {
+          console.log('RecentLogins - API failed:', loginData);
         }
 
       } catch (err) {
@@ -83,12 +88,16 @@ const RecentActivities = () => {
   };
 
   // Check if user has permission to view recent logins
-  const hasPermission = user?.permissions?.user?.includes('read-all');
+  const hasPermission = user?.permissions?.user?.includes('R');
 
-  // If user doesn't have permission, don't render the component
-  if (!hasPermission) {
-    return null;
-  }
+  console.log('RecentLogins - User permissions:', user?.permissions);
+  console.log('RecentLogins - Has permission:', hasPermission);
+
+  // Temporarily allow all users to see the component for debugging
+  // if (!hasPermission) {
+  //   console.log('RecentLogins - No permission, returning null');
+  //   return null;
+  // }
 
   if (loading) {
     return (

@@ -34,10 +34,17 @@ const pages = {
       icon: icons.UsergroupDeleteOutlined
     },
     {
-      id: 'course-registrations',
-      title: 'Course Registrations',
+      id: 'enrollments',
+      title: 'Enrollments',
       type: 'item',
-      url: '/app/course-registrations',
+      url: '/app/enrollments',
+      icon: icons.FileAddOutlined
+    },
+    {
+      id: 'required-documents',
+      title: 'Required Documents',
+      type: 'item',
+      url: '/app/required-documents',
       icon: icons.FileAddOutlined
     },
     {

@@ -1,18 +1,18 @@
 const Student = require("../models/student");
-const CourseRegistration = require("../models/course_registration");
+const Enrollment = require("../models/enrollment");
 const Batch = require("../models/batch");
 const Course = require("../models/course");
 const User = require("../models/user");
 
-// get no of courseRegistrations, courses, batches, today's courseRegistrations
+// get no of enrollments, courses, batches, today's enrollments
 async function getEnrollmentSummaryStats(req, res) {
   try {
     const totalRegistrations = await Student.countDocuments();
 
-    const distinctCourses = await CourseRegistration.distinct("courseId");
+    const distinctCourses = await Enrollment.distinct("courseId");
     const totalRunningCourses = distinctCourses.length;
 
-    const distinctBatches = await CourseRegistration.distinct("batchId");
+    const distinctBatches = await Enrollment.distinct("batchId");
     const totalRunningBatches = distinctBatches.length;
 
     // get total courses
@@ -27,8 +27,8 @@ async function getEnrollmentSummaryStats(req, res) {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const todaysRegistrations = await CourseRegistration.countDocuments({
-      createdAt: { $gte: today, $lt: tomorrow }
+    const todaysEnrollments = await Enrollment.countDocuments({
+      enrollmentDate: { $gte: today, $lt: tomorrow }
     });
 
     res.status(200).json({
@@ -39,7 +39,7 @@ async function getEnrollmentSummaryStats(req, res) {
         totalRunningBatches,
         totalCourses,
         totalBatches,
-        todaysRegistrations
+        todaysEnrollments
       }
     });
   } catch (error) {
@@ -87,9 +87,9 @@ async function getUpcomingBatchDates(req, res) {
   }
 }
 
-async function getCourseRegistrations(req, res) {
+async function getCourseEnrollments(req, res) {
   try {
-    const registrations = await CourseRegistration.aggregate([
+    const enrollments = await Enrollment.aggregate([
       {
         $group: {
           _id: "$courseId",
@@ -116,15 +116,21 @@ async function getCourseRegistrations(req, res) {
       }
     ]);
 
-    // Calculate total number of registrations
-    const totalRegistrations = registrations.reduce((sum, item) => sum + item.registrations, 0);
+    // Calculate total number of enrollments
+    const totalEnrollments = enrollments.reduce((sum, item) => sum + item.registrations, 0);
+
+    console.log('Enrollment stats:', {
+      totalEnrollments,
+      totalRunningCourses: enrollments.length,
+      courseEnrollments: enrollments
+    });
 
     res.status(200).json({
       success: true,
       data: {
-        totalRunningCourses: registrations.length,
-        totalRegistrations,
-        registrations
+        totalRunningCourses: enrollments.length,
+        totalEnrollments,
+        courseEnrollments: enrollments
       }
     });
   } catch (error) {
@@ -146,16 +152,16 @@ async function getEnrollmentNumbers(req, res) {
     const endOfYear = new Date(currentYear + 1, 0, 1);
 
     // Get annual enrollment numbers
-    const annualEnrollment = await CourseRegistration.countDocuments({
-      createdAt: { $gte: startOfYear, $lt: endOfYear }
+    const annualEnrollment = await Enrollment.countDocuments({
+      enrollmentDate: { $gte: startOfYear, $lt: endOfYear }
     });
 
     // Get this month's enrollment numbers
     const startOfMonth = new Date(currentYear, now.getMonth(), 1);
     const endOfMonth = new Date(currentYear, now.getMonth() + 1, 1);
 
-    const monthlyEnrollment = await CourseRegistration.countDocuments({
-      createdAt: { $gte: startOfMonth, $lt: endOfMonth }
+    const monthlyEnrollment = await Enrollment.countDocuments({
+      enrollmentDate: { $gte: startOfMonth, $lt: endOfMonth }
     });
 
     const percentageOverAnnual =
@@ -164,15 +170,15 @@ async function getEnrollmentNumbers(req, res) {
         : "0.00";
 
     // Monthly enrollment trend from Jan to current month
-    const enrollmentTrend = await CourseRegistration.aggregate([
+    const enrollmentTrend = await Enrollment.aggregate([
       {
         $match: {
-          createdAt: { $gte: startOfYear, $lt: endOfYear }
+          enrollmentDate: { $gte: startOfYear, $lt: endOfYear }
         }
       },
       {
         $group: {
-          _id: { month: { $month: "$createdAt" } },
+          _id: { month: { $month: "$enrollmentDate" } },
           count: { $sum: 1 }
         }
       },
@@ -237,7 +243,7 @@ async function getRecentStudents(req, res) {
 module.exports = {
   getEnrollmentSummaryStats,
   getUpcomingBatchDates,
-  getCourseRegistrations,
+  getCourseEnrollments,
   getEnrollmentNumbers,
   getRecentStudents
 };

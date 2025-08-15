@@ -44,7 +44,7 @@ class ActivityLogger {
     return this.logActivity({
       user,
       action: 'LOGIN',
-      description: `User ${user.email} logged in successfully`,
+      description: `User ${user.email || user._id || 'Unknown'} ${status === 'SUCCESS' ? 'logged in successfully' : 'login attempt'}`,
       resourceType: 'AUTH',
       ipAddress,
       userAgent,
@@ -95,6 +95,63 @@ class ActivityLogger {
       },
       ipAddress,
       userAgent
+    });
+  }
+
+  // Enrollment activity logging methods
+  static async logEnrollmentCreate(user, enrollmentId, description) {
+    return this.logActivity({
+      user,
+      action: 'ENROLLMENT_CREATE',
+      description: description,
+      resourceType: 'ENROLLMENT',
+      resourceId: enrollmentId
+    });
+  }
+
+  static async logEnrollmentUpdate(user, enrollmentId, description) {
+    return this.logActivity({
+      user,
+      action: 'ENROLLMENT_UPDATE',
+      description: description,
+      resourceType: 'ENROLLMENT',
+      resourceId: enrollmentId
+    });
+  }
+
+  static async logEnrollmentDelete(user, enrollmentId, description) {
+    return this.logActivity({
+      user,
+      action: 'ENROLLMENT_DELETE',
+      description: description,
+      resourceType: 'ENROLLMENT',
+      resourceId: enrollmentId
+    });
+  }
+
+  static async logEnrollmentExport(user, count, ipAddress, userAgent) {
+    return this.logActivity({
+      user,
+      action: 'ENROLLMENT_EXPORT',
+      description: `Exported ${count} enrollments`,
+      resourceType: 'ENROLLMENT',
+      details: { count },
+      ipAddress,
+      userAgent
+    });
+  }
+
+  static async logBatchTransfer(user, enrollmentId, newBatchId, reason) {
+    return this.logActivity({
+      user,
+      action: 'BATCH_TRANSFER',
+      description: `Batch transfer for enrollment ${enrollmentId}`,
+      resourceType: 'ENROLLMENT',
+      resourceId: enrollmentId,
+      details: {
+        newBatchId,
+        reason
+      }
     });
   }
 

@@ -126,6 +126,17 @@ async function login(req, res) {
       });
     }
 
+    // Check if user type exists
+    if (!user.user_type) {
+      // Log failed login attempt
+      await ActivityLogger.logLogin(user, requestInfo.ipAddress, requestInfo.userAgent, 'FAILED', 'User type not found');
+      
+      return res.status(403).json({
+        success: false,
+        message: "User type not configured. Please contact admin.",
+      });
+    }
+
     // Prepare user info for token payload
     const { _id, name: userName, email: userEmail, user_type: userType } = user;
 
@@ -135,7 +146,9 @@ async function login(req, res) {
       student: userType.student,
       course: userType.course,
       batch: userType.batch,
-      registrations: userType.registrations,
+      enrollments: userType.enrollments,
+      finance: userType.finance,
+      reports: userType.reports,
     };
 
     // Create JWT token

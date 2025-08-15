@@ -268,22 +268,29 @@ const View = () => {
   }, []);
   
   return (
-    <MainCard title="User List">
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 2,
-          flexDirection: 'row' // Ensure items are aligned horizontally
-        }}
-      >
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+    <MainCard 
+      title={
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <span>User List</span>
+          <Button 
+            onClick={handleClickAddNew} 
+            variant="contained" 
+            startIcon={<FileAddOutlined />}
+            size="small"
+          >
+            Add User
+          </Button>
+        </Box>
+      }
+    >
+      <Box sx={{ marginBottom: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField 
             label="Search" 
             variant="outlined" 
             onChange={handleSearch}
             placeholder="Search by name or email"
+            sx={{ minWidth: 300, maxWidth: 400 }}
           />
           <FormControl sx={{ minWidth: 200 }}>
             <InputLabel>Filter by Role</InputLabel>
@@ -295,32 +302,14 @@ const View = () => {
               <MenuItem value="">
                 <em>All Roles</em>
               </MenuItem>
-                             {userTypes.map((userType) => (
-                 <MenuItem key={userType._id} value={userType._id}>
-                   {userType.displayName}
-                 </MenuItem>
-               ))}
+              {userTypes.map((userType) => (
+                <MenuItem key={userType._id} value={userType._id}>
+                  {userType.displayName}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Box>
-        <div>
-          {/* <Button
-            variant="contained"
-            style={{
-              marginRight: '8px'
-            }}
-            color="success"
-            text="white"
-            disabled={selected.length === 0}
-            onClick={exportToCSV}
-            startIcon={<UploadOutlined />}
-          >
-            Export
-          </Button> */}
-          <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
-            Add New
-          </Button>
-        </div>
       </Box>
       <TableContainer component={Paper}>
         <Table>

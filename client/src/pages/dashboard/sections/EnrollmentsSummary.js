@@ -16,7 +16,7 @@ const EnrollmentSummary = () => {
     totalCourses: 0,
     totalRunningBatches: 0,
     totalBatches: 0,
-    todaysRegistrations: 0
+    todaysEnrollments: 0
   });
 
   const animateCountIncrease = (key, finalCount) => {
@@ -59,8 +59,21 @@ const EnrollmentSummary = () => {
         const json = await response.json();
 
         if (json.success && json.data) {
-          Object.entries(json.data).forEach(([key, value]) => {
-            animateCountIncrease(key, value);
+          // Ensure all expected fields exist with default values
+          const dataWithDefaults = {
+            totalRegistrations: 0,
+            totalRunningCourses: 0,
+            totalCourses: 0,
+            totalRunningBatches: 0,
+            totalBatches: 0,
+            todaysEnrollments: 0,
+            ...json.data
+          };
+          
+          Object.entries(dataWithDefaults).forEach(([key, value]) => {
+            if (typeof value === 'number') {
+              animateCountIncrease(key, value);
+            }
           });
         } else {
           console.error('Failed to fetch enrollment summary:', json.message);
@@ -109,22 +122,22 @@ const EnrollmentSummary = () => {
       ) : (
         <>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce title="Total Students Registered" count={animatedCounts.totalRegistrations.toLocaleString()} />
+            <AnalyticEcommerce title="Total Students Registered" count={(animatedCounts.totalRegistrations || 0).toLocaleString()} />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
             <AnalyticEcommerce
               title="Total Courses Offered"
-              count={`${animatedCounts.totalRunningCourses.toLocaleString()} / ${animatedCounts.totalCourses.toLocaleString()}`}
+              count={`${(animatedCounts.totalRunningCourses || 0).toLocaleString()} / ${(animatedCounts.totalCourses || 0).toLocaleString()}`}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
             <AnalyticEcommerce
               title="Total Batches Running"
-              count={`${animatedCounts.totalRunningBatches.toLocaleString()} / ${animatedCounts.totalBatches.toLocaleString()}`}
+              count={`${(animatedCounts.totalRunningBatches || 0).toLocaleString()} / ${(animatedCounts.totalBatches || 0).toLocaleString()}`}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce title="Today's Course Registrations" count={animatedCounts.todaysRegistrations.toLocaleString()} />
+            <AnalyticEcommerce title="Today's Enrollments" count={(animatedCounts.todaysEnrollments || 0).toLocaleString()} />
           </Grid>
         </>
       )}

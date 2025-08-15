@@ -26,7 +26,7 @@ const RecentActivities = () => {
 
   useEffect(() => {
     // Check if user has permission to view recent student registrations
-    const hasPermission = user?.permissions?.student?.includes('update-all');
+    const hasPermission = user?.permissions?.student?.includes('R');
     
     // If user doesn't have permission, don't fetch data
     if (!hasPermission) {
@@ -70,7 +70,7 @@ const RecentActivities = () => {
   };
 
   // Check if user has permission to view recent student registrations
-  const hasPermission = user?.permissions?.student?.includes('update-all');
+  const hasPermission = user?.permissions?.student?.includes('R');
 
   // If user doesn't have permission, don't render the component
   if (!hasPermission) {
