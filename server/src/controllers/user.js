@@ -7,15 +7,33 @@ const ActivityLogger = require("../utils/activityLogger");
 const { getRequestInfo } = require("../middleware/requestInfo");
 
 async function getUsers(req, res) {
-  // fetch all users with user_type populated
+  // fetch users with optional status filter and user_type populated
   try {
-    const users = await User.find({ status: true }).populate({
+    const { status } = req.query;
+    const filter = {};
+
+    if (status === 'active') {
+      filter.status = true;
+    } else if (status === 'disabled') {
+      filter.status = false;
+    }
+
+    const users = await User.find(filter).populate({
       path: "user_type",
       model: "User_type",
     });
-    res.status(200).json(users);
+    res.status(200).json({
+      success: true,
+      data: users,
+      message: 'Users retrieved successfully'
+    });
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error('Error fetching users:', error);
+    res.status(500).json({ 
+      success: false,
+      error: "Internal Server Error",
+      message: error.message 
+    });
   }
 }
 
@@ -25,12 +43,13 @@ async function createUser(req, res) {
     const requestInfo = getRequestInfo(req);
 
     // Check if user_type exists in the user_type collection
-    const user_type_document = await User_type.findOne({ name: user_type });
+    const user_type_document = await User_type.findById(user_type);
 
     if (!user_type_document) {
       return res.status(400).json({
         success: false,
-        message: `User type not found: ${user_type}`,
+        message: `User type not found with ID: ${user_type}`,
+        error: "User type not found"
       });
     }
 
@@ -41,6 +60,7 @@ async function createUser(req, res) {
       return res.status(409).json({
         success: false,
         message: "Email already exists",
+        error: "Email already exists"
       });
     }
 
@@ -61,15 +81,16 @@ async function createUser(req, res) {
     // Log the user creation
     await ActivityLogger.logUserCreate(req.user, newUser, requestInfo.ipAddress, requestInfo.userAgent);
 
+    // Populate the user_type for the response
+    const populatedUser = await User.findById(newUser._id).populate({
+      path: "user_type",
+      model: "User_type",
+    });
+
     res.status(201).json({
       success: true,
       message: "User created successfully",
-      data: {
-        userId: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        user_type: user_type_document.name,
-      },
+      data: populatedUser,
     });
   } catch (error) {
     console.error(error); // log for debugging
@@ -149,6 +170,7 @@ async function login(req, res) {
       enrollments: userType.enrollments,
       finance: userType.finance,
       reports: userType.reports,
+      requiredDocument: userType.requiredDocument,
     };
 
     // Create JWT token
@@ -193,18 +215,38 @@ async function getUserById(req, res) {
 
     // check if the id is valid object id
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({ error: "Invalid id" });
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid id",
+        message: "Invalid user ID format"
+      });
     }
 
-    const user = await User.findById(id);
+    const user = await User.findById(id).populate({
+      path: "user_type",
+      model: "User_type",
+    });
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ 
+        success: false,
+        error: "User not found",
+        message: "User not found"
+      });
     }
 
-    res.status(200).json(user);
+    res.status(200).json({
+      success: true,
+      data: user,
+      message: 'User retrieved successfully'
+    });
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error('Error fetching user by ID:', error);
+    res.status(500).json({ 
+      success: false,
+      error: "Internal Server Error",
+      message: error.message 
+    });
   }
 }
 
@@ -219,6 +261,7 @@ async function editUser(req, res) {
       return res.status(404).json({
         success: false,
         message: "User not found",
+        error: "User not found"
       });
     }
 
@@ -227,7 +270,8 @@ async function editUser(req, res) {
     if (!userTypeDoc) {
       return res.status(400).json({
         success: false,
-        message: `User type not found: ${user_type}`,
+        message: `User type not found with ID: ${user_type}`,
+        error: "User type not found"
       });
     }
 
@@ -238,6 +282,7 @@ async function editUser(req, res) {
         return res.status(409).json({
           success: false,
           message: "Email already exists",
+          error: "Email already exists"
         });
       }
     }
@@ -249,15 +294,16 @@ async function editUser(req, res) {
 
     const updatedUser = await user.save();
 
+    // Populate the user_type for the response
+    const populatedUser = await User.findById(updatedUser._id).populate({
+      path: "user_type",
+      model: "User_type",
+    });
+
     res.status(200).json({
       success: true,
       message: "User updated successfully",
-      data: {
-        userId: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        user_type: userTypeDoc.name,
-      },
+      data: populatedUser,
     });
   } catch (error) {
     console.error("Error updating user:", error);
@@ -278,6 +324,7 @@ async function disableUser(req, res) {
       return res.status(404).json({
         success: false,
         message: "User not found",
+        error: "User not found"
       });
     }
 
@@ -287,6 +334,10 @@ async function disableUser(req, res) {
     res.status(200).json({
       success: true,
       message: "User disabled successfully",
+      data: {
+        userId: user._id,
+        status: user.status
+      }
     });
   } catch (error) {
     console.error("Error disabling user:", error);
@@ -308,6 +359,7 @@ async function updatePassword(req, res) {
       return res.status(400).json({
         success: false,
         message: "Password and Confirm Password are required",
+        error: "Missing required fields"
       });
     }
 
@@ -316,6 +368,7 @@ async function updatePassword(req, res) {
       return res.status(400).json({
         success: false,
         message: "Passwords do not match",
+        error: "Password mismatch"
       });
     }
 
@@ -325,6 +378,7 @@ async function updatePassword(req, res) {
       return res.status(404).json({
         success: false,
         message: "User not found",
+        error: "User not found"
       });
     }
 
@@ -338,12 +392,50 @@ async function updatePassword(req, res) {
     res.status(200).json({
       success: true,
       message: "User password updated successfully",
+      data: {
+        userId: user._id,
+        message: "Password updated successfully"
+      }
     });
   } catch (error) {
     console.error("Error updating password:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: error.message,
+    });
+  }
+}
+
+async function enableUser(req, res) {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        error: "User not found"
+      });
+    }
+
+    user.status = true;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "User enabled successfully",
+      data: {
+        userId: user._id,
+        status: user.status
+      }
+    });
+  } catch (error) {
+    console.error("Error enabling user:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error enabling user",
       error: error.message,
     });
   }
@@ -356,5 +448,6 @@ module.exports = {
   getUserById,
   editUser,
   disableUser,
-  updatePassword
+  updatePassword,
+  enableUser
 };

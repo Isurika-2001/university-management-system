@@ -20,10 +20,9 @@ import {
   InputLabel,
   Select
 } from '@mui/material';
-import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
+import { FileAddOutlined, EditOutlined, DeleteOutlined, CheckOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
-import { useAuthContext } from 'context/useAuthContext';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { formatUserTypes, formatUserTypeName } from '../../utils/userTypeUtils';
@@ -43,8 +42,8 @@ const View = () => {
   // User type filter state
   const [userTypes, setUserTypes] = useState([]);
   const [selectedUserType, setSelectedUserType] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
   const navigate = useNavigate();
-  const { user } = useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -78,10 +77,14 @@ const View = () => {
 
   const fetchData = async () => {
     try {
-      const data = await usersAPI.getAll();
-      console.log('Data:', data);
+      const response = await usersAPI.getAll();
+      console.log('Response:', response);
+      
+      // Handle both old and new response formats
+      const users = response.data || response;
+      console.log('Users:', users);
 
-      setData(data);
+      setData(users);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching data:', error.message);
@@ -91,8 +94,12 @@ const View = () => {
 
   const fetchUserTypes = async () => {
     try {
-      const data = await usersAPI.getUserTypes();
-      setUserTypes(formatUserTypes(data));
+      const response = await usersAPI.getUserTypes();
+      console.log('User types response:', response);
+      
+      // Handle both old and new response formats
+      const userTypes = response.data || response;
+      setUserTypes(formatUserTypes(userTypes));
     } catch (error) {
       console.error('Error fetching user types:', error.message);
     }
@@ -139,7 +146,7 @@ const View = () => {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = data.map((user) => user.id);
+      const newSelecteds = data.map((user) => user._id);
       setSelected(newSelecteds);
     } else {
       setSelected([]);
@@ -166,16 +173,22 @@ const View = () => {
 
   const handleSearch = (event) => {
     const term = event.target.value.toLowerCase();
-    applyFilters(term, selectedUserType);
+    applyFilters(term, selectedUserType, selectedStatus);
   };
 
   const handleUserTypeFilter = (event) => {
     const userType = event.target.value;
     setSelectedUserType(userType);
-    applyFilters('', userType);
+    applyFilters('', userType, selectedStatus);
   };
 
-  const applyFilters = (searchTerm = '', userType = '') => {
+  const handleStatusFilter = (event) => {
+    const status = event.target.value;
+    setSelectedStatus(status);
+    applyFilters('', selectedUserType, status);
+  };
+
+  const applyFilters = (searchTerm = '', userType = '', status = '') => {
     let filteredValues = data;
 
     // Apply search filter
@@ -191,6 +204,13 @@ const View = () => {
       filteredValues = filteredValues.filter((user) => 
         user.user_type && user.user_type._id === userType
       );
+    }
+
+    // Apply status filter
+    if (status === 'active') {
+      filteredValues = filteredValues.filter((user) => user.status === true);
+    } else if (status === 'disabled') {
+      filteredValues = filteredValues.filter((user) => user.status === false);
     }
 
     setFilteredData(filteredValues);
@@ -232,40 +252,110 @@ const View = () => {
   // };
 
   const handleDelete = async (id) => {
-    setDeleting(true);
-    try {
-      const response = await fetch(`${apiRoutes.userRoute}disable/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      });
+    // Show confirmation dialog
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, disable user!'
+    });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        showSuccessSwal(data.message || 'User updated successfully');
-        // Update local state immediately
-        setData(prevData => prevData.filter(user => user._id !== id));
-        setFilteredData(prevFilteredData => prevFilteredData.filter(user => user._id !== id));
-        // Also refetch data to ensure consistency
-        fetchData();
-      } else {
-        showErrorSwal(data.message || 'Failed to update user');
+    if (result.isConfirmed) {
+      setDeleting(true);
+      try {
+        const response = await usersAPI.disable(id);
+        console.log('Disable user response:', response);
+              showSuccessSwal(response.message || 'User disabled successfully');
+      // Refetch data to ensure consistency and get updated user data
+      fetchData();
+      } catch (error) {
+        console.error('Error disabling user:', error);
+        showErrorSwal(error.message || 'Error disabling user');
+      } finally {
+        setDeleting(false);
       }
-    } catch (error) {
-      console.error('Error updating user:', error);
-      showErrorSwal('Error updating user');
-    } finally {
-      setDeleting(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selected.length === 0) {
+      showErrorSwal('Please select users to disable');
+      return;
+    }
+
+    // Show confirmation dialog
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `You are about to disable ${selected.length} user(s). This action cannot be undone!`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: `Yes, disable ${selected.length} user(s)!`
+    });
+
+    if (result.isConfirmed) {
+      setDeleting(true);
+      try {
+        // Disable users one by one since we don't have a bulk disable endpoint
+        const promises = selected.map(id => usersAPI.disable(id));
+        await Promise.all(promises);
+        
+        showSuccessSwal(`${selected.length} user(s) disabled successfully`);
+        
+        // Clear selection and refetch data
+        setSelected([]);
+        fetchData();
+      } catch (error) {
+        console.error('Error disabling users:', error);
+        showErrorSwal(error.message || 'Error disabling users');
+      } finally {
+        setDeleting(false);
+      }
+    }
+  };
+
+  const handleEnable = async (id) => {
+    // Show confirmation dialog
+    const result = await Swal.fire({
+      title: 'Enable User?',
+      text: "This will allow the user to log in again. Are you sure?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, enable user!'
+    });
+
+    if (result.isConfirmed) {
+      setDeleting(true);
+      try {
+        const response = await usersAPI.enable(id);
+        console.log('Enable user response:', response);
+              showSuccessSwal(response.message || 'User enabled successfully');
+      // Refetch data to ensure consistency and get updated user data
+      fetchData();
+      } catch (error) {
+        console.error('Error enabling user:', error);
+        showErrorSwal(error.message || 'Error enabling user');
+      } finally {
+        setDeleting(false);
+      }
     }
   };
 
   useEffect(() => {
     fetchUserTypes();
-    fetchData()
+    fetchData();
   }, []);
+
+  // Update filtered data when data changes
+  useEffect(() => {
+    setFilteredData(data);
+  }, [data]);
   
   return (
     <MainCard 
@@ -284,31 +374,68 @@ const View = () => {
       }
     >
       <Box sx={{ marginBottom: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField 
-            label="Search" 
-            variant="outlined" 
-            onChange={handleSearch}
-            placeholder="Search by name or email"
-            sx={{ minWidth: 300, maxWidth: 400 }}
-          />
-          <FormControl sx={{ minWidth: 200 }}>
-            <InputLabel>Filter by Role</InputLabel>
-            <Select
-              value={selectedUserType}
-              label="Filter by Role"
-              onChange={handleUserTypeFilter}
-            >
-              <MenuItem value="">
-                <em>All Roles</em>
-              </MenuItem>
-              {userTypes.map((userType) => (
-                <MenuItem key={userType._id} value={userType._id}>
-                  {userType.displayName}
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+            <TextField 
+              label="Search" 
+              variant="outlined" 
+              onChange={handleSearch}
+              placeholder="Search by name or email"
+              sx={{ minWidth: 300, maxWidth: 400 }}
+            />
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Filter by Role</InputLabel>
+              <Select
+                value={selectedUserType}
+                label="Filter by Role"
+                onChange={handleUserTypeFilter}
+              >
+                <MenuItem value="">
+                  <em>All Roles</em>
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                {userTypes.map((userType) => (
+                  <MenuItem key={userType._id} value={userType._id}>
+                    {userType.displayName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Filter by Status</InputLabel>
+              <Select
+                value={selectedStatus}
+                label="Filter by Status"
+                onChange={handleStatusFilter}
+              >
+                <MenuItem value="">
+                  <em>All Statuses</em>
+                </MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="disabled">Disabled</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+          {selected.length > 0 && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={() => setSelected([])}
+                size="small"
+              >
+                Clear Selection
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteOutlined />}
+                onClick={handleBulkDelete}
+                disabled={deleting}
+              >
+                Disable Selected ({selected.length})
+              </Button>
+            </Box>
+          )}
         </Box>
       </Box>
       <TableContainer component={Paper}>
@@ -349,44 +476,70 @@ const View = () => {
                   Role
                 </TableSortLabel>
               </TableCell>
+              <TableCell>Status</TableCell>
               <TableCell>Action</TableCell> {/* Add column for actions */}
             </TableRow>
           </TableHead>
           {loading && <LinearProgress sx={{ width: '100%' }} />}
-          <TableBody>
+                    <TableBody>
+            {console.log('Rendering table with data:', { filteredData: filteredData.length, data: data.length, users: stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy)).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage) })}
             {stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy))
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((user) => (
-                <TableRow key={user._id} selected={isSelected(user._id)}>
-                  <TableCell padding="checkbox">
-                    <Checkbox checked={isSelected(user._id)} onChange={(event) => handleCheckboxClick(event, user._id)} />
-                  </TableCell>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                                     <TableCell>{formatUserTypeName(user.user_type.name)}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outlined"
-                      style={{
-                        marginRight: '8px'
-                      }}
-                      color="warning"
-                      startIcon={<EditOutlined />}
-                      onClick={() => handleViewRow(user._id)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={deleting ? <CircularProgress size={16} /> : <DeleteOutlined />}
-                      onClick={() => handleDelete(user._id)}
-                    >
-                      Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              .length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center">
+                  {loading ? 'Loading users...' : 'No users found'}
+                </TableCell>
+              </TableRow>
+            ) : (
+              stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy))
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((user) => (
+                  <TableRow key={user._id} selected={isSelected(user._id)}>
+                    <TableCell padding="checkbox">
+                      <Checkbox checked={isSelected(user._id)} onChange={(event) => handleCheckboxClick(event, user._id)} />
+                    </TableCell>
+                    <TableCell>{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.user_type ? formatUserTypeName(user.user_type.name) : 'N/A'}</TableCell>
+                    <TableCell>{user.status === true ? 'Active' : 'Disabled'}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outlined"
+                        style={{
+                          marginRight: '8px'
+                        }}
+                        color="warning"
+                        startIcon={<EditOutlined />}
+                        onClick={() => handleViewRow(user._id)}
+                      >
+                        Edit
+                      </Button>
+                      {user.status === true ? (
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          startIcon={deleting ? <CircularProgress size={16} /> : <DeleteOutlined />}
+                          onClick={() => handleDelete(user._id)}
+                          disabled={deleting}
+                        >
+                          {deleting ? 'Disabling...' : 'Disable'}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outlined"
+                          color="success"
+                          startIcon={<CheckOutlined />}
+                          onClick={() => handleEnable(user._id)}
+                          disabled={deleting}
+                        >
+                          Enable
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -399,6 +552,10 @@ const View = () => {
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
+      {/* Debug info */}
+      <div style={{ padding: '10px', fontSize: '12px', color: '#666' }}>
+        Debug: Loading: {loading.toString()}, Data length: {data.length}, Filtered data length: {filteredData.length}
+      </div>
     </MainCard>
   );
 };

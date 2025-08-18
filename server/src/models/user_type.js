@@ -17,6 +17,7 @@ const user_typeSchema = new mongoose.Schema({
   enrollments: String,
   finance: String,
   reports: String,
+  requiredDocument: String,
 }, {
   timestamps: true,
 });

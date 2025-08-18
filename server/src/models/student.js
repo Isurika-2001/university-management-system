@@ -4,7 +4,10 @@ const studentSchema = new mongoose.Schema({
   firstName: String,
   lastName: String,
   dob: Date,
-  nic: String,
+  nic: {
+    type: String,
+    unique: true,
+  },
   address: String,
   mobile: String,
   homeContact: String,
@@ -74,6 +77,11 @@ const studentSchema = new mongoose.Schema({
 }, {
   timestamps: true,
 });
+
+// Create indexes for better performance
+studentSchema.index({ nic: 1 });
+studentSchema.index({ registration_no: 1 });
+studentSchema.index({ email: 1 });
 
 const Student = mongoose.model("Student", studentSchema);
 
