@@ -14,13 +14,16 @@ const SamplePage = Loadable(lazy(() => import('pages/extra-pages/SamplePage')));
 const Students = Loadable(lazy(() => import('pages/students/View')));
 const Batches = Loadable(lazy(() => import('pages/batches/View')));
 const Courses = Loadable(lazy(() => import('pages/courses/View')));
-const CourseRegistrations = Loadable(lazy(() => import('pages/course-registrations/View')));
+const Enrollments = Loadable(lazy(() => import('pages/enrollments/View')));
 const Users = Loadable(lazy(() => import('pages/users/View')));
+const RequiredDocuments = Loadable(lazy(() => import('pages/required-documents/View')));
 
 // add new pages
 const AddStudentForm = Loadable(lazy(() => import('pages/students/Add-new')));
 const AddBatchForm = Loadable(lazy(() => import('pages/batches/Add-new')));
 const AddCourseForm = Loadable(lazy(() => import('pages/courses/Add-new')));
+const AddEnrollmentForm = Loadable(lazy(() => import('pages/enrollments/Add-new')));
+const AddRequiredDocumentForm = Loadable(lazy(() => import('pages/required-documents/Add-new')));
 // const AddCourseRegistrationForm = Loadable(lazy(() => import('pages/course-registrations/Add-new')));
 const AddUserForm = Loadable(lazy(() => import('pages/users/Add-new')));
 
@@ -28,7 +31,8 @@ const AddUserForm = Loadable(lazy(() => import('pages/users/Add-new')));
 const UpdateStudentForm = Loadable(lazy(() => import('pages/students/Update')));
 const UpdateBatchForm = Loadable(lazy(() => import('pages/batches/Update')));
 const UpdateCourseForm = Loadable(lazy(() => import('pages/courses/Update')));
-const UpdateCourseRegistrationForm = Loadable(lazy(() => import('pages/course-registrations/Update')));
+const UpdateEnrollmentForm = Loadable(lazy(() => import('pages/enrollments/Update')));
+const UpdateRequiredDocumentForm = Loadable(lazy(() => import('pages/required-documents/Update')));
 const UpdateUserForm = Loadable(lazy(() => import('pages/users/Update')));
 
 const AuthLogin = Loadable(lazy(() => import('pages/authentication/Login')));
@@ -60,30 +64,41 @@ export default function ThemeRoutes() {
 
         {/* Student section */}
         <Route path="students" element={<Outlet />}>
-          <Route index element={permissions?.student?.includes('read-all') ? <Students /> : <Navigate to="/app/access-denied" replace />} />
+          <Route index element={permissions?.student?.includes('R') ? <Students /> : <Navigate to="/app/access-denied" replace />} />
           <Route
             path="add"
-            element={permissions?.student?.includes('create') ? <AddStudentForm /> : <Navigate to="/app/access-denied" replace />}
+            element={permissions?.student?.includes('C') ? <AddStudentForm /> : <Navigate to="/app/access-denied" replace />}
           />
+
           <Route
             path="update"
-            element={permissions?.student?.includes('update') ? <UpdateStudentForm /> : <Navigate to="/app/access-denied" replace />}
+            element={permissions?.student?.includes('U') ? <UpdateStudentForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
 
-        {/* Course-Registrations section */}
-        <Route path="course-registrations" element={<Outlet />}>
+        {/* Enrollments section */}
+        <Route path="enrollments" element={<Outlet />}>
           <Route
             index
             element={
-              permissions?.registrations?.includes('read-all') ? <CourseRegistrations /> : <Navigate to="/app/access-denied" replace />
+              permissions?.enrollments?.includes('R') ? <Enrollments /> : <Navigate to="/app/access-denied" replace />
+            }
+          />
+          <Route
+            path="add"
+            element={
+              permissions?.enrollments?.includes('C') ? (
+                <AddEnrollmentForm />
+              ) : (
+                <Navigate to="/app/access-denied" replace />
+              )
             }
           />
           <Route
             path="update"
             element={
-              permissions?.registrations?.includes('update') ? (
-                <UpdateCourseRegistrationForm />
+              permissions?.enrollments?.includes('U') ? (
+                <UpdateEnrollmentForm />
               ) : (
                 <Navigate to="/app/access-denied" replace />
               )
@@ -93,40 +108,53 @@ export default function ThemeRoutes() {
 
         {/* Course section */}
         <Route path="courses" element={<Outlet />}>
-          <Route index element={permissions?.course?.includes('read-all') ? <Courses /> : <Navigate to="/app/access-denied" replace />} />
+          <Route index element={permissions?.course?.includes('R') ? <Courses /> : <Navigate to="/app/access-denied" replace />} />
           <Route
             path="add"
-            element={permissions?.course?.includes('create') ? <AddCourseForm /> : <Navigate to="/app/access-denied" replace />}
+            element={permissions?.course?.includes('C') ? <AddCourseForm /> : <Navigate to="/app/access-denied" replace />}
           />
           <Route
             path="update"
-            element={permissions?.course?.includes('create') ? <UpdateCourseForm /> : <Navigate to="/app/access-denied" replace />}
+            element={permissions?.course?.includes('U') ? <UpdateCourseForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
 
         {/* Batch section */}
         <Route path="batches" element={<Outlet />}>
-          <Route index element={permissions?.batch?.includes('read-all') ? <Batches /> : <Navigate to="/app/access-denied" replace />} />
+          <Route index element={permissions?.batch?.includes('R') ? <Batches /> : <Navigate to="/app/access-denied" replace />} />
           <Route
             path="add"
-            element={permissions?.batch?.includes('create') ? <AddBatchForm /> : <Navigate to="/app/access-denied" replace />}
+            element={permissions?.batch?.includes('C') ? <AddBatchForm /> : <Navigate to="/app/access-denied" replace />}
           />
           <Route
             path="update"
-            element={permissions?.batch?.includes('update-all') ? <UpdateBatchForm /> : <Navigate to="/app/access-denied" replace />}
+            element={permissions?.batch?.includes('U') ? <UpdateBatchForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
 
         {/* User section */}
         <Route path="users" element={<Outlet />}>
-          <Route index element={permissions?.user?.includes('read-all') ? <Users /> : <Navigate to="/app/access-denied" replace />} />
+          <Route index element={permissions?.user?.includes('R') ? <Users /> : <Navigate to="/app/access-denied" replace />} />
           <Route
             path="add"
-            element={permissions?.user?.includes('create') ? <AddUserForm /> : <Navigate to="/app/access-denied" replace />}
+            element={permissions?.user?.includes('C') ? <AddUserForm /> : <Navigate to="/app/access-denied" replace />}
           />
           <Route
             path="update"
-            element={permissions?.user?.includes('update-all') ? <UpdateUserForm /> : <Navigate to="/app/access-denied" replace />}
+            element={permissions?.user?.includes('U') ? <UpdateUserForm /> : <Navigate to="/app/access-denied" replace />}
+          />
+        </Route>
+
+        {/* Required Documents section */}
+        <Route path="required-documents" element={<Outlet />}>
+          <Route index element={permissions?.requiredDocument?.includes('R') ? <RequiredDocuments /> : <Navigate to="/app/access-denied" replace />} />
+          <Route
+            path="add"
+            element={permissions?.requiredDocument?.includes('C') ? <AddRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />}
+          />
+          <Route
+            path="update"
+            element={permissions?.requiredDocument?.includes('U') ? <UpdateRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
 

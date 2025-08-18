@@ -39,5 +39,20 @@ export const usersAPI = {
   // Get user types
   getUserTypes: async () => {
     return api.get(apiRoutes.userTypeRoute);
+  },
+
+  // Update user password
+  updatePassword: async (id, passwordData) => {
+    return api.put(`${apiRoutes.userRoute}password/${id}`, passwordData);
+  },
+
+  // Disable user
+  disable: async (id) => {
+    return api.put(`${apiRoutes.userRoute}disable/${id}`);
+  },
+
+  // Enable user
+  enable: async (id) => {
+    return api.put(`${apiRoutes.userRoute}enable/${id}`);
   }
 }; 

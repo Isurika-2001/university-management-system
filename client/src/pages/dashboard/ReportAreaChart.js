@@ -103,7 +103,7 @@ const ReportAreaChart = ({ onStatsChange }) => {
     }
   }, [theme, secondary, line, user?.token, onStatsChange]);
 
-  return <ReactApexChart options={options} series={series} type="line" height={345} />;
+  return <ReactApexChart options={options} series={series} type="line" height={365} />;
 };
 
 export default ReportAreaChart;

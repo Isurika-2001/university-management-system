@@ -10,7 +10,14 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
-  "keywords": ["university", "management", "system", "api", "express", "mongodb"],
+  "keywords": [
+    "university",
+    "management",
+    "system",
+    "api",
+    "express",
+    "mongodb"
+  ],
   "author": "University Management System Team",
   "license": "MIT",
   "dependencies": {
@@ -18,14 +25,17 @@
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
     "express": "^4.19.2",
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.3.3",
     "morgan": "^1.10.0",
+    "multer": "^2.0.2",
     "nodemon": "^3.1.0",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "eslint": "^8.57.0",

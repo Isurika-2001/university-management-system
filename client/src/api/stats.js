@@ -39,5 +39,10 @@ export const statsAPI = {
   // get recent students
   getRecentStudents: async (params = {}) => {
     return api.get(apiRoutes.statRoute + 'recentStudents', params);
+  },
+
+  // get course distribution data
+  getCourseDistribution: async (params = {}) => {
+    return api.get(apiRoutes.statRoute + 'courseDistribution', params);
   }
 }; 

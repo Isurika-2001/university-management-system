@@ -12,7 +12,17 @@ async function getAllCourses(req, res) {
 }
 
 async function createCourse(req, res) {
-  const { name, code, description } = req.body;
+  const { 
+    name, 
+    code, 
+    description,
+    // New fields
+    prerequisites,
+    courseCredits,
+    courseDuration,
+    weekdayBatch,
+    weekendBatch,
+  } = req.body;
 
   try {
     // Check if the course name is already taken
@@ -35,7 +45,17 @@ async function createCourse(req, res) {
       });
     }
 
-    const course = new Course({ name, code, description });
+    const course = new Course({ 
+      name, 
+      code, 
+      description,
+      // New fields
+      prerequisites,
+      courseCredits,
+      courseDuration,
+      weekdayBatch,
+      weekendBatch,
+    });
     const newCourse = await course.save();
 
     res.status(201).json({
@@ -56,7 +76,17 @@ async function createCourse(req, res) {
 
 async function editCourse(req, res) {
   const { id } = req.params;
-  const { name, code, description } = req.body;
+  const { 
+    name, 
+    code, 
+    description,
+    // New fields
+    prerequisites,
+    courseCredits,
+    courseDuration,
+    weekdayBatch,
+    weekendBatch,
+  } = req.body;
 
   try {
     const existingCourse = await Course.findById(id);
@@ -93,6 +123,12 @@ async function editCourse(req, res) {
     existingCourse.name = name || existingCourse.name;
     existingCourse.code = code || existingCourse.code;
     existingCourse.description = description || existingCourse.description;
+    // Update new fields
+    existingCourse.prerequisites = prerequisites || existingCourse.prerequisites;
+    existingCourse.courseCredits = courseCredits || existingCourse.courseCredits;
+    existingCourse.courseDuration = courseDuration || existingCourse.courseDuration;
+    existingCourse.weekdayBatch = weekdayBatch !== undefined ? weekdayBatch : existingCourse.weekdayBatch;
+    existingCourse.weekendBatch = weekendBatch !== undefined ? weekendBatch : existingCourse.weekendBatch;
 
     const updatedCourse = await existingCourse.save();
 

@@ -4,32 +4,40 @@ import {
   Grid, 
   Typography, 
   Avatar, 
-  Chip,
   List,
   ListItem,
   ListItemAvatar,
   ListItemText,
   Divider,
-  Skeleton
+  Skeleton,
+  Card,
+  CardContent,
+  useTheme,
+  Chip,
+  Grow
 } from '@mui/material';
-// Using simple icons instead of Material-UI icons to avoid import issues
-const PersonIcon = () => <span style={{ fontSize: '20px' }}>👤</span>;
-const TimeIcon = () => <span style={{ fontSize: '16px' }}>⏰</span>;
-import MainCard from 'components/MainCard';
+import { 
+  LoginOutlined, 
+  ClockCircleOutlined,
+  UserOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  ExclamationCircleOutlined
+} from '@ant-design/icons';
+
 import { useAuthContext } from 'context/useAuthContext';
 import { statsAPI } from '../../../api/stats';
 
-const RecentActivities = () => {
+const RecentLogins = () => {
   const { user } = useAuthContext();
   const [recentLogins, setRecentLogins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const theme = useTheme();
 
   useEffect(() => {
-    // Check if user has permission to view recent logins
-    const hasPermission = user?.permissions?.user?.includes('read-all');
+    const hasPermission = user?.permissions?.user?.includes('R');
     
-    // If user doesn't have permission, don't fetch data
     if (!hasPermission) {
       setLoading(false);
       return;
@@ -40,11 +48,15 @@ const RecentActivities = () => {
         setLoading(true);
         setError(null);
 
-        // Fetch recent logins
-        const loginData = await statsAPI.getRecentActivities({ action: 'LOGIN', limit: 5, page: 1 });
+        console.log('RecentLogins - Fetching recent activities...');
+        const loginData = await statsAPI.getRecentActivities({ action: 'LOGIN', limit: 3, page: 1 });
+        console.log('RecentLogins - API response:', loginData);
 
         if (loginData.success) {
           setRecentLogins(loginData.data.logs || []);
+          console.log('RecentLogins - Set logs:', loginData.data.logs || []);
+        } else {
+          console.log('RecentLogins - API failed:', loginData);
         }
 
       } catch (err) {
@@ -69,120 +81,232 @@ const RecentActivities = () => {
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  const getStatusColor = (status) => {
+  const getStatusIcon = (status) => {
     switch (status) {
       case 'SUCCESS':
-        return 'success';
+        return <CheckCircleOutlined style={{ color: theme.palette.success.main }} />;
       case 'FAILED':
-        return 'error';
+        return <CloseCircleOutlined style={{ color: theme.palette.error.main }} />;
       case 'PENDING':
-        return 'warning';
+        return <ExclamationCircleOutlined style={{ color: theme.palette.warning.main }} />;
       default:
-        return 'default';
+        return <ExclamationCircleOutlined style={{ color: theme.palette.grey[500] }} />;
     }
   };
 
-  // Check if user has permission to view recent logins
-  const hasPermission = user?.permissions?.user?.includes('read-all');
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'SUCCESS':
+        return theme.palette.success.main;
+      case 'FAILED':
+        return theme.palette.error.main;
+      case 'PENDING':
+        return theme.palette.warning.main;
+      default:
+        return theme.palette.grey[500];
+    }
+  };
 
-  // If user doesn't have permission, don't render the component
+  const hasPermission = user?.permissions?.user?.includes('R');
+
   if (!hasPermission) {
     return null;
   }
 
   if (loading) {
     return (
-      <Grid item xs={12} md={6} lg={6}>
-        <MainCard sx={{ mt: 2, minHeight: 500 }}>
-          <Box sx={{ p: 2 }}>
-            <Skeleton variant="rectangular" height={60} sx={{ mb: 2 }} />
-            <Skeleton variant="rectangular" height={60} sx={{ mb: 2 }} />
-            <Skeleton variant="rectangular" height={60} />
-          </Box>
-        </MainCard>
+      <Grid item xs={12}>
+        <Card sx={{ 
+          borderRadius: 3,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, rgba(255,255,255,0.9) 100%)'
+        }}>
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <Box sx={{ 
+                width: 48, 
+                height: 48, 
+                borderRadius: 2, 
+                backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: theme.palette.success.main,
+                fontSize: '24px',
+                mr: 2
+              }}>
+                <LoginOutlined />
+              </Box>
+              <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.grey[800] }}>
+                Recent Logins
+              </Typography>
+            </Box>
+            <Box sx={{ p: 2 }}>
+              {[1, 2, 3].map((item) => (
+                <Box key={item} sx={{ mb: 2 }}>
+                  <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 2 }} />
+                </Box>
+              ))}
+            </Box>
+          </CardContent>
+        </Card>
       </Grid>
     );
   }
 
   if (error) {
     return (
-      <Grid item xs={12} md={6} lg={6}>
-        <MainCard title="Recent Logins">
-          <Box sx={{ p: 2 }}>
-            <Typography color="error">{error}</Typography>
-          </Box>
-        </MainCard>
+      <Grid item xs={12}>
+        <Card sx={{ 
+          borderRadius: 3,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          background: 'linear-gradient(135deg, rgba(244, 67, 54, 0.05) 0%, rgba(255,255,255,0.9) 100%)'
+        }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography color="error" variant="h6" sx={{ textAlign: 'center' }}>
+              {error}
+            </Typography>
+          </CardContent>
+        </Card>
       </Grid>
     );
   }
 
   return (
-    <Grid item xs={12} md={6} lg={6}>
-      <Grid container alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Grid item>
-          <Typography variant="h5">Recent Logins</Typography>
-        </Grid>
-      </Grid>
-      <MainCard sx={{ mt: 2 }} content={false}>
-        <Box sx={{ p: 2, pt: 0, maxHeight: 450, overflow: 'auto' }}>
-          <List>
-            {recentLogins.length > 0 ? (
-              recentLogins.map((login, index) => (
-                <React.Fragment key={login._id || index}>
-                  <ListItem alignItems="flex-start" sx={{ px: 0 }}>
-                    <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <PersonIcon />
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle2">
-                            {login.user?.name || login.user?.email || 'Unknown User'}
-                          </Typography>
-                          <Chip 
-                            label={login.status} 
-                            size="small" 
-                            color={getStatusColor(login.status)}
-                            variant="outlined"
-                          />
-                        </Box>
-                      }
-                      secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            {login.description}
-                          </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                            <TimeIcon />
-                            <Typography variant="caption" color="text.secondary">
-                              {formatTimeAgo(login.timestamp)}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                  {index < recentLogins.length - 1 && <Divider variant="inset" component="li" />}
-                </React.Fragment>
-              ))
-            ) : (
-              <ListItem>
-                <ListItemText
-                  primary={
-                    <Typography variant="body2" color="text.secondary">
-                      No recent login activity
-                    </Typography>
-                  }
-                />
-              </ListItem>
-            )}
-          </List>
-        </Box>
-      </MainCard>
+    <Grid item xs={12}>
+      <Grow in={!loading} timeout={300}>
+        <Card sx={{ 
+          borderRadius: 3,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, rgba(255,255,255,0.9) 100%)',
+          transition: 'all 0.3s ease-in-out',
+          '&:hover': {
+            boxShadow: '0 8px 25px rgba(0,0,0,0.12)'
+          }
+        }}>
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <Box sx={{ 
+                width: 48, 
+                height: 48, 
+                borderRadius: 2, 
+                backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: theme.palette.success.main,
+                fontSize: '24px',
+                mr: 2
+              }}>
+                <LoginOutlined />
+              </Box>
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.grey[800] }}>
+                  Recent Logins
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Latest user login activities
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box>
+              {recentLogins.length > 0 ? (
+                <List sx={{ p: 0 }}>
+                  {recentLogins.map((login, index) => (
+                    <React.Fragment key={login._id || index}>
+                      <ListItem 
+                        sx={{ 
+                          p: 2, 
+                          mb: 1, 
+                          borderRadius: 2,
+                          backgroundColor: 'rgba(255,255,255,0.7)',
+                          border: '1px solid rgba(0,0,0,0.05)',
+                          transition: 'all 0.2s ease-in-out',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255,255,255,0.9)',
+                            transform: 'translateX(4px)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                          }
+                        }}
+                      >
+                        <ListItemAvatar>
+                          <Avatar 
+                            sx={{ 
+                              bgcolor: theme.palette.success.main,
+                              width: 48,
+                              height: 48,
+                              fontSize: '18px',
+                              fontWeight: 600
+                            }}
+                          >
+                            <UserOutlined />
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: theme.palette.grey[800] }}>
+                                {login.user?.name || login.user?.email || 'Unknown User'}
+                              </Typography>
+                              <Chip 
+                                icon={getStatusIcon(login.status)}
+                                label={login.status} 
+                                size="small" 
+                                sx={{ 
+                                  backgroundColor: getStatusColor(login.status),
+                                  color: 'white',
+                                  fontSize: '0.7rem',
+                                  height: 20,
+                                  '& .MuiChip-icon': {
+                                    color: 'white !important'
+                                  }
+                                }} 
+                              />
+                            </Box>
+                          }
+                          secondary={
+                            <Box>
+                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', mb: 0.5 }}>
+                                {login.description || 'User login activity'}
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <ClockCircleOutlined style={{ fontSize: '14px', color: theme.palette.grey[600] }} />
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                                  {formatTimeAgo(login.timestamp)}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          }
+                        />
+                      </ListItem>
+                      {index < recentLogins.length - 1 && (
+                        <Divider sx={{ my: 1, opacity: 0.3 }} />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </List>
+              ) : (
+                <Box sx={{ 
+                  textAlign: 'center', 
+                  py: 4,
+                  color: theme.palette.grey[500]
+                }}>
+                  <LoginOutlined style={{ fontSize: '48px', marginBottom: '16px' }} />
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    No Recent Logins
+                  </Typography>
+                  <Typography variant="body2">
+                    No recent login activity found
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </CardContent>
+        </Card>
+      </Grow>
     </Grid>
   );
 };
 
-export default RecentActivities; 
+export default RecentLogins;

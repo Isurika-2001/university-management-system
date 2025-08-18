@@ -5,10 +5,12 @@ import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useNavigate } from 'react-router-dom';
 import { formatUserTypes } from '../../utils/userTypeUtils';
 import { usersAPI } from '../../api/users';
 
 const AddForm = () => {
+  const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [userTypes, setUserTypes] = useState([]);
 
@@ -62,23 +64,33 @@ const AddForm = () => {
   // fetch user types
   async function fetchUserTypes() {
     try {
-      const data = await usersAPI.getUserTypes();
-      setUserTypes(formatUserTypes(data));
+      const response = await usersAPI.getUserTypes();
+      console.log('User types response:', response);
+      
+      // Handle both old and new response formats
+      const userTypes = response.data || response;
+      setUserTypes(formatUserTypes(userTypes));
     } catch (error) {
       console.error('Error fetching user types:', error);
       return [];
     }
   }
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values, { resetForm }) => {
     console.log('Submitted:', values);
     try {
       setSubmitting(true);
-      const responseData = await usersAPI.create(values);
-      showSuccessSwal(responseData.message || 'User added successfully');
+      const response = await usersAPI.create(values);
+      console.log('Create user response:', response);
+      showSuccessSwal(response.message || 'User added successfully');
       console.log('User added successfully');
+      // Reset form and navigate back to users list
+      resetForm();
+      setTimeout(() => {
+        navigate('/app/users');
+      }, 1500);
     } catch (error) {
-      console.error(error);
+      console.error('Error creating user:', error);
       showErrorSwal(error.message || 'Failed to add user');
     } finally {
       setSubmitting(false);
@@ -155,7 +167,7 @@ const AddForm = () => {
                     sx={{ mb: 3 }} // Margin bottom added
                   >
                     {userTypes.map((option) => (
-                      <MenuItem key={option._id} value={option.name}>
+                      <MenuItem key={option._id} value={option._id}>
                         {option.displayName}
                       </MenuItem>
                     ))}
@@ -163,7 +175,16 @@ const AddForm = () => {
                 </Grid>
               </Grid>
               <Divider sx={{ mt: 3, mb: 2 }} />
-              <Grid item xs={12} sm={6} style={{ textAlign: 'right' }}>
+              <Grid item xs={12} style={{ textAlign: 'right' }}>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  size="small"
+                  onClick={() => navigate('/app/users')}
+                  sx={{ mr: 2 }}
+                >
+                  Cancel
+                </Button>
                 <Button
                   type="submit"
                   variant="contained"

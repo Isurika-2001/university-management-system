@@ -10,6 +10,11 @@ const DashboardDefault = Loadable(lazy(() => import('pages/dashboard')));
 // render - sample page
 const SamplePage = Loadable(lazy(() => import('pages/extra-pages/SamplePage')));
 const Students = Loadable(lazy(() => import('pages/students/View')));
+const StudentAdd = Loadable(lazy(() => import('pages/students/Add-new')));
+const StudentUpdate = Loadable(lazy(() => import('pages/students/Update')));
+const AdvancedRegistration = Loadable(lazy(() => import('pages/students/AdvancedRegistration')));
+const RequiredDocuments = Loadable(lazy(() => import('pages/required-documents/View')));
+const Enrollments = Loadable(lazy(() => import('pages/enrollments/View')));
 
 // render - utilities
 const Typography = Loadable(lazy(() => import('pages/components-overview/Typography')));
@@ -47,6 +52,26 @@ const MainRoutes = {
     {
       path: 'students',
       element: <Students />
+    },
+    {
+      path: 'students/add',
+      element: <StudentAdd />
+    },
+    {
+      path: 'students/update',
+      element: <StudentUpdate />
+    },
+    {
+      path: 'students/advanced-registration',
+      element: <AdvancedRegistration />
+    },
+    {
+      path: 'required-documents',
+      element: <RequiredDocuments />
+    },
+    {
+      path: 'enrollments',
+      element: <Enrollments />
     },
     {
       path: 'shadow',

@@ -13,7 +13,8 @@ import {
   TablePagination,
   TableSortLabel,
   LinearProgress,
-  TextField // Import TextField for input field
+  TextField, // Import TextField for input field
+  Chip
 } from '@mui/material';
 import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
@@ -220,35 +221,28 @@ const View = () => {
   // };
 
   return (
-    <MainCard title="Course List">
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 2,
-          flexDirection: 'row' // Ensure items are aligned horizontally
-        }}
-      >
-        <TextField label="Search" variant="outlined" onChange={handleSearch} />
-        <div>
-          {/* <Button
-            variant="contained"
-            style={{
-              marginRight: '8px'
-            }}
-            color="success"
-            text="white"
-            disabled={selected.length === 0}
-            onClick={exportToCSV}
-            startIcon={<UploadOutlined />}
+    <MainCard 
+      title={
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <span>Course List</span>
+          <Button 
+            onClick={handleClickAddNew} 
+            variant="contained" 
+            startIcon={<FileAddOutlined />}
+            size="small"
           >
-            Export
-          </Button> */}
-          <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />}>
-            Add New
+            Add Course
           </Button>
-        </div>
+        </Box>
+      }
+    >
+      <Box sx={{ marginBottom: 2 }}>
+        <TextField 
+          label="Search" 
+          variant="outlined" 
+          onChange={handleSearch}
+          sx={{ minWidth: 300, maxWidth: 400 }}
+        />
       </Box>
       <TableContainer component={Paper}>
         <Table>
@@ -288,6 +282,9 @@ const View = () => {
                   Description
                 </TableSortLabel>
               </TableCell>
+              <TableCell>Credits</TableCell>
+              <TableCell>Duration</TableCell>
+              <TableCell>Batch Types</TableCell>
               <TableCell>Action</TableCell> {/* Add column for actions */}
             </TableRow>
           </TableHead>
@@ -303,6 +300,15 @@ const View = () => {
                   <TableCell>{course.name}</TableCell>
                   <TableCell>{course.code}</TableCell>
                   <TableCell>{course.description}</TableCell>
+                  <TableCell>{course.courseCredits || 'N/A'}</TableCell>
+                  <TableCell>{course.courseDuration || 'N/A'}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      {course.weekdayBatch && <Chip label="Weekday" size="small" color="primary" />}
+                      {course.weekendBatch && <Chip label="Weekend" size="small" color="secondary" />}
+                      {!course.weekdayBatch && !course.weekendBatch && <Chip label="Not specified" size="small" variant="outlined" />}
+                    </Box>
+                  </TableCell>
                   <TableCell>
                     <Button
                       variant="outlined"

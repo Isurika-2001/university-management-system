@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, Grid, Divider, CircularProgress } from '@mui/material';
+import { TextField, Button, Grid, Divider, CircularProgress, Select, MenuItem, FormControlLabel, Checkbox } from '@mui/material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
@@ -44,7 +44,12 @@ const AddForm = () => {
   const initialValues = {
     name: '',
     code: '',
-    description: ''
+    description: '',
+    prerequisites: 'None',
+    courseCredits: 3,
+    courseDuration: '1 year',
+    weekdayBatch: false,
+    weekendBatch: false
   };
 
   const validationSchema = Yup.object().shape({
@@ -52,7 +57,12 @@ const AddForm = () => {
     code: Yup.string()
       .required('Course code is required')
       .matches(/^[a-zA-Z0-9_]+$/, 'Course code can only contain letters, numbers, and underscores'),
-    description: Yup.string().required('Description is required')
+    description: Yup.string().required('Description is required'),
+    prerequisites: Yup.string().required('Prerequisites are required'),
+    courseCredits: Yup.number().min(1, 'Course credits must be at least 1').required('Course credits are required'),
+    courseDuration: Yup.string().required('Course duration is required'),
+    weekdayBatch: Yup.boolean(),
+    weekendBatch: Yup.boolean()
   });
 
   const handleSubmit = async (values) => {
@@ -147,6 +157,96 @@ const AddForm = () => {
                     }}
                     sx={{ mb: 3 }} // Margin bottom added
                   />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Prerequisites"
+                    variant="outlined"
+                    name="prerequisites"
+                    fullWidth
+                    error={touched.prerequisites && !!errors.prerequisites}
+                    helperText={<ErrorMessage name="prerequisites" />}
+                    InputProps={{
+                      sx: { px: 2, py: 1 }
+                    }}
+                    sx={{ mb: 3 }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Course Credits"
+                    variant="outlined"
+                    type="number"
+                    name="courseCredits"
+                    fullWidth
+                    error={touched.courseCredits && !!errors.courseCredits}
+                    helperText={<ErrorMessage name="courseCredits" />}
+                    InputProps={{
+                      sx: { px: 2, py: 1 }
+                    }}
+                    sx={{ mb: 3 }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field name="courseDuration">
+                    {({ field, form }) => (
+                      <Select
+                        {...field}
+                        displayEmpty
+                        variant="outlined"
+                        fullWidth
+                        error={form.touched.courseDuration && !!form.errors.courseDuration}
+                        sx={{ mb: 3, minHeight: '3.5rem' }}
+                      >
+                        <MenuItem value="" disabled>
+                          Course Duration
+                        </MenuItem>
+                        <MenuItem value="3 months">3 months</MenuItem>
+                        <MenuItem value="6 months">6 months</MenuItem>
+                        <MenuItem value="1 year">1 year</MenuItem>
+                        <MenuItem value="2 years">2 years</MenuItem>
+                        <MenuItem value="3 years">3 years</MenuItem>
+                        <MenuItem value="4 years">4 years</MenuItem>
+                        <MenuItem value="Other">Other</MenuItem>
+                      </Select>
+                    )}
+                  </Field>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field name="weekdayBatch">
+                    {({ field, form }) => (
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            {...field}
+                            checked={field.value}
+                            onChange={(e) => form.setFieldValue('weekdayBatch', e.target.checked)}
+                          />
+                        }
+                        label="Weekday Batch Available"
+                        sx={{ mb: 3 }}
+                      />
+                    )}
+                  </Field>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field name="weekendBatch">
+                    {({ field, form }) => (
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            {...field}
+                            checked={field.value}
+                            onChange={(e) => form.setFieldValue('weekendBatch', e.target.checked)}
+                          />
+                        }
+                        label="Weekend Batch Available"
+                        sx={{ mb: 3 }}
+                      />
+                    )}
+                  </Field>
                 </Grid>
               </Grid>
               <Divider sx={{ mt: 3, mb: 2 }} />

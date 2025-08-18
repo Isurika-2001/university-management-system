@@ -1,4 +1,4 @@
-const CourseRegistration = require("../models/course_registration");
+const CourseRegistration = require("../models/enrollment");
 const Batch = require("../models/batch");
 
 // Middleware to check if any student is assigned to the course

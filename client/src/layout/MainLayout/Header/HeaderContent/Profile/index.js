@@ -31,6 +31,7 @@ import SettingTab from './SettingTab';
 import avatar6 from 'assets/images/users/avatar-6.jpg';
 import { LogoutOutlined } from '@ant-design/icons';
 import { useLogout } from 'hooks/useLogout';
+import { getUserRoleDisplayName } from '../../../../../utils/userTypeUtils';
 
 // tab panel wrapper
 function TabPanel({ children, value, index, ...other }) {
@@ -156,7 +157,7 @@ const Profile = () => {
                             <Stack>
                               <Typography variant="h6">{user.userName}</Typography>
                               <Typography variant="body2" color="textSecondary">
-                                {user?.userType.name || 'Admin'}
+                                {getUserRoleDisplayName(user) || 'Unknown'}
                               </Typography>
                             </Stack>
                           </Stack>

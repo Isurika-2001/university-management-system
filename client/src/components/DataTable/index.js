@@ -145,7 +145,12 @@ const DataTable = ({
   };
 
   return (
-    <MainCard title={title} {...containerProps}>
+    <MainCard 
+      title={
+        typeof title === 'string' ? title : title
+      } 
+      {...containerProps}
+    >
       {/* Header Section */}
       {(showSearch || showFilters || showActions) && (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>

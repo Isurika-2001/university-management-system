@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import DataTable from 'components/DataTable';
@@ -231,22 +231,26 @@ const View = () => {
   ];
 
   // Define actions
-  const actions = [
-    {
-      label: 'Add New',
-      icon: <FileAddOutlined />,
-      onClick: handleClickAddNew,
-      variant: 'contained',
-      color: 'primary'
-    }
-  ];
+  const actions = [];
 
   // Define sortable columns
   const sortableColumns = ['name', 'courseName', 'orientationDate', 'startDate', 'registrationDeadline'];
 
   return (
     <DataTable
-      title="Batch List"
+      title={
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <span>Batch List</span>
+          <Button 
+            onClick={handleClickAddNew} 
+            variant="contained" 
+            startIcon={<FileAddOutlined />}
+            size="small"
+          >
+            Add Batch
+          </Button>
+        </Box>
+      }
       data={data}
       loading={loading}
       totalCount={totalRows}

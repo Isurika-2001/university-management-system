@@ -18,11 +18,11 @@ const icons = {
   BranchesOutlined
 };
 
-// ==============================|| MENU ITEMS - EXTRA PAGES ||============================== //
+// ==============================|| MENU ITEMS - ACADEMIC ADMINISTRATOR PAGES ||============================== //
 
 const counselor_pages = {
   id: 'pages',
-  title: 'Pages',
+  title: 'Academic Management',
   caption: '',
   type: 'group',
   children: [
@@ -34,11 +34,32 @@ const counselor_pages = {
       icon: icons.UsergroupDeleteOutlined
     },
     {
-      id: 'course-registrations',
-      title: 'Course Registrations',
+      id: 'enrollments',
+      title: 'Enrollments',
       type: 'item',
-      url: '/app/course-registrations',
+      url: '/app/enrollments',
       icon: icons.FileAddOutlined
+    },
+    {
+      id: 'required-documents',
+      title: 'Required Documents',
+      type: 'item',
+      url: '/app/required-documents',
+      icon: icons.FileAddOutlined
+    },
+    {
+      id: 'courses',
+      title: 'Courses',
+      type: 'item',
+      url: '/app/courses',
+      icon: icons.AppstoreOutlined
+    },
+    {
+      id: 'batches',
+      title: 'Batches',
+      type: 'item',
+      url: '/app/batches',
+      icon: icons.BranchesOutlined
     }
   ]
 };
