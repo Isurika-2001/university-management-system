@@ -240,10 +240,82 @@ async function getRecentStudents(req, res) {
   }
 }
 
+// Get course distribution data including most popular and emerging courses
+async function getCourseDistribution(req, res) {
+  try {
+    // Get course enrollment counts with course details
+    const courseEnrollments = await Enrollment.aggregate([
+      {
+        $group: {
+          _id: "$courseId",
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: "courses",
+          localField: "_id",
+          foreignField: "_id",
+          as: "courseDetails"
+        }
+      },
+      {
+        $unwind: "$courseDetails"
+      },
+      {
+        $project: {
+          courseId: "$_id",
+          courseName: "$courseDetails.name",
+          courseCode: "$courseDetails.courseCode",
+          registrations: "$count"
+        }
+      },
+      {
+        $sort: { registrations: -1 }
+      }
+    ]);
+
+    // Calculate total registrations
+    const totalRegistrations = courseEnrollments.reduce((sum, item) => sum + item.registrations, 0);
+
+    // Get most popular course (highest enrollment)
+    const mostPopularCourse = courseEnrollments.length > 0 ? {
+      name: courseEnrollments[0].courseName,
+      count: courseEnrollments[0].registrations,
+      courseCode: courseEnrollments[0].courseCode
+    } : { name: 'No courses available', count: 0, courseCode: 'N/A' };
+
+    // Get emerging course (lowest enrollment)
+    const emergingCourse = courseEnrollments.length > 0 ? {
+      name: courseEnrollments[courseEnrollments.length - 1].courseName,
+      count: courseEnrollments[courseEnrollments.length - 1].registrations,
+      courseCode: courseEnrollments[courseEnrollments.length - 1].courseCode
+    } : { name: 'No courses available', count: 0, courseCode: 'N/A' };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalRegistrations,
+        mostPopularCourse,
+        emergingCourse,
+        courseEnrollments
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching course distribution",
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   getEnrollmentSummaryStats,
   getUpcomingBatchDates,
   getCourseEnrollments,
   getEnrollmentNumbers,
-  getRecentStudents
+  getRecentStudents,
+  getCourseDistribution
 };

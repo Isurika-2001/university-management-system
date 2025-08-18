@@ -9,7 +9,7 @@ const multer = require('multer');
 const xlsx = require('xlsx');
 
 // utility calling
-const { getNextSequenceValue } = require('../utilities/counter');
+const { getNextSequenceValue } = require('../utilities/counter'); 
 const { generateCSV, generateExcel, studentExportHeaders } = require("../utils/exportUtils");
 
 // Function to check if student has all required fields completed
@@ -674,7 +674,7 @@ async function exportStudents(req, res) {
 
     // Log the export activity
     try {
-      await ActivityLogger.logStudentExport(req.user, exportData.length, requestInfo.ipAddress, requestInfo.userAgent);
+    await ActivityLogger.logStudentExport(req.user, exportData.length, requestInfo.ipAddress, requestInfo.userAgent);
     } catch (logError) {
       console.error('Error logging export activity:', logError);
       // Continue with export even if logging fails
