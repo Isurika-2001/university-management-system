@@ -5,6 +5,10 @@
 
 // Mapping of database names to display names
 const USER_TYPE_DISPLAY_NAMES = {
+  'system_administrator': 'System Administrator',
+  'academic_administrator': 'Academic Administrator',
+  'finance_admin': 'Finance Administrator',
+  'accountant': 'Accountant',
   'sup_admin': 'Super Admin',
   'admin': 'Admin',
   'counselor': 'Counselor',
@@ -69,10 +73,38 @@ export const getDisplayName = (userTypeName) => {
   return formatUserTypeName(userTypeName);
 };
 
+/**
+ * Check if user has permission for a specific action
+ * @param {Object} user - User object with userType and permissions
+ * @param {string} resource - Resource name (user, student, course, batch, enrollments, finance, reports)
+ * @param {string} action - Action type (C, R, U, D)
+ * @returns {boolean} - Whether user has permission
+ */
+export const hasPermission = (user, resource, action) => {
+  if (!user || !user.permissions || !user.permissions[resource]) {
+    return false;
+  }
+  
+  const permissions = user.permissions[resource];
+  return permissions.includes(action);
+};
+
+/**
+ * Get user role display name
+ * @param {Object} user - User object
+ * @returns {string} - Display name of user role
+ */
+export const getUserRoleDisplayName = (user) => {
+  if (!user || !user.userType) return 'Unknown';
+  return formatUserTypeName(user.userType.name);
+};
+
 export default {
   formatUserTypeName,
   formatUserTypes,
   formatUserType,
   getDisplayNames,
-  getDisplayName
+  getDisplayName,
+  hasPermission,
+  getUserRoleDisplayName
 }; 

@@ -1,5 +1,5 @@
 const Student = require('../models/student');
-const CourseRegistration = require('../models/course_registration');
+const Enrollment = require('../models/enrollment');
 const Course = require('../models/course');
 const Batch = require('../models/batch');
 const { getNextSequenceValue } = require('./counter');
@@ -27,25 +27,26 @@ async function registerCourse(studentId, courseCode, batchName, studentRegNo) {
   const batch = await findBatchByNameAndCourse(batchName, course._id);
   if (!batch) return { success: false, reason: `Batch '${batchName}' does not exist for course '${courseCode}'` };
 
-  const isRegistered = await CourseRegistration.findOne({
+  const isRegistered = await Enrollment.findOne({
     studentId,
     courseId: course._id,
     batchId: batch._id
   });
 
-  if (isRegistered) return { success: false, reason: 'Duplicate course registration' };
+  if (isRegistered) return { success: false, reason: 'Duplicate enrollment' };
 
   const courseSequence = await getNextSequenceValue("course_id_sequence");
 
-  const newCourseReg = new CourseRegistration({
+  const newEnrollment = new Enrollment({
     studentId,
     courseId: course._id,
     batchId: batch._id,
     registration_no: studentRegNo,
-    courseReg_no: courseSequence,
+    enrollment_no: courseSequence,
+    enrollmentDate: new Date(),
   });
 
-  await newCourseReg.save();
+  await newEnrollment.save();
 
   return { success: true };
 }
@@ -64,6 +65,16 @@ async function createStudentAndRegister(data) {
     homeContact: data.homeContact,
     email: data.email,
     registration_no: studentRegNo,
+    // New fields with defaults
+    registrationDate: new Date(),
+    highestAcademicQualification: data.highestAcademicQualification || 'O-Level',
+    qualificationDescription: data.qualificationDescription || 'Not specified',
+    requiredDocuments: data.requiredDocuments || [],
+    emergencyContact: data.emergencyContact || {
+      name: 'Not specified',
+      relationship: 'Not specified',
+      phone: 'Not specified'
+    },
   });
 
   const savedStudent = await student.save();

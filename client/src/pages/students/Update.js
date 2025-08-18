@@ -1,5 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { TextField, Button, Grid, Divider, LinearProgress, CircularProgress } from '@mui/material';
+import { 
+  TextField, 
+  Button, 
+  Grid, 
+  Select, 
+  MenuItem, 
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Typography,
+  Box,
+  Checkbox,
+  FormControlLabel,
+  Stepper,
+  Step,
+  StepLabel,
+  Card,
+  CardContent,
+  LinearProgress,
+  Chip
+} from '@mui/material';
+import { 
+  UserOutlined, 
+  BookOutlined, 
+  PhoneOutlined, 
+  FileTextOutlined,
+  ReadOutlined,
+  ArrowRightOutlined,
+  ArrowLeftOutlined,
+  SaveOutlined
+} from '@ant-design/icons';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
@@ -9,10 +39,23 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
 
-const UpdateForm = () => {
-  const [data, setData] = useState(null);
-  const location = useLocation();
+const steps = [
+  'Personal Details',
+  'Course Details', 
+  'Academic Details',
+  'Required Documents',
+  'Emergency Contact'
+];
+
+const UpdateStudent = () => {
+  const [activeStep, setActiveStep] = useState(0);
+  const [requiredDocuments, setRequiredDocuments] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [enrollments, setEnrollments] = useState([]);
+  const [submitButtonClicked, setSubmitButtonClicked] = useState(false);
+  const location = useLocation();
   const { user } = useAuthContext();
   
   const Toast = withReactContent(
@@ -36,7 +79,6 @@ const UpdateForm = () => {
     });
   };
 
-  // error showErrorSwal
   const showErrorSwal = (e) => {
     Toast.fire({
       icon: 'error',
@@ -45,15 +87,76 @@ const UpdateForm = () => {
   };
 
   useEffect(() => {
-    fetchdata();
+    fetchStudentData();
+    fetchRequiredDocuments();
   }, [location.search]);
 
-  async function fetchdata() {
+
+
+  // Fetch student data and enrollment data
+  async function fetchStudentData() {
     const searchParams = new URLSearchParams(location.search);
     const id = searchParams.get('id');
-    // Fetch student data based on the id
+    
     try {
-      const response = await fetch(apiRoutes.studentRoute + id, {
+      // Fetch student data
+      const studentResponse = await fetch(apiRoutes.studentRoute + id, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
+      });
+
+      const studentData = await studentResponse.json();
+
+      if (!studentResponse.ok) {
+        if (studentResponse.status === 500) {
+          console.error('Internal Server Error.');
+          return;
+        }
+        return;
+      }
+
+      // Fetch enrollment data for this student
+      const enrollmentResponse = await fetch(apiRoutes.enrollmentRoute + `student/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        },
+      });
+
+      let enrollmentData = [];
+      if (enrollmentResponse.ok) {
+        const response = await enrollmentResponse.json();
+        enrollmentData = response.data || [];
+      }
+
+      // Combine student and enrollment data
+      const combinedData = {
+        ...studentData,
+        enrollments: enrollmentData
+      };
+
+      console.log('Combined student and enrollment data:', combinedData);
+      setData(combinedData);
+      setEnrollments(enrollmentData);
+    } catch (error) {
+      console.error('Error fetching student data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+
+
+
+  // Fetch required documents
+  async function fetchRequiredDocuments() {
+    try {
+      const response = await fetch(apiRoutes.requiredDocumentRoute, {
         method: 'GET',   
         headers: {
           'Content-Type': 'application/json',
@@ -64,37 +167,74 @@ const UpdateForm = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        // if (response.status === 401) {
-        //   console.error('Unauthorized access. Logging out.');
-        //   logout();
-        // }
         if (response.status === 500) {
           console.error('Internal Server Error.');
-          // logout();
           return;
         }
         return;
       }
-      setData(data);
-      console.log(data);
+      setRequiredDocuments(data);
     } catch (error) {
-      console.error('Error fetching courses:', error);
+      console.error('Error fetching required documents:', error);
       return [];
     }
   }
 
-  const initialValues = {
-    firstName: data ? data.firstName : '',
-    lastName: data ? data.lastName : '',
-    dob: data ? new Date(data.dob).toISOString().split('T')[0] : '',
-    nic: data ? data.nic : '',
-    address: data ? data.address : '',
-    mobile: data ? data.mobile : '',
-    homeContact: data ? data.homeContact : '',
-    email: data ? data.email : ''
+  const academicQualificationOptions = [
+    'O-Level',
+    'A-Level',
+    'Diploma',
+    'Bachelor\'s Degree',
+    'Master\'s Degree',
+    'PhD',
+    'Other'
+  ];
+
+  const getInitialValues = () => {
+    if (!data) return {};
+
+    console.log('Student data for initial values:', data);
+
+    return {
+      // Personal Details (Step 1)
+      firstName: data.firstName || '',
+      lastName: data.lastName || '',
+      dob: data.dob ? new Date(data.dob).toISOString().split('T')[0] : '',
+      nic: data.nic || '',
+      address: data.address || '',
+      mobile: data.mobile || '',
+      homeContact: data.homeContact || '',
+      email: data.email || '',
+      
+      // Course Details (Step 2) - Multiple enrollments
+      enrollments: enrollments && enrollments.length > 0 ? enrollments.map(enrollment => ({
+        enrollmentId: enrollment._id,
+        courseId: enrollment.courseId || enrollment.course?._id || '',
+        batchId: enrollment.batchId || enrollment.batch?._id || '',
+        courseName: enrollment.course?.name || '',
+        batchName: enrollment.batch?.name || ''
+      })) : [],
+      
+      // Academic Details (Step 3)
+      highestAcademicQualification: data.highestAcademicQualification || '',
+      qualificationDescription: data.qualificationDescription || '',
+      
+      // Required Documents (Step 4)
+      requiredDocuments: data.requiredDocuments ? data.requiredDocuments.map(doc => doc.documentId || doc._id) : [],
+      
+      // Emergency Contact (Step 5)
+      emergencyContact: data.emergencyContact || {
+        name: '',
+        relationship: '',
+        phone: '',
+        email: '',
+        address: ''
+      }
+    };
   };
 
   const validationSchema = Yup.object().shape({
+    // Personal Details validation
     firstName: Yup.string().required('First name is required'),
     lastName: Yup.string().required('Last name is required'),
     dob: Yup.string().required('Date of Birth is required'),
@@ -109,65 +249,174 @@ const UpdateForm = () => {
       .matches(/^\+?\d{10,12}$/, 'Contact No should be 10 to 12 digits with an optional leading + sign')
       .required('Contact No is required'),
     homeContact: Yup.string().matches(/^\+?\d{10,12}$/, 'Contact No should be 10 to 12 digits with an optional leading + sign'),
-    email: Yup.string().required('Email is required')
+    email: Yup.string().email('Invalid email format').required('Email is required'),
+    
+    // Course Details validation (read-only, no validation needed)
+    enrollments: Yup.array(),
+    
+    // Academic Details validation (optional)
+    highestAcademicQualification: Yup.string(),
+    qualificationDescription: Yup.string(),
+    
+    // Emergency Contact validation (optional)
+    emergencyContact: Yup.object().shape({
+      name: Yup.string(),
+      relationship: Yup.string(),
+      phone: Yup.string().matches(/^\+?\d{10,12}$/, 'Phone should be 10 to 12 digits with an optional leading + sign'),
+      email: Yup.string().email('Invalid email format'),
+      address: Yup.string()
+    })
   });
 
+  const handleNext = (values, { setTouched, setFieldError }) => {
+    // Reset submit button clicked state when moving to next step
+    setSubmitButtonClicked(false);
+    
+    // Validate current step before proceeding
+    if (activeStep === 0) {
+      // Validate Personal Details
+      const personalFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
+      let hasErrors = false;
+      
+      personalFields.forEach(field => {
+        if (!values[field]) {
+          setFieldError(field, 'This field is required');
+          hasErrors = true;
+        }
+      });
+      
+      if (hasErrors) {
+        setTouched({ firstName: true, lastName: true, dob: true, nic: true, address: true, mobile: true, email: true });
+        return;
+      }
+    }
+    
+    if (activeStep === 1) {
+      // Course Details step is read-only, no validation needed
+      // Users can proceed without any course enrollments
+    }
+    
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  };
+
+  const handleBack = () => {
+    // Reset submit button clicked state when going back
+    setSubmitButtonClicked(false);
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+  };
+
   const handleSubmit = async (values) => {
+    // Additional check to ensure we're on the final step and submit button was clicked
+    if (activeStep !== steps.length - 1 || !submitButtonClicked) {
+      console.log('handleSubmit called but not on final step or submit button not clicked, preventing submission');
+      console.log('activeStep:', activeStep, 'submitButtonClicked:', submitButtonClicked);
+      return;
+    }
+    
     const searchParams = new URLSearchParams(location.search);
     const id = searchParams.get('id');
-    console.log('Submitting:', values, id);
+    
+    console.log('handleSubmit called with values:', values);
+    console.log('Student ID:', id);
+    
+    // Check if we have the required data
+    if (!id) {
+      console.error('No student ID found in URL');
+      showErrorSwal('Student ID not found');
+      return;
+    }
+    
+    if (!data) {
+      console.error('No student data available');
+      showErrorSwal('Student data not available');
+      return;
+    }
+    
     try {
       setSubmitting(true);
-      const response = await fetch(apiRoutes.studentRoute + id, {
+      
+      // Transform requiredDocuments array to the format expected by the server
+      const studentUpdateData = {
+        firstName: values.firstName,
+        lastName: values.lastName,
+        dob: values.dob,
+        nic: values.nic,
+        address: values.address,
+        mobile: values.mobile,
+        homeContact: values.homeContact,
+        email: values.email,
+        highestAcademicQualification: values.highestAcademicQualification,
+        qualificationDescription: values.qualificationDescription,
+        requiredDocuments: values.requiredDocuments.map(docId => ({
+          documentId: docId,
+          isProvided: true
+        })),
+        emergencyContact: values.emergencyContact
+      };
+
+      // Update student data
+      const studentResponse = await fetch(apiRoutes.studentRoute + id, {
         method: 'PUT',   
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
         },
-        body: JSON.stringify(values)
+        body: JSON.stringify(studentUpdateData)
       });
 
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        // display error message
-        const errorMessage = responseData.message;
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          return;
-        } else if (response.status === 403) {
-          showErrorSwal(errorMessage); // Show error message from response body
-        }
+      if (!studentResponse.ok) {
+        const errorData = await studentResponse.json();
+        console.error('Student update failed:', errorData);
+        showErrorSwal(errorData.message || 'Failed to update student');
         return;
-      } else {
-        const successMessage = responseData.message; // Get success message from response body
-        showSuccessSwal(successMessage); // Show success message from response body
       }
+
+             // Enrollments are read-only in the wizard, no updates needed
+
+             // Get the updated student data to check the new status
+       const updatedStudentResponse = await fetch(apiRoutes.studentRoute + id, {
+         method: 'GET',
+         headers: {
+           'Content-Type': 'application/json',
+           Authorization: `Bearer ${user.token}`
+         },
+       });
+       
+       let statusMessage = 'Student updated successfully';
+       if (updatedStudentResponse.ok) {
+         const updatedStudent = await updatedStudentResponse.json();
+         if (updatedStudent.status === 'completed') {
+           statusMessage = 'Student updated successfully! Registration is now complete.';
+         } else if (updatedStudent.status === 'incomplete') {
+           statusMessage = 'Student updated successfully! Some required fields are still missing.';
+         }
+       }
+       
+       showSuccessSwal(statusMessage);
+       // Redirect back to students list
+       window.location.href = '/app/students';
 
       console.log('Student updated successfully');
     } catch (error) {
       console.error(error);
-      showErrorSwal(error);
+      showErrorSwal('Error updating student: ' + error.message);
     } finally {
       setSubmitting(false);
+      setSubmitButtonClicked(false); // Reset submit button state
     }
   };
 
-  if (!data) {
+  const renderStepContent = (step, values, errors, touched, setFieldValue) => {
+    switch (step) {
+      case 0:
     return (
-      <div>
-        <LinearProgress />
-      </div>
-    );
-  }
-
-  return (
-    <MainCard title="Update Student">
-      <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
-        {({ errors, handleSubmit, touched }) => (
-          <Form onSubmit={handleSubmit}>
-            <Grid container direction="column" justifyContent="center">
-              <Grid container sx={{ p: 3 }} spacing={2}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <UserOutlined style={{ marginRight: 8, fontSize: 24 }} />
+                <Typography variant="h5">Personal Details</Typography>
+              </Box>
+              <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Field
                     as={TextField}
@@ -177,10 +426,7 @@ const UpdateForm = () => {
                     fullWidth
                     error={touched.firstName && !!errors.firstName}
                     helperText={<ErrorMessage name="firstName" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
-                    }}
-                    sx={{ mb: 3 }} // Margin bottom added
+                    InputProps={{ sx: { px: 2, py: 1 } }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -192,10 +438,7 @@ const UpdateForm = () => {
                     fullWidth
                     error={touched.lastName && !!errors.lastName}
                     helperText={<ErrorMessage name="lastName" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
-                    }}
-                    sx={{ mb: 3 }} // Margin bottom added
+                    InputProps={{ sx: { px: 2, py: 1 } }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -209,10 +452,7 @@ const UpdateForm = () => {
                     fullWidth
                     error={touched.dob && !!errors.dob}
                     helperText={<ErrorMessage name="dob" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
-                    }}
-                    sx={{ mb: 3 }} // Margin bottom added
+                    InputProps={{ sx: { px: 2, py: 1 } }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -224,25 +464,21 @@ const UpdateForm = () => {
                     fullWidth
                     error={touched.nic && !!errors.nic}
                     helperText={<ErrorMessage name="nic" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
-                    }}
-                    sx={{ mb: 3 }} // Margin bottom added
+                    InputProps={{ sx: { px: 2, py: 1 } }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12}>
                   <Field
                     as={TextField}
                     label="Address"
                     variant="outlined"
                     name="address"
                     fullWidth
+                    multiline
+                    rows={3}
                     error={touched.address && !!errors.address}
                     helperText={<ErrorMessage name="address" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
-                    }}
-                    sx={{ mb: 3 }} // Margin bottom added
+                    InputProps={{ sx: { px: 2, py: 1 } }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -254,28 +490,22 @@ const UpdateForm = () => {
                     fullWidth
                     error={touched.mobile && !!errors.mobile}
                     helperText={<ErrorMessage name="mobile" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
-                    }}
-                    sx={{ mb: 3 }} // Margin bottom added
+                    InputProps={{ sx: { px: 2, py: 1 } }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Field
                     as={TextField}
-                    label="Home Contact"
+                    label="Home Contact (Optional)"
                     variant="outlined"
                     name="homeContact"
                     fullWidth
                     error={touched.homeContact && !!errors.homeContact}
                     helperText={<ErrorMessage name="homeContact" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
-                    }}
-                    sx={{ mb: 3 }} // Margin bottom added
+                    InputProps={{ sx: { px: 2, py: 1 } }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12}>
                   <Field
                     as={TextField}
                     label="Email"
@@ -284,32 +514,374 @@ const UpdateForm = () => {
                     fullWidth
                     error={touched.email && !!errors.email}
                     helperText={<ErrorMessage name="email" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
-                    }}
-                    sx={{ mb: 3 }} // Margin bottom added
+                    InputProps={{ sx: { px: 2, py: 1 } }}
                   />
                 </Grid>
               </Grid>
-              <Divider sx={{ mt: 3, mb: 2 }} />
-              <Grid item xs={12} sm={6} style={{ textAlign: 'right' }}>
+            </CardContent>
+          </Card>
+        );
+
+             case 1:
+         return (
+           <Card>
+             <CardContent>
+               <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                 <BookOutlined style={{ marginRight: 8, fontSize: 24 }} />
+                 <Typography variant="h5">Course Details (Read Only)</Typography>
+               </Box>
+               
+               <Box sx={{ mb: 2 }}>
+                 <Typography variant="subtitle2" gutterBottom>
+                   Current Enrollments:
+                 </Typography>
+                 {values.enrollments && values.enrollments.length > 0 ? (
+                   values.enrollments.map((enrollment, index) => (
+                     <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1, bgcolor: 'grey.50' }}>
+                       <Grid container spacing={2} alignItems="center">
+                         <Grid item xs={12} sm={6}>
+                           <Typography variant="body2" color="textSecondary">
+                             <strong>Course:</strong> {enrollment.courseName || 'Not selected'}
+                           </Typography>
+                         </Grid>
+                         <Grid item xs={12} sm={6}>
+                           <Typography variant="body2" color="textSecondary">
+                             <strong>Batch:</strong> {enrollment.batchName || 'Not selected'}
+                           </Typography>
+                         </Grid>
+                       </Grid>
+                     </Box>
+                   ))
+                 ) : (
+                   <Box sx={{ p: 2, border: '1px solid #e0e0e0', borderRadius: 1, bgcolor: 'grey.50' }}>
+                     <Typography variant="body2" color="textSecondary" align="center">
+                       No enrollments found for this student
+                     </Typography>
+                   </Box>
+                 )}
+               </Box>
+
+
+
+               <Box sx={{ mt: 3, p: 2, bgcolor: 'info.50', borderRadius: 1 }}>
+                 <Typography variant="body2" color="info.main">
+                   <strong>Note:</strong> Course enrollments can only be managed through the dedicated enrollment management page. 
+                   This wizard is for updating student personal information only.
+                 </Typography>
+               </Box>
+             </CardContent>
+           </Card>
+         );
+
+      case 2:
+        return (
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <ReadOutlined style={{ marginRight: 8, fontSize: 24 }} />
+                <Typography variant="h5">Academic Details (Optional)</Typography>
+              </Box>
+              
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 3, p: 2, bgcolor: 'info.50', borderRadius: 1 }}>
+                This step is optional. You can skip it if you don&apos;t want to update academic information.
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Field name="highestAcademicQualification">
+                    {({ field }) => (
+                      <FormControl fullWidth>
+                        <InputLabel>Highest Academic Qualification</InputLabel>
+                        <Select {...field} label="Highest Academic Qualification">
+                          {academicQualificationOptions.map((qualification) => (
+                            <MenuItem key={qualification} value={qualification}>
+                              {qualification}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
+                  </Field>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Qualification Description"
+                    variant="outlined"
+                    name="qualificationDescription"
+                    fullWidth
+                    InputProps={{ sx: { px: 2, py: 1 } }}
+                  />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        );
+
+      case 3:
+        return (
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <FileTextOutlined style={{ marginRight: 8, fontSize: 24 }} />
+                <Typography variant="h5">Required Documents (Optional)</Typography>
+              </Box>
+              
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 3, p: 2, bgcolor: 'info.50', borderRadius: 1 }}>
+                This step is optional. You can skip it if you don&apos;t want to update document information.
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Select documents that have been provided:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {requiredDocuments.map((doc) => (
+                      <FormControlLabel
+                        key={doc._id}
+                        control={
+                          <Checkbox
+                            checked={values.requiredDocuments.includes(doc._id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFieldValue('requiredDocuments', [...values.requiredDocuments, doc._id]);
+                              } else {
+                                setFieldValue('requiredDocuments', values.requiredDocuments.filter(id => id !== doc._id));
+                              }
+                            }}
+                          />
+                        }
+                        label={
+                          <Box>
+                            <Typography variant="body2">{doc.name}</Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {doc.description}
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                    ))}
+                  </Box>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        );
+
+      case 4:
+        return (
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <PhoneOutlined style={{ marginRight: 8, fontSize: 24 }} />
+                <Typography variant="h5">Emergency Contact (Optional)</Typography>
+              </Box>
+              
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 3, p: 2, bgcolor: 'info.50', borderRadius: 1 }}>
+                This step is optional. You can skip it if you don&apos;t want to update emergency contact information.
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Contact Name"
+                    variant="outlined"
+                    name="emergencyContact.name"
+                    fullWidth
+                    InputProps={{ sx: { px: 2, py: 1 } }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Relationship"
+                    variant="outlined"
+                    name="emergencyContact.relationship"
+                    fullWidth
+                    InputProps={{ sx: { px: 2, py: 1 } }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Phone"
+                    variant="outlined"
+                    name="emergencyContact.phone"
+                    fullWidth
+                    InputProps={{ sx: { px: 2, py: 1 } }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    as={TextField}
+                    label="Email (Optional)"
+                    variant="outlined"
+                    name="emergencyContact.email"
+                    fullWidth
+                    InputProps={{ sx: { px: 2, py: 1 } }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Field
+                    as={TextField}
+                    label="Address (Optional)"
+                    variant="outlined"
+                    name="emergencyContact.address"
+                    fullWidth
+                    multiline
+                    rows={2}
+                    InputProps={{ sx: { px: 2, py: 1 } }}
+                  />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div>
+        <LinearProgress />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <MainCard title="Update Student">
+        <Typography variant="h6" color="error">
+          Student not found
+        </Typography>
+      </MainCard>
+    );
+  }
+
+  return (
+    <MainCard 
+      title={
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h4">Update Student - Registration Wizard</Typography>
+          {data && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" color="textSecondary">Status:</Typography>
+              <Chip 
+                label={data.status || 'pending'} 
+                color={
+                  data.status === 'completed' ? 'success' : 
+                  data.status === 'incomplete' ? 'warning' : 'default'
+                }
+                size="small"
+              />
+            </Box>
+          )}
+        </Box>
+      }
+    >
+      <Formik 
+        initialValues={getInitialValues()} 
+        validationSchema={validationSchema} 
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({ errors, handleSubmit, touched, values, setFieldValue, setTouched, setFieldError }) => {
+          console.log('Form render - errors:', errors);
+          console.log('Form render - touched:', touched);
+          console.log('Form render - values:', values);
+          
+          return (
+            <Form onSubmit={(e) => {
+              console.log('Form submit event triggered, activeStep:', activeStep, 'steps.length:', steps.length);
+              if (activeStep !== steps.length - 1) {
+                console.log('Preventing form submission - not on final step');
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+              }
+              console.log('Allowing form submission - on final step');
+              handleSubmit(e);
+            }} onKeyDown={(e) => {
+              // Prevent form submission on Enter key unless on final step
+              if (e.key === 'Enter' && activeStep !== steps.length - 1) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+              }
+            }} noValidate>
+            <Box sx={{ width: '100%', mb: 4 }}>
+              <Stepper activeStep={activeStep} alternativeLabel>
+                {steps.map((label) => (
+                  <Step key={label}>
+                    <StepLabel>{label}</StepLabel>
+                  </Step>
+                ))}
+              </Stepper>
+            </Box>
+
+            <Box sx={{ mt: 2, mb: 4 }}>
+              {renderStepContent(activeStep, values, errors, touched, setFieldValue)}
+            </Box>
+
+            {activeStep === steps.length - 1 && (
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 2, textAlign: 'center' }}>
+                Click &quot;Update Student&quot; to submit your changes.
+              </Typography>
+            )}
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 2 }}>
+              <Button
+                disabled={activeStep === 0}
+                onClick={handleBack}
+                startIcon={<ArrowLeftOutlined />}
+                variant="outlined"
+              >
+                Back
+              </Button>
+              
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {activeStep >= 2 && activeStep < steps.length - 1 && (
+                  <Button
+                    variant="outlined"
+                    onClick={() => setActiveStep((prevActiveStep) => prevActiveStep + 1)}
+                  >
+                    Skip
+                  </Button>
+                )}
+                
+                {activeStep === steps.length - 1 ? (
                 <Button
                   type="submit"
                   variant="contained"
                   color="primary"
-                  size="small"
                   disabled={submitting}
-                  endIcon={submitting ? <CircularProgress size={20} color="inherit" /> : null}
+                  startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : <SaveOutlined />}
+                  onClick={() => {
+                    console.log('Update Student button clicked, setting submitButtonClicked to true');
+                    setSubmitButtonClicked(true);
+                  }}
                 >
-                  Update Student
+                  {submitting ? 'Updating...' : 'Update Student'}
                 </Button>
-              </Grid>
-            </Grid>
+                ) : (
+                  <Button
+                    variant="contained"
+                    onClick={() => handleNext(values, { setTouched, setFieldError })}
+                    endIcon={<ArrowRightOutlined />}
+                  >
+                    Next
+                </Button>
+                )}
+              </Box>
+            </Box>
           </Form>
-        )}
+        );
+        }}
       </Formik>
     </MainCard>
   );
 };
 
-export default UpdateForm;
+export default UpdateStudent;

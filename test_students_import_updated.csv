@@ -1,0 +1,6 @@
+First Name,Last Name,Date of Birth,NIC,Address,Mobile,Email,Home Contact,Academic Qualification,Qualification Description,Course Code,Batch Name,Emergency Contact Name,Emergency Contact Relationship,Emergency Contact Phone,Emergency Contact Email,Emergency Contact Address
+John,Doe,5/15/1995,951234567V,123 Main Street Colombo,0771234567,john.doe@email.com,0112345678,A-Level,Advanced Level in Science,CS001,2024 Batch,,,,,
+Jane,Smith,8/22/1998,981234567V,456 Oak Avenue Kandy,0772345678,jane.smith@email.com,,Bachelor's Degree,,IT001,2024 Batch,John Smith,Husband,0778765432,john.smith@email.com,456 Oak Avenue Kandy
+Mike,Johnson,12/10/1996,961234567V,789 Pine Road Galle,0773456789,mike.johnson@email.com,0912345678,,,CS001,2024 Batch,Sarah Johnson,Sister,0777654321,sarah.johnson@email.com,789 Pine Road Galle
+Sarah,Williams,3/28/1997,971234567V,321 Elm Street Jaffna,0774567890,sarah.williams@email.com,0212345678,,,,,David Williams,Brother,0776543210,david.williams@email.com,321 Elm Street Jaffna
+David,Brown,7/14/1999,991234567V,654 Maple Drive Anuradhapura,0775678901,david.brown@email.com,0252345678,,,,,Lisa Brown,Mother,0775432109,lisa.brown@email.com,654 Maple Drive Anuradhapura

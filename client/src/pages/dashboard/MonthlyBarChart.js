@@ -58,20 +58,20 @@ const MonthlyBarChart = ({ onTotalChange }) => {
   useEffect(() => {
     async function fetchRegistrations() {
       try {
-        const res = await fetch(apiRoutes.statRoute + 'registrations', {
+        const res = await fetch(apiRoutes.statRoute + 'enrollments', {
           headers: { Authorization: `Bearer ${user.token}` }
         });
         const json = await res.json();
 
         if (json.success && json.data) {
-          const { registrations } = json.data;
-          const { totalRegistrations } = json.data;
+          const { courseEnrollments } = json.data;
+          const { totalEnrollments } = json.data;
           // Call the callback to pass the total up
           if (onTotalChange) {
-            onTotalChange(totalRegistrations);
+            onTotalChange(totalEnrollments);
           }
-          const categories = registrations.map((item) => item.courseName);
-          const data = registrations.map((item) => item.registrations);
+          const categories = courseEnrollments.map((item) => item.courseName);
+          const data = courseEnrollments.map((item) => item.registrations);
 
           setSeries([{ data }]);
           setOptions((prev) => ({

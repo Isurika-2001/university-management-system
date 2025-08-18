@@ -14,17 +14,19 @@ import {
   LinearProgress,
   TextField,
   IconButton,
+  Chip,
 } from '@mui/material';
 import { UploadOutlined, DownloadOutlined, EditOutlined, FileAddOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { useAuthContext } from 'context/useAuthContext';
-import * as XLSX from 'xlsx';
+
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import ImportSummaryModal from './Import-summary-modal';
 import { CircularProgress } from '../../../node_modules/@mui/material/index';
 import { studentsAPI } from '../../api/students';
+import { apiRoutes } from '../../config';
 
 const View = () => {
   const [page, setPage] = useState(0); // zero-based page index
@@ -33,7 +35,6 @@ const View = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [summaryData, setSummaryData] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -170,7 +171,7 @@ const View = () => {
   };
 
   const handleViewRow = (id) => {
-    navigate('/app/course-registrations/update?id=' + id);
+    navigate('/app/students/update?id=' + id);
   };
 
   const handleClick = () => {
@@ -182,39 +183,32 @@ const View = () => {
     if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
     params.append('sortBy', sortBy);
     params.append('sortOrder', sortOrder);
+    params.append('format', 'csv');
 
     try {
       setIsUploading(true);
-      const response = await fetch(`${apiRoutes.studentRoute + 'export'}?${params.toString()}`, {
+      console.log('Exporting CSV with URL:', `${apiRoutes.studentRoute}export?${params.toString()}`);
+      
+      const response = await fetch(`${apiRoutes.studentRoute}export?${params.toString()}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
         }
       });
 
-      if (!response.ok) throw new Error('Error exporting students');
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
 
-      const json = await response.json();
-      const exportData = json.data || [];
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Response error:', errorText);
+        throw new Error(`Error exporting students: ${response.status} ${errorText}`);
+      }
 
-      const csvHeader = ['Student ID', 'First Name', 'Last Name', 'NIC', 'DOB', 'Address', 'Mobile', 'Home Contact', 'Email'].join(',');
-      const csvData = exportData.map((student) =>
-        [
-          student.registrationNo,
-          student.firstName,
-          student.lastName,
-          student.nic,
-          student.dob,
-          student.address,
-          student.mobile,
-          student.homeContact,
-          student.email
-        ].join(',')
-      );
-
-      const csvContent = csvHeader + '\n' + csvData.join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const blob = await response.blob();
+      console.log('Blob size:', blob.size);
+      console.log('Blob type:', blob.type);
+      
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
       link.download = 'students_export.csv';
@@ -223,6 +217,52 @@ const View = () => {
       document.body.removeChild(link);
     } catch (error) {
       console.error('Export error:', error.message);
+      showErrorSwal('Failed to export students: ' + error.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const exportToExcel = async () => {
+    const params = new URLSearchParams();
+    if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+    params.append('sortBy', sortBy);
+    params.append('sortOrder', sortOrder);
+    params.append('format', 'excel');
+
+    try {
+      setIsUploading(true);
+      console.log('Exporting Excel with URL:', `${apiRoutes.studentRoute}export?${params.toString()}`);
+      
+      const response = await fetch(`${apiRoutes.studentRoute}export?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${user.token}`
+        }
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Response error:', errorText);
+        throw new Error(`Error exporting students: ${response.status} ${errorText}`);
+      }
+
+      const blob = await response.blob();
+      console.log('Blob size:', blob.size);
+      console.log('Blob type:', blob.type);
+      
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = 'students_export.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Export error:', error.message);
+      showErrorSwal('Failed to export students: ' + error.message);
     } finally {
       setIsUploading(false);
     }
@@ -238,39 +278,44 @@ const View = () => {
       if (!file) return;
 
       try {
-        setIsDownloading(true);
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data);
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        setIsUploading(true);
+        
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('file', file);
 
-        console.log('Parsed Excel Data:', jsonData);
+        console.log('Uploading file:', file.name);
 
         // Send to backend API
-        const response = await fetch(`${apiRoutes.bulkUploadRoute}`, {
+        const response = await fetch(`${apiRoutes.studentRoute}import`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
             Authorization: `Bearer ${user.token}`
           },
-          body: JSON.stringify({ data: jsonData })
+          body: formData
         });
 
         const result = await response.json();
 
         if (response.ok) {
-          setSummaryData(result);
-          console.log('result', result)
+          setSummaryData(result.data);
+          console.log('Import result:', result);
           setShowModal(true);
           fetchData(); // Refresh the table
+          
+          // Show success message
+          Toast.fire({
+            icon: 'success',
+            title: result.message
+          });
         } else {
-          showErrorSwal(result.message);
+          showErrorSwal(result.message || 'Failed to import Excel file');
         }
       } catch (err) {
         console.error('Import error:', err.message);
-        showErrorSwal('Failed to import Excel file');
+        showErrorSwal('Failed to import Excel file: ' + err.message);
       } finally {
-        setIsDownloading(false);
+        setIsUploading(false);
       }
     };
 
@@ -279,28 +324,63 @@ const View = () => {
 
   return (
     <>
-      <MainCard title="Student List">
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
-          {/* Left side: Filters */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-            <TextField label="Search" variant="outlined" onChange={handleSearch} value={searchTerm} sx={{ width: 300 }} />
+      <MainCard 
+        title={
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <span>Student List</span>
+            <Button 
+              onClick={handleClick} 
+              variant="contained" 
+              startIcon={<FileAddOutlined />}
+              size="small"
+            >
+              Add Student
+            </Button>
           </Box>
-          {/* Right side: Export button */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-            <Button variant="contained" disabled={isUploading} color="success" onClick={exportToCSV} startIcon={<UploadOutlined />}>
-              Export
+        }
+      >
+        {/* Search and Actions Row */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2 }}>
+          {/* Search Field */}
+          <TextField 
+            label="Search" 
+            variant="outlined" 
+            onChange={handleSearch} 
+            value={searchTerm} 
+            sx={{ minWidth: 300, flexGrow: 1, maxWidth: 400 }} 
+          />
+          
+          {/* Action Buttons */}
+          <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+            <Button 
+              variant="outlined" 
+              disabled={isUploading} 
+              color="success" 
+              onClick={exportToCSV} 
+              startIcon={<UploadOutlined />}
+              size="small"
+            >
+              CSV
+            </Button>
+            <Button 
+              variant="outlined" 
+              disabled={isUploading} 
+              color="primary" 
+              onClick={exportToExcel} 
+              startIcon={<UploadOutlined />}
+              size="small"
+            >
+              Excel
             </Button>
             <Button
-              variant="contained"
-              disabled={isDownloading}
+              variant="outlined"
+              disabled={isUploading}
               color="info"
               onClick={importFromExcel}
-              startIcon={isDownloading ? <CircularProgress size={16} /> : <DownloadOutlined />}
+              startIcon={isUploading ? <CircularProgress size={16} /> : <DownloadOutlined />}
+              size="small"
             >
               Import
-            </Button>
-            <Button onClick={handleClick} variant="contained" startIcon={<FileAddOutlined />}>
-              Add New Student
             </Button>
           </Box>
         </Box>
@@ -396,6 +476,8 @@ const View = () => {
                     </IconButton>
                   </Box>
                 </TableCell>
+                <TableCell>Registration Date</TableCell>
+                <TableCell>Status</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
@@ -411,6 +493,19 @@ const View = () => {
                   <TableCell>{student.nic}</TableCell>
                   <TableCell>{student.mobile}</TableCell>
                   <TableCell>{student.address}</TableCell>
+                  <TableCell>
+                    {student.registrationDate ? new Date(student.registrationDate).toLocaleDateString() : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={student.status || 'pending'} 
+                      color={
+                        student.status === 'completed' ? 'success' : 
+                        student.status === 'incomplete' ? 'warning' : 'default'
+                      }
+                      size="small"
+                    />
+                  </TableCell>
                   <TableCell>
                     <Button
                       variant="outlined"

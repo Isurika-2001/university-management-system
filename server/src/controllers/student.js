@@ -2,12 +2,115 @@
 
 const Student = require("../models/student");
 const Counter = require("../models/counter");
-const CourseRegistration = require("../models/course_registration");
+const Enrollment = require("../models/enrollment");
 const ActivityLogger = require("../utils/activityLogger");
 const { getRequestInfo } = require("../middleware/requestInfo");
+const multer = require('multer');
+const xlsx = require('xlsx');
 
 // utility calling
 const { getNextSequenceValue } = require('../utilities/counter'); 
+const { generateCSV, generateExcel, studentExportHeaders } = require("../utils/exportUtils");
+
+// Function to check if student has all required fields completed
+function checkStudentCompletion(student) {
+  // Check basic required fields (Step 1 - Required)
+  const basicFields = [
+    student.firstName,
+    student.lastName,
+    student.dob,
+    student.nic,
+    student.address,
+    student.mobile,
+    student.email
+  ];
+
+  // Check if any basic field is missing
+  if (basicFields.some(field => !field)) {
+    return false;
+  }
+
+  // Check if student has at least one enrollment (Step 2 - Required)
+  // This is handled by the enrollment creation, so we assume it exists if student is created
+
+  // Step 3: Academic Details (Required for completion)
+  if (!student.highestAcademicQualification || !student.qualificationDescription) {
+    return false;
+  }
+
+  // Step 4: Required Documents (Required for completion)
+  if (!student.requiredDocuments || student.requiredDocuments.length === 0) {
+    return false;
+  }
+
+  // Check if at least one document is marked as provided
+  const hasProvidedDocuments = student.requiredDocuments.some(doc => doc.isProvided);
+  if (!hasProvidedDocuments) {
+    return false;
+  }
+
+  // Step 5: Emergency Contact (Required for completion)
+  if (!student.emergencyContact || 
+      !student.emergencyContact.name || 
+      !student.emergencyContact.relationship || 
+      !student.emergencyContact.phone) {
+    return false;
+  }
+
+  return true;
+}
+
+// Function to get detailed completion status
+function getStudentCompletionStatus(student) {
+  const status = {
+    step1: false, // Personal Details
+    step2: false, // Course Details (enrollment)
+    step3: false, // Academic Details
+    step4: false, // Required Documents
+    step5: false, // Emergency Contact
+    overall: 'pending'
+  };
+
+  // Step 1: Personal Details
+  const basicFields = [
+    student.firstName,
+    student.lastName,
+    student.dob,
+    student.nic,
+    student.address,
+    student.mobile,
+    student.email
+  ];
+  status.step1 = !basicFields.some(field => !field);
+
+  // Step 2: Course Details (enrollment) - assume true if student exists
+  status.step2 = true;
+
+  // Step 3: Academic Details
+  status.step3 = !!(student.highestAcademicQualification && student.qualificationDescription);
+
+  // Step 4: Required Documents
+  status.step4 = !!(student.requiredDocuments && 
+                   student.requiredDocuments.length > 0 && 
+                   student.requiredDocuments.some(doc => doc.isProvided));
+
+  // Step 5: Emergency Contact
+  status.step5 = !!(student.emergencyContact && 
+                   student.emergencyContact.name && 
+                   student.emergencyContact.relationship && 
+                   student.emergencyContact.phone);
+
+  // Determine overall status
+  if (status.step1 && status.step2 && status.step3 && status.step4 && status.step5) {
+    status.overall = 'completed';
+  } else if (status.step1 && status.step2) {
+    status.overall = 'incomplete';
+  } else {
+    status.overall = 'pending';
+  }
+
+  return status;
+} 
 
 async function getAllStudents(req, res) {
   try {
@@ -106,7 +209,13 @@ async function getStudentById(req, res) {
       return res.status(404).json({ error: "Student not found" });
     }
 
-    res.status(200).json(student);
+    // Get completion status for the student
+    const completionStatus = getStudentCompletionStatus(student);
+
+    res.status(200).json({
+      ...student.toObject(),
+      completionStatus: completionStatus
+    });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -124,6 +233,11 @@ async function createStudent(req, res) {
     email,
     courseId,
     batchId,
+    // New fields
+    highestAcademicQualification,
+    qualificationDescription,
+    requiredDocuments,
+    emergencyContact,
   } = req.body;
 
   const requestInfo = getRequestInfo(req);
@@ -174,7 +288,8 @@ async function createStudent(req, res) {
     // New student registration
     const sequenceValue = await getNextSequenceValue("unique_id_sequence");
 
-    const student = new Student({
+    // Build student data object with only defined optional fields
+    const studentData = {
       firstName,
       lastName,
       dob,
@@ -184,9 +299,36 @@ async function createStudent(req, res) {
       homeContact,
       email,
       registration_no: sequenceValue,
-    });
+    };
+
+    // Only include optional fields if they have values
+    if (highestAcademicQualification && highestAcademicQualification.trim() !== '') {
+      studentData.highestAcademicQualification = highestAcademicQualification;
+    }
+    
+    if (qualificationDescription && qualificationDescription.trim() !== '') {
+      studentData.qualificationDescription = qualificationDescription;
+    }
+    
+    if (requiredDocuments && requiredDocuments.length > 0) {
+      studentData.requiredDocuments = requiredDocuments;
+    }
+    
+    if (emergencyContact && 
+        emergencyContact.name && emergencyContact.name.trim() !== '' &&
+        emergencyContact.relationship && emergencyContact.relationship.trim() !== '' &&
+        emergencyContact.phone && emergencyContact.phone.trim() !== '') {
+      studentData.emergencyContact = emergencyContact;
+    }
+
+    const student = new Student(studentData);
 
     const newStudent = await student.save();
+
+    // Get detailed completion status and update
+    const completionStatus = getStudentCompletionStatus(newStudent);
+    newStudent.status = completionStatus.overall;
+    await newStudent.save();
 
     const courseSequenceValue = await getNextSequenceValue("course_id_sequence");
 
@@ -201,14 +343,26 @@ async function createStudent(req, res) {
 
     // Log the student creation
     await ActivityLogger.logStudentCreate(req.user, newStudent, requestInfo.ipAddress, requestInfo.userAgent);
+    
+    let message = "New student registered for the course";
+    if (completionStatus.overall === 'completed') {
+      message = "Student registered successfully! Registration is complete.";
+    } else if (completionStatus.overall === 'incomplete') {
+      const missingSteps = [];
+      if (!completionStatus.step3) missingSteps.push('Academic Details');
+      if (!completionStatus.step4) missingSteps.push('Required Documents');
+      if (!completionStatus.step5) missingSteps.push('Emergency Contact');
+      message = `Student registered successfully! To complete registration, please provide: ${missingSteps.join(', ')}`;
+    }
 
     res.status(201).json({
       success: true,
-      message: "New student registered for the course",
+      message: message,
       data: {
         studentId: newStudent._id,
         courseId,
         batchId,
+        completionStatus: completionStatus
       },
     });
   } catch (error) {
@@ -224,7 +378,21 @@ async function createStudent(req, res) {
 
 async function updateStudent(req, res) {
   const studentId = req.params.id;
-  const { firstName, lastName, dob, nic, address, mobile, homeContact, email } = req.body;
+  const { 
+    firstName, 
+    lastName, 
+    dob, 
+    nic, 
+    address, 
+    mobile, 
+    homeContact, 
+    email,
+    // New fields
+    highestAcademicQualification,
+    qualificationDescription,
+    requiredDocuments,
+    emergencyContact,
+  } = req.body;
   const requestInfo = getRequestInfo(req);
 
   try {
@@ -248,6 +416,24 @@ async function updateStudent(req, res) {
     student.mobile = mobile;
     student.homeContact = homeContact;
     student.email = email;
+    
+    // Update optional fields only if they have values
+    if (highestAcademicQualification !== undefined) {
+      student.highestAcademicQualification = highestAcademicQualification;
+    }
+    if (qualificationDescription !== undefined) {
+      student.qualificationDescription = qualificationDescription;
+    }
+    if (requiredDocuments !== undefined) {
+      student.requiredDocuments = requiredDocuments;
+    }
+    if (emergencyContact !== undefined) {
+      student.emergencyContact = emergencyContact;
+    }
+
+    // Get detailed completion status and update
+    const completionStatus = getStudentCompletionStatus(student);
+    student.status = completionStatus.overall;
 
     await student.save();
 
@@ -260,16 +446,33 @@ async function updateStudent(req, res) {
       address: { from: originalStudent.address, to: address },
       mobile: { from: originalStudent.mobile, to: mobile },
       homeContact: { from: originalStudent.homeContact, to: homeContact },
-      email: { from: originalStudent.email, to: email }
+      email: { from: originalStudent.email, to: email },
+      // New fields
+      highestAcademicQualification: { from: originalStudent.highestAcademicQualification, to: highestAcademicQualification },
+      qualificationDescription: { from: originalStudent.qualificationDescription, to: qualificationDescription },
+      requiredDocuments: { from: originalStudent.requiredDocuments, to: requiredDocuments },
+      emergencyContact: { from: originalStudent.emergencyContact, to: emergencyContact }
     };
 
     await ActivityLogger.logStudentUpdate(req.user, student, changes, requestInfo.ipAddress, requestInfo.userAgent);
+    
+    let message = "Student updated successfully";
+    if (completionStatus.overall === 'completed') {
+      message = "Student updated successfully! Registration is now complete.";
+    } else if (completionStatus.overall === 'incomplete') {
+      const missingSteps = [];
+      if (!completionStatus.step3) missingSteps.push('Academic Details');
+      if (!completionStatus.step4) missingSteps.push('Required Documents');
+      if (!completionStatus.step5) missingSteps.push('Emergency Contact');
+      message = `Student updated successfully! To complete registration, please provide: ${missingSteps.join(', ')}`;
+    }
 
     res.status(200).json({
       success: true,
-      message: "Student updated successfully",
+      message: message,
       data: {
         studentId: student._id,
+        completionStatus: completionStatus
       },
     });
   } catch (error) {
@@ -285,6 +488,8 @@ async function updateStudent(req, res) {
 async function AddCourseRegistration(req, res) {
   const studentId = req.params.id;
   const { courseId, batchId } = req.body;
+
+  console.log('AddCourseRegistration called with:', { studentId, courseId, batchId });
 
   try {
     // Check if the student is already registered for this course and batch
@@ -332,18 +537,18 @@ async function deleteCourseRegistration(req, res) {
   const courseRegistrationId = req.params.id;
 
   try {
-    const courseRegistration = await CourseRegistration.findByIdAndDelete(courseRegistrationId);
+    const enrollment = await Enrollment.findByIdAndDelete(courseRegistrationId);
 
-    if (!courseRegistration) {
+    if (!enrollment) {
       return res.status(404).json({
         success: false,
-        message: "Course registration not found",
+        message: "Enrollment not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Course registration deleted successfully",
+      message: "Enrollment deleted successfully",
       data: {
         courseRegistrationId,
       },
@@ -352,7 +557,7 @@ async function deleteCourseRegistration(req, res) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Error deleting course registration",
+      message: "Error deleting enrollment",
       error: error.message,
     });
   }
@@ -365,21 +570,24 @@ async function checkDuplicateRegistration(nic) {
 }
 
 async function checkDuplicateCourseRegistration(studentId, courseId, batchId) {
-  const courseRegistration = await CourseRegistration.findOne({
+  const enrollment = await Enrollment.findOne({
     studentId,
     courseId,
     batchId,
   });
-  return !!courseRegistration;
+  return !!enrollment;
 }
 
 async function exportStudents(req, res) {
   try {
-    const { search = '', sortBy = 'registration_no', sortOrder = 'asc' } = req.query;
+    const { search = '', sortBy = 'registration_no', sortOrder = 'asc', format = 'csv' } = req.query;
     const requestInfo = getRequestInfo(req);
 
     console.log('--- Export Students Request ---');
-    console.log('Received Query Params:', { search, sortBy, sortOrder });
+    console.log('Received Query Params:', { search, sortBy, sortOrder, format });
+    console.log('Request URL:', req.url);
+    console.log('Request method:', req.method);
+    console.log('User:', req.user ? req.user._id : 'No user');
 
     let filter = {};
 
@@ -432,28 +640,80 @@ async function exportStudents(req, res) {
     }
 
     console.log('Students fetched from DB:', students.length);
+    console.log('First student sample:', students[0] ? {
+      registration_no: students[0].registration_no,
+      firstName: students[0].firstName,
+      lastName: students[0].lastName,
+      status: students[0].status
+    } : 'No students found');
 
     const exportData = students.map((student) => ({
       registrationNo: student.registration_no,
       firstName: student.firstName,
       lastName: student.lastName,
       nic: student.nic,
-      dob: student.dob,
+      dob: student.dob ? new Date(student.dob).toLocaleDateString() : '',
       address: student.address,
       mobile: student.mobile,
       homeContact: student.homeContact,
-      email: student.email
+      email: student.email,
+      status: student.status || 'pending',
+      registrationDate: student.registrationDate ? new Date(student.registrationDate).toLocaleDateString() : '',
+      highestAcademicQualification: student.highestAcademicQualification || '',
+      qualificationDescription: student.qualificationDescription || '',
+      emergencyContactName: student.emergencyContact?.name || '',
+      emergencyContactRelationship: student.emergencyContact?.relationship || '',
+      emergencyContactPhone: student.emergencyContact?.phone || '',
+      emergencyContactEmail: student.emergencyContact?.email || '',
+      emergencyContactAddress: student.emergencyContact?.address || '',
+      requiredDocumentsCount: student.requiredDocuments ? student.requiredDocuments.length : 0,
+      providedDocumentsCount: student.requiredDocuments ? student.requiredDocuments.filter(doc => doc.isProvided).length : 0
     }));
 
     console.log('Final export data count:', exportData.length);
 
     // Log the export activity
+    try {
     await ActivityLogger.logStudentExport(req.user, exportData.length, requestInfo.ipAddress, requestInfo.userAgent);
+    } catch (logError) {
+      console.error('Error logging export activity:', logError);
+      // Continue with export even if logging fails
+    }
 
-    res.status(200).json({
-      total: exportData.length,
-      data: exportData
-    });
+    console.log('Export format requested:', format);
+    console.log('Export data count:', exportData.length);
+    
+    // Handle different export formats
+    if (format.toLowerCase() === 'excel') {
+      try {
+        console.log('Generating Excel file...');
+        const excelBuffer = await generateExcel(exportData, studentExportHeaders, 'Students Export');
+        console.log('Excel buffer size:', excelBuffer.length);
+        
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=students_export.xlsx');
+        res.send(excelBuffer);
+        console.log('Excel file sent successfully');
+      } catch (excelError) {
+        console.error('Error generating Excel:', excelError);
+        res.status(500).json({ error: "Failed to generate Excel file: " + excelError.message });
+      }
+    } else {
+      // Default CSV format
+      try {
+        console.log('Generating CSV file...');
+        const csvContent = generateCSV(exportData, studentExportHeaders);
+        console.log('CSV content length:', csvContent.length);
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=students_export.csv');
+        res.send(csvContent);
+        console.log('CSV file sent successfully');
+      } catch (csvError) {
+        console.error('Error generating CSV:', csvError);
+        res.status(500).json({ error: "Failed to generate CSV file: " + csvError.message });
+      }
+    }
   } catch (error) {
     console.error('Error in exportStudents:', error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -467,15 +727,222 @@ async function courseRegistration(
   sequenceValue,
   courseSequenceValue,
 ) {
-  const courseRegistration = new CourseRegistration({
+  console.log('courseRegistration called with:', { studentId, courseId, batchId, sequenceValue, courseSequenceValue });
+  
+  const enrollment = new Enrollment({
     studentId,
     courseId,
     batchId,
     registration_no: sequenceValue,
-    courseReg_no: courseSequenceValue,
+    enrollment_no: courseSequenceValue,
+    enrollmentDate: new Date(),
   });
 
-  await courseRegistration.save();
+  console.log('Creating enrollment with data:', enrollment);
+  await enrollment.save();
+  console.log('Enrollment saved successfully');
+}
+
+// Excel Import Function
+async function importStudentsFromExcel(req, res) {
+  const requestInfo = getRequestInfo(req);
+  
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded"
+      });
+    }
+
+    console.log('Processing Excel file:', req.file.originalname);
+
+    // Read the Excel file
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Convert to JSON
+    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    
+    if (data.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Excel file must contain at least a header row and one data row"
+      });
+    }
+
+    // Extract headers and data
+    const headers = data[0];
+    const rows = data.slice(1);
+
+    console.log('Headers found:', headers);
+    console.log('Number of data rows:', rows.length);
+
+    // Validate required headers
+    const requiredHeaders = [
+      'First Name', 'Last Name', 'Date of Birth', 'NIC', 'Address', 
+      'Mobile', 'Email'
+    ];
+
+    const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+    if (missingHeaders.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required headers: ${missingHeaders.join(', ')}`
+      });
+    }
+
+    // Process each row
+    const results = {
+      total: rows.length,
+      successful: 0,
+      failed: 0,
+      errors: []
+    };
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNumber = i + 2; // +2 because we start from row 2 (after header)
+
+      try {
+        // Map row data to student object
+        const studentData = {
+          firstName: row[headers.indexOf('First Name')]?.toString().trim(),
+          lastName: row[headers.indexOf('Last Name')]?.toString().trim(),
+          dob: row[headers.indexOf('Date of Birth')]?.toString().trim(),
+          nic: row[headers.indexOf('NIC')]?.toString().trim(),
+          address: row[headers.indexOf('Address')]?.toString().trim(),
+          mobile: row[headers.indexOf('Mobile')]?.toString().trim(),
+          email: row[headers.indexOf('Email')]?.toString().trim(),
+          homeContact: row[headers.indexOf('Home Contact')]?.toString().trim() || '',
+          highestAcademicQualification: row[headers.indexOf('Academic Qualification')]?.toString().trim() || '',
+          qualificationDescription: row[headers.indexOf('Qualification Description')]?.toString().trim() || '',
+          courseCode: row[headers.indexOf('Course Code')]?.toString().trim(),
+          batchName: row[headers.indexOf('Batch Name')]?.toString().trim(),
+          emergencyContactName: row[headers.indexOf('Emergency Contact Name')]?.toString().trim() || '',
+          emergencyContactRelationship: row[headers.indexOf('Emergency Contact Relationship')]?.toString().trim() || '',
+          emergencyContactPhone: row[headers.indexOf('Emergency Contact Phone')]?.toString().trim() || '',
+          emergencyContactEmail: row[headers.indexOf('Emergency Contact Email')]?.toString().trim() || '',
+          emergencyContactAddress: row[headers.indexOf('Emergency Contact Address')]?.toString().trim() || ''
+        };
+
+        // Validate required fields
+        const requiredFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
+        const missingFields = requiredFields.filter(field => !studentData[field]);
+        
+        if (missingFields.length > 0) {
+          results.failed++;
+          results.errors.push(`Row ${rowNumber}: Missing required fields: ${missingFields.join(', ')}`);
+          continue;
+        }
+
+        // Check if student already exists (by NIC)
+        const existingStudent = await Student.findOne({ nic: studentData.nic });
+        if (existingStudent) {
+          results.failed++;
+          results.errors.push(`Row ${rowNumber}: Student with NIC ${studentData.nic} already exists`);
+          continue;
+        }
+
+        // Find course and batch by code/name (optional)
+        let course = null;
+        let batch = null;
+        
+        if (studentData.courseCode) {
+          const Course = require('../models/course');
+          course = await Course.findOne({ courseCode: studentData.courseCode });
+          if (!course) {
+            results.failed++;
+            results.errors.push(`Row ${rowNumber}: Course with code "${studentData.courseCode}" not found`);
+            continue;
+          }
+
+          if (studentData.batchName) {
+            const Batch = require('../models/batch');
+            batch = await Batch.findOne({ 
+              name: { $regex: new RegExp(studentData.batchName, 'i') },
+              courseId: course._id 
+            });
+            if (!batch) {
+              results.failed++;
+              results.errors.push(`Row ${rowNumber}: Batch "${studentData.batchName}" not found for course "${course.name}" (Code: ${studentData.courseCode})`);
+              continue;
+            }
+          }
+        }
+
+        // Create student
+        const sequenceValue = await getNextSequenceValue("unique_id_sequence");
+        
+        const student = new Student({
+          firstName: studentData.firstName,
+          lastName: studentData.lastName,
+          dob: new Date(studentData.dob),
+          nic: studentData.nic,
+          address: studentData.address,
+          mobile: studentData.mobile,
+          homeContact: studentData.homeContact,
+          email: studentData.email,
+          registration_no: sequenceValue,
+          highestAcademicQualification: studentData.highestAcademicQualification,
+          qualificationDescription: studentData.qualificationDescription,
+          emergencyContact: studentData.emergencyContactName ? {
+            name: studentData.emergencyContactName,
+            relationship: studentData.emergencyContactRelationship,
+            phone: studentData.emergencyContactPhone,
+            email: studentData.emergencyContactEmail,
+            address: studentData.emergencyContactAddress
+          } : undefined
+        });
+
+        const newStudent = await student.save();
+
+        // Get completion status and update
+        const completionStatus = getStudentCompletionStatus(newStudent);
+        newStudent.status = completionStatus.overall;
+        await newStudent.save();
+
+        // Create enrollment (only if course and batch are provided)
+        if (course && batch) {
+          const courseSequenceValue = await getNextSequenceValue("course_id_sequence");
+          await courseRegistration(
+            newStudent._id,
+            course._id,
+            batch._id,
+            sequenceValue,
+            courseSequenceValue
+          );
+        }
+
+        // Log the student creation
+        await ActivityLogger.logStudentCreate(req.user, newStudent, requestInfo.ipAddress, requestInfo.userAgent);
+
+        results.successful++;
+
+      } catch (error) {
+        console.error(`Error processing row ${rowNumber}:`, error);
+        results.failed++;
+        results.errors.push(`Row ${rowNumber}: ${error.message}`);
+      }
+    }
+
+    console.log('Import results:', results);
+
+    res.status(200).json({
+      success: true,
+      message: `Import completed. ${results.successful} students imported successfully, ${results.failed} failed.`,
+      data: results
+    });
+
+  } catch (error) {
+    console.error('Error in importStudentsFromExcel:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error processing Excel file",
+      error: error.message
+    });
+  }
 }
 
 module.exports = {
@@ -486,4 +953,5 @@ module.exports = {
   AddCourseRegistration,
   deleteCourseRegistration,
   exportStudents,
+  importStudentsFromExcel,
 };

@@ -5,19 +5,17 @@ import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { useAuthContext } from 'context/useAuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { formatUserTypes } from '../../utils/userTypeUtils';
 import { usersAPI } from '../../api/users';
 
 function UpdateUser() {
   const location = useLocation();
+  const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
   const [submitting, setSubmitting] = useState(false);
 
   const id = queryParams.get('id');
-
-  const { user } = useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -50,7 +48,7 @@ function UpdateUser() {
 
   const passwordInitialValues = {
     password: '',
-    consirmPassword: ''
+    confirmPassword: ''
   };
 
   const validationSchema = Yup.object().shape({
@@ -76,8 +74,12 @@ function UpdateUser() {
 
   const fetchUserTypes = async () => {
     try {
-      const data = await usersAPI.getUserTypes();
-      setUserTypes(formatUserTypes(data));
+      const response = await usersAPI.getUserTypes();
+      console.log('User types response:', response);
+      
+      // Handle both old and new response formats
+      const userTypes = response.data || response;
+      setUserTypes(formatUserTypes(userTypes));
     } catch (error) {
       console.error('Error fetching user types:', error);
     }
@@ -85,11 +87,15 @@ function UpdateUser() {
 
   const fetchUserById = async () => {
     try {
-      const data = await usersAPI.getById(id);
+      const response = await usersAPI.getById(id);
+      console.log('User response:', response);
+      
+      // Handle both old and new response formats
+      const userData = response.data || response;
       setInitialValues({
-        name: data.name,
-        email: data.email,
-        user_type: data.user_type // Using ID directly
+        name: userData.name,
+        email: userData.email,
+        user_type: userData.user_type?._id || userData.user_type // Handle both populated and ID
       });
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -102,8 +108,13 @@ function UpdateUser() {
   const handleSubmit = async (values) => {
     setSubmitting(true);
     try {
-      const data = await usersAPI.update(id, values);
-      showSuccessSwal(data.message || 'User updated successfully');
+      const response = await usersAPI.update(id, values);
+      console.log('Update user response:', response);
+      showSuccessSwal(response.message || 'User updated successfully');
+      // Navigate back to users list after successful update
+      setTimeout(() => {
+        navigate('/app/users');
+      }, 1500);
     } catch (error) {
       console.error('Error updating user:', error);
       showErrorSwal(error.message || 'Error updating user');
@@ -112,36 +123,40 @@ function UpdateUser() {
     }
   };
 
-  const handlePasswordSubmit = async (values) => {
+  const handlePasswordSubmit = async (values, { resetForm }) => {
     setSubmitting(true);
-    console.log('Values', values);
+    console.log('Password update values:', values);
 
     try {
-      const { password, confirmPassword } = values; // Only send the required field
-
-      const response = await fetch(`${apiRoutes.userRoute}password/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({ password, confirmPassword }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        showSuccessSwal(data.message || 'User password updated successfully');
-      } else {
-        showErrorSwal(data.message || 'Failed to update user password');
-      }
+      const { password, confirmPassword } = values;
+      const response = await usersAPI.updatePassword(id, { password, confirmPassword });
+      showSuccessSwal(response.message || 'User password updated successfully');
+      // Reset the password form after successful update
+      resetForm();
     } catch (error) {
       console.error('Error updating user password:', error);
-      showErrorSwal('Error updating user password');
+      showErrorSwal(error.message || 'Error updating user password');
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (!id) {
+    return (
+      <Box textAlign="center" mt={5}>
+        <MainCard title="Error">
+          <p>User ID is required. Please go back to the users list and try again.</p>
+          <Button 
+            variant="contained" 
+            onClick={() => navigate('/app/users')}
+            sx={{ mt: 2 }}
+          >
+            Back to Users
+          </Button>
+        </MainCard>
+      </Box>
+    );
+  }
 
   if (loading) {
     return (
@@ -205,7 +220,16 @@ function UpdateUser() {
                   </Grid>
                 </Grid>
                 <Divider sx={{ mt: 3, mb: 2 }} />
-                <Grid item xs={12} sm={6} style={{ textAlign: 'right' }}>
+                <Grid item xs={12} style={{ textAlign: 'right' }}>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    size="small"
+                    onClick={() => navigate('/app/users')}
+                    sx={{ mr: 2 }}
+                  >
+                    Cancel
+                  </Button>
                   <Button
                     type="submit"
                     variant="contained"
@@ -262,7 +286,7 @@ function UpdateUser() {
                   </Grid>
                 </Grid>
                 <Divider sx={{ mt: 3, mb: 2 }} />
-                <Grid item xs={12} sm={6} style={{ textAlign: 'right' }}>
+                <Grid item xs={12} style={{ textAlign: 'right' }}>
                   <Button
                     type="submit"
                     variant="contained"
