@@ -61,7 +61,7 @@ function checkStudentCompletion(student) {
 }
 
 // Function to get detailed completion status
-function getStudentCompletionStatus(student) {
+async function getStudentCompletionStatus(student) {
   const status = {
     step1: false, // Personal Details
     step2: false, // Course Details (enrollment)
@@ -83,8 +83,9 @@ function getStudentCompletionStatus(student) {
   ];
   status.step1 = !basicFields.some(field => !field);
 
-  // Step 2: Course Details (enrollment) - assume true if student exists
-  status.step2 = true;
+  // Step 2: Course Details (enrollment) - check if student has at least one enrollment
+  const enrollmentCount = await Enrollment.countDocuments({ studentId: student._id });
+  status.step2 = enrollmentCount > 0;
 
   // Step 3: Academic Details
   status.step3 = !!(student.highestAcademicQualification && student.qualificationDescription);
@@ -210,7 +211,7 @@ async function getStudentById(req, res) {
     }
 
     // Get completion status for the student
-    const completionStatus = getStudentCompletionStatus(student);
+    const completionStatus = await getStudentCompletionStatus(student);
 
     res.status(200).json({
       ...student.toObject(),
@@ -326,7 +327,7 @@ async function createStudent(req, res) {
     const newStudent = await student.save();
 
     // Get detailed completion status and update
-    const completionStatus = getStudentCompletionStatus(newStudent);
+    const completionStatus = await getStudentCompletionStatus(newStudent);
     newStudent.status = completionStatus.overall;
     await newStudent.save();
 
@@ -432,7 +433,7 @@ async function updateStudent(req, res) {
     }
 
     // Get detailed completion status and update
-    const completionStatus = getStudentCompletionStatus(student);
+    const completionStatus = await getStudentCompletionStatus(student);
     student.status = completionStatus.overall;
 
     await student.save();
@@ -514,13 +515,41 @@ async function AddCourseRegistration(req, res) {
 
     await courseRegistration(studentId, courseId, batchId, student.registration_no, courseSequenceValue);
 
+    // Check completion status after adding the new enrollment
+    const completionStatus = await getStudentCompletionStatus(student);
+    const previousStatus = student.status;
+    
+    // Update student status if it has changed
+    if (student.status !== completionStatus.overall) {
+      student.status = completionStatus.overall;
+      await student.save();
+    }
+
+    // Prepare response message based on completion status
+    let message = "Student registered for the course";
+    if (completionStatus.overall === 'completed' && previousStatus !== 'completed') {
+      message = "Student registered for the course. Student registration is now complete!";
+    } else if (completionStatus.overall === 'incomplete') {
+      const missingSteps = [];
+      if (!completionStatus.step1) missingSteps.push('Personal Details');
+      if (!completionStatus.step2) missingSteps.push('Course Enrollment');
+      if (!completionStatus.step3) missingSteps.push('Academic Details');
+      if (!completionStatus.step4) missingSteps.push('Required Documents');
+      if (!completionStatus.step5) missingSteps.push('Emergency Contact');
+      
+      if (missingSteps.length > 0) {
+        message = `Student registered for the course. Student registration is incomplete. Missing: ${missingSteps.join(', ')}`;
+      }
+    }
+
     res.status(201).json({
       success: true,
-      message: "Student registered for the course",
+      message: message,
       data: {
         studentId,
         courseId,
         batchId,
+        completionStatus: completionStatus
       },
     });
   } catch (error) {
@@ -899,7 +928,7 @@ async function importStudentsFromExcel(req, res) {
         const newStudent = await student.save();
 
         // Get completion status and update
-        const completionStatus = getStudentCompletionStatus(newStudent);
+        const completionStatus = await getStudentCompletionStatus(newStudent);
         newStudent.status = completionStatus.overall;
         await newStudent.save();
 
@@ -954,4 +983,5 @@ module.exports = {
   deleteCourseRegistration,
   exportStudents,
   importStudentsFromExcel,
+  getStudentCompletionStatus,
 };

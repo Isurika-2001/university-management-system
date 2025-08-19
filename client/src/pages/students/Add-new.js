@@ -180,10 +180,12 @@ const AddStudent = () => {
         }
         return;
       }
-      setRequiredDocuments(data);
+      // Handle both structured response and direct array
+      const documents = data.data || data;
+      setRequiredDocuments(Array.isArray(documents) ? documents : []);
     } catch (error) {
       console.error('Error fetching required documents:', error);
-      return [];
+      setRequiredDocuments([]);
     }
   }
 
@@ -360,7 +362,7 @@ const AddStudent = () => {
            qualificationDescription: values.qualificationDescription 
          }),
          // Required documents - only include if they exist and have values
-         ...(values.requiredDocuments && values.requiredDocuments.length > 0 && {
+         ...(Array.isArray(values.requiredDocuments) && values.requiredDocuments.length > 0 && {
            requiredDocuments: values.requiredDocuments.map(docId => ({
              documentId: docId,
              isProvided: true
@@ -402,18 +404,41 @@ const AddStudent = () => {
          body: JSON.stringify(studentData)
        });
 
-      const studentResponseData = await studentResponse.json();
+             const studentResponseData = await studentResponse.json();
 
-      if (!studentResponse.ok) {
-        const errorMessage = studentResponseData.message;
-        if (studentResponse.status === 500) {
-          console.error('Internal Server Error.');
-          return;
-        } else if (studentResponse.status === 403) {
-          showErrorSwal(errorMessage);
-        }
-        return;
-      }
+       if (!studentResponse.ok) {
+         const errorMessage = studentResponseData.message;
+         if (studentResponse.status === 500) {
+           console.error('Internal Server Error.');
+           return;
+         } else if (studentResponse.status === 403) {
+           showErrorSwal(errorMessage);
+         }
+         return;
+       }
+
+       // Show appropriate message based on completion status
+       let successMessage = studentResponseData.message || 'Student registered successfully';
+       
+       // If we have completion status details, provide more specific feedback
+       if (studentResponseData.data && studentResponseData.data.completionStatus) {
+         const completionStatus = studentResponseData.data.completionStatus;
+         
+         if (completionStatus.overall === 'completed') {
+           successMessage = 'Student registered successfully! Registration is complete.';
+         } else if (completionStatus.overall === 'incomplete') {
+           const missingSteps = [];
+           if (!completionStatus.step1) missingSteps.push('Personal Details');
+           if (!completionStatus.step2) missingSteps.push('Course Enrollment');
+           if (!completionStatus.step3) missingSteps.push('Academic Details');
+           if (!completionStatus.step4) missingSteps.push('Required Documents');
+           if (!completionStatus.step5) missingSteps.push('Emergency Contact');
+           
+           successMessage = `Student registered successfully! To complete registration, please provide: ${missingSteps.join(', ')}`;
+         } else {
+           successMessage = 'Student registered successfully! Registration is still pending.';
+         }
+       }
 
                     // Create additional enrollments for the student (skip the first one as it's already created)
        console.log('About to create additional enrollments:', values.enrollments);
@@ -452,24 +477,6 @@ const AddStudent = () => {
          }
        }
 
-             // Use the completion status from the response
-       let successMessage = studentResponseData.message;
-       
-       // If we have completion status in the response, use it for better messaging
-       if (studentResponseData.data && studentResponseData.data.completionStatus) {
-         const completionStatus = studentResponseData.data.completionStatus;
-         
-         if (completionStatus.overall === 'completed') {
-           successMessage = 'Student registered successfully! Registration is complete.';
-         } else if (completionStatus.overall === 'incomplete') {
-           const missingSteps = [];
-           if (!completionStatus.step3) missingSteps.push('Academic Details');
-           if (!completionStatus.step4) missingSteps.push('Required Documents');
-           if (!completionStatus.step5) missingSteps.push('Emergency Contact');
-           successMessage = `Student registered successfully! To complete registration, please provide: ${missingSteps.join(', ')}`;
-         }
-       }
-       
        showSuccessSwal(successMessage);
        // Reset form or redirect
        window.location.reload();
@@ -870,7 +877,7 @@ const AddStudent = () => {
                     Select documents that have been provided:
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {requiredDocuments.map((doc) => (
+                    {Array.isArray(requiredDocuments) && requiredDocuments.map((doc) => (
                       <FormControlLabel
                         key={doc._id}
                         control={

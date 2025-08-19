@@ -173,10 +173,12 @@ const UpdateStudent = () => {
         }
         return;
       }
-      setRequiredDocuments(data);
+      // Handle both structured response and direct array
+      const documents = data.data || data;
+      setRequiredDocuments(Array.isArray(documents) ? documents : []);
     } catch (error) {
       console.error('Error fetching required documents:', error);
-      return [];
+      setRequiredDocuments([]);
     }
   }
 
@@ -220,7 +222,7 @@ const UpdateStudent = () => {
       qualificationDescription: data.qualificationDescription || '',
       
       // Required Documents (Step 4)
-      requiredDocuments: data.requiredDocuments ? data.requiredDocuments.map(doc => doc.documentId || doc._id) : [],
+      requiredDocuments: data.requiredDocuments && Array.isArray(data.requiredDocuments) ? data.requiredDocuments.map(doc => doc.documentId || doc._id) : [],
       
       // Emergency Contact (Step 5)
       emergencyContact: data.emergencyContact || {
@@ -347,10 +349,10 @@ const UpdateStudent = () => {
         email: values.email,
         highestAcademicQualification: values.highestAcademicQualification,
         qualificationDescription: values.qualificationDescription,
-        requiredDocuments: values.requiredDocuments.map(docId => ({
+        requiredDocuments: Array.isArray(values.requiredDocuments) ? values.requiredDocuments.map(docId => ({
           documentId: docId,
           isProvided: true
-        })),
+        })) : [],
         emergencyContact: values.emergencyContact
       };
 
@@ -371,30 +373,35 @@ const UpdateStudent = () => {
         return;
       }
 
-             // Enrollments are read-only in the wizard, no updates needed
-
-             // Get the updated student data to check the new status
-       const updatedStudentResponse = await fetch(apiRoutes.studentRoute + id, {
-         method: 'GET',
-         headers: {
-           'Content-Type': 'application/json',
-           Authorization: `Bearer ${user.token}`
-         },
-       });
-       
-       let statusMessage = 'Student updated successfully';
-       if (updatedStudentResponse.ok) {
-         const updatedStudent = await updatedStudentResponse.json();
-         if (updatedStudent.status === 'completed') {
-           statusMessage = 'Student updated successfully! Registration is now complete.';
-         } else if (updatedStudent.status === 'incomplete') {
-           statusMessage = 'Student updated successfully! Some required fields are still missing.';
-         }
-       }
-       
-       showSuccessSwal(statusMessage);
-       // Redirect back to students list
-       window.location.href = '/app/students';
+      // Get the response data which includes completion status
+      const responseData = await studentResponse.json();
+      
+      // Show appropriate message based on completion status
+      let statusMessage = responseData.message || 'Student updated successfully';
+      
+      // If we have completion status details, provide more specific feedback
+      if (responseData.data && responseData.data.completionStatus) {
+        const completionStatus = responseData.data.completionStatus;
+        
+        if (completionStatus.overall === 'completed') {
+          statusMessage = 'Student updated successfully! Registration is now complete.';
+        } else if (completionStatus.overall === 'incomplete') {
+          const missingSteps = [];
+          if (!completionStatus.step1) missingSteps.push('Personal Details');
+          if (!completionStatus.step2) missingSteps.push('Course Enrollment');
+          if (!completionStatus.step3) missingSteps.push('Academic Details');
+          if (!completionStatus.step4) missingSteps.push('Required Documents');
+          if (!completionStatus.step5) missingSteps.push('Emergency Contact');
+          
+          statusMessage = `Student updated successfully! To complete registration, please provide: ${missingSteps.join(', ')}`;
+        } else {
+          statusMessage = 'Student updated successfully! Registration is still pending.';
+        }
+      }
+      
+      showSuccessSwal(statusMessage);
+      // Redirect back to students list
+      window.location.href = '/app/students';
 
       console.log('Student updated successfully');
     } catch (error) {
@@ -635,7 +642,7 @@ const UpdateStudent = () => {
                     Select documents that have been provided:
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {requiredDocuments.map((doc) => (
+                    {Array.isArray(requiredDocuments) && requiredDocuments.map((doc) => (
                       <FormControlLabel
                         key={doc._id}
                         control={
@@ -765,19 +772,45 @@ const UpdateStudent = () => {
       title={
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="h4">Update Student - Registration Wizard</Typography>
-          {data && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" color="textSecondary">Status:</Typography>
-              <Chip 
-                label={data.status || 'pending'} 
-                color={
-                  data.status === 'completed' ? 'success' : 
-                  data.status === 'incomplete' ? 'warning' : 'default'
-                }
-                size="small"
-              />
-            </Box>
-          )}
+                     {data && (
+             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+               <Typography variant="body2" color="textSecondary">Status:</Typography>
+               <Chip 
+                 label={data.status || 'pending'} 
+                 color={
+                   data.status === 'completed' ? 'success' : 
+                   data.status === 'incomplete' ? 'warning' : 'default'
+                 }
+                 size="small"
+               />
+               {data.completionStatus && (
+                 <Box sx={{ ml: 2 }}>
+                   <Typography variant="caption" color="textSecondary" display="block">
+                     Completion Progress:
+                   </Typography>
+                   <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
+                     {['step1', 'step2', 'step3', 'step4', 'step5'].map((step, index) => (
+                       <Box
+                         key={step}
+                         sx={{
+                           width: 8,
+                           height: 8,
+                           borderRadius: '50%',
+                           bgcolor: data.completionStatus[step] ? 'success.main' : 'grey.300',
+                           border: '1px solid',
+                           borderColor: data.completionStatus[step] ? 'success.main' : 'grey.400'
+                         }}
+                         title={`Step ${index + 1}: ${step === 'step1' ? 'Personal Details' : 
+                                                   step === 'step2' ? 'Course Enrollment' :
+                                                   step === 'step3' ? 'Academic Details' :
+                                                   step === 'step4' ? 'Required Documents' : 'Emergency Contact'}`}
+                       />
+                     ))}
+                   </Box>
+                 </Box>
+               )}
+             </Box>
+           )}
         </Box>
       }
     >
