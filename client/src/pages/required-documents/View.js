@@ -238,8 +238,6 @@ const RequiredDocumentsView = () => {
                                  <TableCell>Description</TableCell>
                  <TableCell>Type</TableCell>
                  <TableCell>Required</TableCell>
-                 <TableCell>Max Size (MB)</TableCell>
-                 <TableCell>Allowed Extensions</TableCell>
                  <TableCell>Created Date</TableCell>
                  <TableCell>Action</TableCell>
               </TableRow>
@@ -274,12 +272,6 @@ const RequiredDocumentsView = () => {
                        variant="outlined" 
                        size="small" 
                      />
-                   </TableCell>
-                   <TableCell>{document.maxFileSize || 'N/A'}</TableCell>
-                   <TableCell>
-                     {Array.isArray(document.allowedExtensions) 
-                       ? document.allowedExtensions.join(', ') 
-                       : document.allowedExtensions || 'N/A'}
                    </TableCell>
                    <TableCell>
                      {document.createdAt ? new Date(document.createdAt).toLocaleDateString() : 'N/A'}

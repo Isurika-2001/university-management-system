@@ -658,44 +658,108 @@ const UpdateStudent = () => {
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                 <FileTextOutlined style={{ marginRight: 8, fontSize: 24 }} />
-                <Typography variant="h5">Required Documents (Optional)</Typography>
+                <Typography variant="h5">Required Documents</Typography>
               </Box>
               
               <Typography variant="body2" color="textSecondary" sx={{ mb: 3, p: 2, bgcolor: 'info.50', borderRadius: 1 }}>
-                This step is optional. You can skip it if you don&apos;t want to update document information.
+                This step can be skipped during update, but all required documents must be provided to complete the student&apos;s registration status.
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <Typography variant="subtitle2" gutterBottom>
                     Select documents that have been provided:
                   </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {Array.isArray(requiredDocuments) && requiredDocuments.map((doc) => (
-                      <FormControlLabel
-                        key={doc._id}
-                        control={
-                          <Checkbox
-                            checked={values.requiredDocuments.includes(doc._id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFieldValue('requiredDocuments', [...values.requiredDocuments, doc._id]);
-                              } else {
-                                setFieldValue('requiredDocuments', values.requiredDocuments.filter(id => id !== doc._id));
-                              }
-                            }}
+                  
+                  {/* Required Documents Section */}
+                  {Array.isArray(requiredDocuments) && requiredDocuments.filter(doc => doc.isRequired).length > 0 && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold', color: 'error.main' }}>
+                        Required Documents *
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: 'block' }}>
+                        These documents are mandatory for completing your registration
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {requiredDocuments.filter(doc => doc.isRequired).map((doc) => (
+                          <FormControlLabel
+                            key={doc._id}
+                            control={
+                              <Checkbox
+                                checked={values.requiredDocuments.includes(doc._id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFieldValue('requiredDocuments', [...values.requiredDocuments, doc._id]);
+                                  } else {
+                                    setFieldValue('requiredDocuments', values.requiredDocuments.filter(id => id !== doc._id));
+                                  }
+                                }}
+                              />
+                            }
+                            label={
+                              <Box sx={{ border: '1px solid', borderColor: 'error.main', borderRadius: 1, p: 1, backgroundColor: 'rgba(244, 67, 54, 0.1)' }}>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                  {doc.name} *
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                  {doc.description}
+                                </Typography>
+                              </Box>
+                            }
                           />
-                        }
-                        label={
-                          <Box>
-                            <Typography variant="body2">{doc.name}</Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              {doc.description}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    ))}
-                  </Box>
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                  
+                  {/* Optional Documents Section */}
+                  {Array.isArray(requiredDocuments) && requiredDocuments.filter(doc => !doc.isRequired).length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold', color: 'success.main' }}>
+                        Optional Documents
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: 'block' }}>
+                        These documents are optional and can be provided later
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {requiredDocuments.filter(doc => !doc.isRequired).map((doc) => (
+                          <FormControlLabel
+                            key={doc._id}
+                            control={
+                              <Checkbox
+                                checked={values.requiredDocuments.includes(doc._id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFieldValue('requiredDocuments', [...values.requiredDocuments, doc._id]);
+                                  } else {
+                                    setFieldValue('requiredDocuments', values.requiredDocuments.filter(id => id !== doc._id));
+                                  }
+                                }}
+                              />
+                            }
+                            label={
+                              <Box sx={{ border: '1px solid', borderColor: 'success.main', borderRadius: 1, p: 1, backgroundColor: 'rgba(76, 175, 80, 0.1)' }}>
+                                <Typography variant="body2">
+                                  {doc.name}
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                  {doc.description}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                  
+                  {/* No Documents Message */}
+                  {(!Array.isArray(requiredDocuments) || requiredDocuments.length === 0) && (
+                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                      <Typography variant="body2" color="textSecondary">
+                        No documents configured. You can skip this step.
+                      </Typography>
+                    </Box>
+                  )}
                 </Grid>
               </Grid>
             </CardContent>

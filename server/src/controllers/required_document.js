@@ -29,10 +29,10 @@ const getRequiredDocumentById = async (req, res) => {
 // Create a new required document
 const createRequiredDocument = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, type, isRequired } = req.body;
 
-    if (!name || !description) {
-      return res.status(400).json({ message: "Name and description are required" });
+    if (!name || !description || !type) {
+      return res.status(400).json({ message: "Name, description, and type are required" });
     }
 
     const existingDocument = await RequiredDocument.findOne({ name });
@@ -43,6 +43,8 @@ const createRequiredDocument = async (req, res) => {
     const newDocument = new RequiredDocument({
       name,
       description,
+      type,
+      isRequired: isRequired !== undefined ? isRequired : true,
     });
 
     const savedDocument = await newDocument.save();
@@ -66,10 +68,10 @@ const createRequiredDocument = async (req, res) => {
 // Update a required document
 const updateRequiredDocument = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, type, isRequired } = req.body;
 
-    if (!name || !description) {
-      return res.status(400).json({ message: "Name and description are required" });
+    if (!name || !description || !type) {
+      return res.status(400).json({ message: "Name, description, and type are required" });
     }
 
     const existingDocument = await RequiredDocument.findOne({ 
@@ -82,7 +84,12 @@ const updateRequiredDocument = async (req, res) => {
 
     const updatedDocument = await RequiredDocument.findByIdAndUpdate(
       req.params.id,
-      { name, description },
+      { 
+        name, 
+        description, 
+        type, 
+        isRequired: isRequired !== undefined ? isRequired : true 
+      },
       { new: true, runValidators: true }
     );
 

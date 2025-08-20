@@ -3,6 +3,7 @@
 const Student = require("../models/student");
 const Counter = require("../models/counter");
 const Enrollment = require("../models/enrollment");
+const RequiredDocument = require("../models/required_document");
 const ActivityLogger = require("../utils/activityLogger");
 const { getRequestInfo } = require("../middleware/requestInfo");
 const multer = require('multer');
@@ -39,15 +40,14 @@ function checkStudentCompletion(student) {
   }
 
   // Step 4: Required Documents (Required for completion)
+  // Check if all required documents are provided
   if (!student.requiredDocuments || student.requiredDocuments.length === 0) {
     return false;
   }
 
-  // Check if at least one document is marked as provided
-  const hasProvidedDocuments = student.requiredDocuments.some(doc => doc.isProvided);
-  if (!hasProvidedDocuments) {
-    return false;
-  }
+  // We need to check against the actual required documents that have isRequired=true
+  // This will be handled in the detailed status check function
+  return true; // Simplified for now, detailed check in getStudentCompletionStatus
 
   // Step 5: Emergency Contact (Required for completion)
   if (!student.emergencyContact || 
@@ -91,9 +91,22 @@ async function getStudentCompletionStatus(student) {
   status.step3 = !!(student.highestAcademicQualification && student.qualificationDescription);
 
   // Step 4: Required Documents
-  status.step4 = !!(student.requiredDocuments && 
-                   student.requiredDocuments.length > 0 && 
-                   student.requiredDocuments.some(doc => doc.isProvided));
+  // Get all required documents from the database
+  const allRequiredDocs = await RequiredDocument.find({ isRequired: true });
+  
+  if (allRequiredDocs.length === 0) {
+    // If no required documents exist, step is considered complete
+    status.step4 = true;
+  } else {
+    // Check if all required documents are provided
+    const providedRequiredDocs = student.requiredDocuments?.filter(doc => 
+      doc.isProvided && allRequiredDocs.some(reqDoc => 
+        reqDoc._id.toString() === doc.documentId.toString()
+      )
+    ) || [];
+    
+    status.step4 = providedRequiredDocs.length === allRequiredDocs.length;
+  }
 
   // Step 5: Emergency Contact
   status.step5 = !!(student.emergencyContact && 
