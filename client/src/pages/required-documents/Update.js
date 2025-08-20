@@ -112,22 +112,16 @@ const UpdateRequiredDocument = () => {
     },
     validationSchema,
     enableReinitialize: true, // Changed back to true for proper initialization
-    onSubmit: async (values) => {
+    onSubmit: async () => {
       setSubmitting(true);
       setError('');
 
       try {
-        console.log('Submitting values:', values);
-        console.log('Document ID:', documentId);
-        
-        const result = await requiredDocumentsAPI.update(documentId, values);
-        console.log('Update result:', result);
         
         showSuccessSwal('Required document updated successfully!');
         navigate('/app/required-documents');
       } catch (err) {
         console.error('Error updating required document:', err);
-        console.error('Error details:', err.response || err);
         
         let errorMessage = 'Network error. Please try again.';
         if (err.message) {
@@ -205,26 +199,9 @@ const UpdateRequiredDocument = () => {
           </Alert>
         )}
 
-        {/* Debug information */}
-        {process.env.NODE_ENV === 'development' && (
-          <Alert severity="info" sx={{ mb: 3 }}>
-            <strong>Debug Info:</strong><br/>
-            Document ID: {documentId}<br/>
-            Loading: {loading.toString()}<br/>
-            Document Data: {documentData ? 'Loaded' : 'Not loaded'}<br/>
-            Form Values: {JSON.stringify(formik.values)}<br/>
-            Form Errors: {JSON.stringify(formik.errors)}<br/>
-            Form Valid: {formik.isValid.toString()}
-          </Alert>
-        )}
 
-        <form onSubmit={(e) => {
-          console.log('Form submit triggered');
-          console.log('Form values:', formik.values);
-          console.log('Form errors:', formik.errors);
-          console.log('Form touched:', formik.touched);
-          formik.handleSubmit(e);
-        }}>
+
+        <form onSubmit={formik.handleSubmit}>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <TextField
