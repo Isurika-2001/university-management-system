@@ -6,9 +6,8 @@ const {
   getRequiredDocumentById,
   createRequiredDocument,
   updateRequiredDocument,
-  deleteRequiredDocument,
-  bulkDeleteRequiredDocuments
-} = require('../controllers/requiredDocument');
+  deleteRequiredDocument
+} = require('../controllers/required_document');
 
 // Get all required documents (with pagination, search, sorting)
 router.get('/', getAllRequiredDocuments);
@@ -24,8 +23,5 @@ router.put('/:id', updateRequiredDocument);
 
 // Delete a required document
 router.delete('/:id', deleteRequiredDocument);
-
-// Bulk delete required documents
-router.post('/bulk-delete', bulkDeleteRequiredDocuments);
 
 module.exports = router;

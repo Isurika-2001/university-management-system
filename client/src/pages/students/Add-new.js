@@ -40,7 +40,7 @@ const steps = [
   'Personal Details',
   'Course Details',
   'Academic Details (Optional)',
-  'Required Documents (Optional)',
+  'Required Documents',
   'Emergency Contact (Optional)'
 ];
 
@@ -64,7 +64,8 @@ const AddStudent = () => {
       background: 'primary',
       showConfirmButton: false,
       timer: 3500,
-      timerProgressBar: true
+      timerProgressBar: true,
+      allowHtml: true
     })
   );
 
@@ -180,10 +181,12 @@ const AddStudent = () => {
         }
         return;
       }
-      setRequiredDocuments(data);
+      // Handle both structured response and direct array
+      const documents = data.data || data;
+      setRequiredDocuments(Array.isArray(documents) ? documents : []);
     } catch (error) {
       console.error('Error fetching required documents:', error);
-      return [];
+      setRequiredDocuments([]);
     }
   }
 
@@ -273,56 +276,59 @@ const AddStudent = () => {
     }).optional()
   });
 
-  const handleNext = (values, { setTouched, setFieldError }) => {
-    // Only validate steps 1 and 2 (Personal Details and Course Details)
-    if (activeStep === 0) {
-      // Validate Personal Details (Step 1 - Required)
-      const personalFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
-      let hasErrors = false;
+     const handleNext = (values, { setTouched, setFieldError }) => {
+     console.log('handleNext called, activeStep:', activeStep);
+     
+     // Only validate steps 1 and 2 (Personal Details and Course Details)
+     if (activeStep === 0) {
+       // Validate Personal Details (Step 1 - Required)
+       const personalFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
+       let hasErrors = false;
 
-      personalFields.forEach(field => {
-        if (!values[field]) {
-          setFieldError(field, 'This field is required');
-          hasErrors = true;
-        }
-      });
+       personalFields.forEach(field => {
+         if (!values[field]) {
+           setFieldError(field, 'This field is required');
+           hasErrors = true;
+         }
+       });
 
-      if (hasErrors) {
-        setTouched({ firstName: true, lastName: true, dob: true, nic: true, address: true, mobile: true, email: true });
-        return;
-      }
-    }
+       if (hasErrors) {
+         setTouched({ firstName: true, lastName: true, dob: true, nic: true, address: true, mobile: true, email: true });
+         return;
+       }
+     }
 
-    if (activeStep === 1) {
-      // Validate Course Details (Step 2 - Required)
-      console.log('Validating course details, enrollments:', values.enrollments);
-      if (!values.enrollments || values.enrollments.length === 0) {
-        setFieldError('enrollments', 'At least one course enrollment is required');
-        setTouched({ enrollments: true });
-        return;
-      }
-      
-      // Validate each enrollment
-      let hasErrors = false;
-      values.enrollments.forEach((enrollment, index) => {
-        console.log(`Validating enrollment ${index}:`, enrollment);
-        if (!enrollment.courseId || !enrollment.batchId) {
-          console.log(`Enrollment ${index} has missing data:`, { courseId: enrollment.courseId, batchId: enrollment.batchId });
-          if (!enrollment.courseId) setFieldError(`enrollments.${index}.courseId`, 'Course is required');
-          if (!enrollment.batchId) setFieldError(`enrollments.${index}.batchId`, 'Batch is required');
-          hasErrors = true;
-        }
-      });
-      
-      if (hasErrors) {
-        setTouched({ enrollments: true });
-        return;
-      }
-    }
+     if (activeStep === 1) {
+       // Validate Course Details (Step 2 - Required)
+       console.log('Validating course details, enrollments:', values.enrollments);
+       if (!values.enrollments || values.enrollments.length === 0) {
+         setFieldError('enrollments', 'At least one course enrollment is required');
+         setTouched({ enrollments: true });
+         return;
+       }
+       
+       // Validate each enrollment
+       let hasErrors = false;
+       values.enrollments.forEach((enrollment, index) => {
+         console.log(`Validating enrollment ${index}:`, enrollment);
+         if (!enrollment.courseId || !enrollment.batchId) {
+           console.log(`Enrollment ${index} has missing data:`, { courseId: enrollment.courseId, batchId: enrollment.batchId });
+           if (!enrollment.courseId) setFieldError(`enrollments.${index}.courseId`, 'Course is required');
+           if (!enrollment.batchId) setFieldError(`enrollments.${index}.batchId`, 'Batch is required');
+           hasErrors = true;
+         }
+       });
+       
+       if (hasErrors) {
+         setTouched({ enrollments: true });
+         return;
+       }
+     }
 
-    // Steps 3, 4, and 5 are optional - no validation needed
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
-  };
+     // Steps 3, 4, and 5 are optional - no validation needed
+     console.log('Moving to next step from', activeStep, 'to', activeStep + 1);
+     setActiveStep((prevActiveStep) => prevActiveStep + 1);
+   };
 
   const handleBack = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
@@ -360,7 +366,7 @@ const AddStudent = () => {
            qualificationDescription: values.qualificationDescription 
          }),
          // Required documents - only include if they exist and have values
-         ...(values.requiredDocuments && values.requiredDocuments.length > 0 && {
+         ...(Array.isArray(values.requiredDocuments) && values.requiredDocuments.length > 0 && {
            requiredDocuments: values.requiredDocuments.map(docId => ({
              documentId: docId,
              isProvided: true
@@ -402,18 +408,51 @@ const AddStudent = () => {
          body: JSON.stringify(studentData)
        });
 
-      const studentResponseData = await studentResponse.json();
+             const studentResponseData = await studentResponse.json();
 
-      if (!studentResponse.ok) {
-        const errorMessage = studentResponseData.message;
-        if (studentResponse.status === 500) {
-          console.error('Internal Server Error.');
-          return;
-        } else if (studentResponse.status === 403) {
-          showErrorSwal(errorMessage);
-        }
-        return;
-      }
+       if (!studentResponse.ok) {
+         console.error('Student creation failed:', studentResponseData);
+         
+         // Format error message with message in bold and error as sub-text
+         let errorMessage = 'Failed to register student';
+         
+         if (studentResponseData.message && studentResponseData.error) {
+           errorMessage = `<strong>${studentResponseData.message}</strong><br/><small>${studentResponseData.error}</small>`;
+         } else if (studentResponseData.message) {
+           errorMessage = `<strong>${studentResponseData.message}</strong>`;
+         } else if (studentResponseData.error) {
+           errorMessage = `<strong>Error:</strong><br/><small>${studentResponseData.error}</small>`;
+         }
+         
+         // Always show the actual error message from the server, regardless of status code
+         showErrorSwal(errorMessage);
+         
+         setSubmitting(false);
+         return;
+       }
+
+       // Show appropriate message based on completion status
+       let successMessage = studentResponseData.message || 'Student registered successfully';
+       
+       // If we have completion status details, provide more specific feedback
+       if (studentResponseData.data && studentResponseData.data.completionStatus) {
+         const completionStatus = studentResponseData.data.completionStatus;
+         
+         if (completionStatus.overall === 'completed') {
+           successMessage = 'Student registered successfully! Registration is complete.';
+         } else if (completionStatus.overall === 'incomplete') {
+           const missingSteps = [];
+           if (!completionStatus.step1) missingSteps.push('Personal Details');
+           if (!completionStatus.step2) missingSteps.push('Course Enrollment');
+           if (!completionStatus.step3) missingSteps.push('Academic Details');
+           if (!completionStatus.step4) missingSteps.push('Required Documents');
+           if (!completionStatus.step5) missingSteps.push('Emergency Contact');
+           
+           successMessage = `Student registered successfully! To complete registration, please provide: ${missingSteps.join(', ')}`;
+         } else {
+           successMessage = 'Student registered successfully! Registration is still pending.';
+         }
+       }
 
                     // Create additional enrollments for the student (skip the first one as it's already created)
        console.log('About to create additional enrollments:', values.enrollments);
@@ -443,41 +482,47 @@ const AddStudent = () => {
             body: JSON.stringify(enrollmentData)
           });
 
-          if (!enrollmentResponse.ok) {
-            const errorData = await enrollmentResponse.json();
-            console.error('Enrollment creation failed:', errorData);
-            showErrorSwal('Student created but additional enrollment creation failed: ' + (errorData.message || 'Unknown error'));
-            return;
-          }
+                     if (!enrollmentResponse.ok) {
+             const errorData = await enrollmentResponse.json();
+             console.error('Enrollment creation failed:', errorData);
+             
+             // Format error message with message in bold and error as sub-text
+             let errorMessage = 'Student created but additional enrollment creation failed';
+             
+             if (errorData.message && errorData.error) {
+               errorMessage = `<strong>${errorData.message}</strong><br/><small>${errorData.error}</small>`;
+             } else if (errorData.message) {
+               errorMessage = `<strong>${errorData.message}</strong>`;
+             } else if (errorData.error) {
+               errorMessage = `<strong>Enrollment Error:</strong><br/><small>${errorData.error}</small>`;
+             } else {
+               errorMessage = '<strong>Enrollment Error:</strong><br/><small>Unknown error</small>';
+             }
+             
+             showErrorSwal(errorMessage);
+             return;
+           }
          }
        }
 
-             // Use the completion status from the response
-       let successMessage = studentResponseData.message;
-       
-       // If we have completion status in the response, use it for better messaging
-       if (studentResponseData.data && studentResponseData.data.completionStatus) {
-         const completionStatus = studentResponseData.data.completionStatus;
-         
-         if (completionStatus.overall === 'completed') {
-           successMessage = 'Student registered successfully! Registration is complete.';
-         } else if (completionStatus.overall === 'incomplete') {
-           const missingSteps = [];
-           if (!completionStatus.step3) missingSteps.push('Academic Details');
-           if (!completionStatus.step4) missingSteps.push('Required Documents');
-           if (!completionStatus.step5) missingSteps.push('Emergency Contact');
-           successMessage = `Student registered successfully! To complete registration, please provide: ${missingSteps.join(', ')}`;
-         }
-       }
-       
        showSuccessSwal(successMessage);
        // Reset form or redirect
        window.location.reload();
 
       console.log('Student added successfully');
     } catch (error) {
-      console.error(error);
-      showErrorSwal(error);
+      console.error('Error in handleSubmit:', error);
+      
+      // Show a user-friendly error message
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      showErrorSwal(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -859,43 +904,107 @@ const AddStudent = () => {
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                 <FileTextOutlined style={{ marginRight: 8, fontSize: 24 }} />
-                <Typography variant="h5">Required Documents (Optional)</Typography>
+                <Typography variant="h5">Required Documents</Typography>
               </Box>
               <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                This step is optional. You can skip it and complete it later when updating the student profile.
+                This step can be skipped during registration, but all required documents must be provided to complete the student&apos;s registration status.
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <Typography variant="subtitle2" gutterBottom>
                     Select documents that have been provided:
                   </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {requiredDocuments.map((doc) => (
-                      <FormControlLabel
-                        key={doc._id}
-                        control={
-                          <Checkbox
-                            checked={values.requiredDocuments.includes(doc._id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFieldValue('requiredDocuments', [...values.requiredDocuments, doc._id]);
-                              } else {
-                                setFieldValue('requiredDocuments', values.requiredDocuments.filter(id => id !== doc._id));
-                              }
-                            }}
+                  
+                  {/* Required Documents Section */}
+                  {Array.isArray(requiredDocuments) && requiredDocuments.filter(doc => doc.isRequired).length > 0 && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold', color: 'error.main' }}>
+                        Required Documents *
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: 'block' }}>
+                        These documents are mandatory for completing your registration
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {requiredDocuments.filter(doc => doc.isRequired).map((doc) => (
+                          <FormControlLabel
+                            key={doc._id}
+                            control={
+                              <Checkbox
+                                checked={values.requiredDocuments.includes(doc._id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFieldValue('requiredDocuments', [...values.requiredDocuments, doc._id]);
+                                  } else {
+                                    setFieldValue('requiredDocuments', values.requiredDocuments.filter(id => id !== doc._id));
+                                  }
+                                }}
+                              />
+                            }
+                            label={
+                              <Box sx={{ border: '1px solid', borderColor: 'error.main', borderRadius: 1, p: 1, backgroundColor: 'rgba(244, 67, 54, 0.1)' }}>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                  {doc.name} *
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                  {doc.description}
+                                </Typography>
+                              </Box>
+                            }
                           />
-                        }
-                        label={
-                          <Box>
-                            <Typography variant="body2">{doc.name}</Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              {doc.description}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    ))}
-                  </Box>
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                  
+                  {/* Optional Documents Section */}
+                  {Array.isArray(requiredDocuments) && requiredDocuments.filter(doc => !doc.isRequired).length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold', color: 'success.main' }}>
+                        Optional Documents
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: 'block' }}>
+                        These documents are optional and can be provided later
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {requiredDocuments.filter(doc => !doc.isRequired).map((doc) => (
+                          <FormControlLabel
+                            key={doc._id}
+                            control={
+                              <Checkbox
+                                checked={values.requiredDocuments.includes(doc._id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFieldValue('requiredDocuments', [...values.requiredDocuments, doc._id]);
+                                  } else {
+                                    setFieldValue('requiredDocuments', values.requiredDocuments.filter(id => id !== doc._id));
+                                  }
+                                }}
+                              />
+                            }
+                            label={
+                              <Box sx={{ border: '1px solid', borderColor: 'success.main', borderRadius: 1, p: 1, backgroundColor: 'rgba(76, 175, 80, 0.1)' }}>
+                                <Typography variant="body2">
+                                  {doc.name}
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                  {doc.description}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                  
+                  {/* No Documents Message */}
+                  {(!Array.isArray(requiredDocuments) || requiredDocuments.length === 0) && (
+                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                      <Typography variant="body2" color="textSecondary">
+                        No documents configured. You can skip this step.
+                      </Typography>
+                    </Box>
+                  )}
                 </Grid>
               </Grid>
             </CardContent>
@@ -983,14 +1092,25 @@ const AddStudent = () => {
            console.log('Form values:', values);
            console.log('Current enrollments in form:', values.enrollments);
            return (
-          <Form onSubmit={(e) => {
-            // Only allow form submission on the final step
-            if (activeStep !== steps.length - 1) {
-              e.preventDefault();
-              return;
-            }
-            handleSubmit(e);
-          }}>
+                     <Form onSubmit={(e) => {
+             console.log('Form onSubmit triggered, activeStep:', activeStep, 'steps.length:', steps.length);
+             // Only allow form submission on the final step
+             if (activeStep !== steps.length - 1) {
+               console.log('Preventing form submission - not on final step');
+               e.preventDefault();
+               e.stopPropagation();
+               return false;
+             }
+             console.log('Allowing form submission - on final step');
+             handleSubmit(e);
+           }} onKeyDown={(e) => {
+             // Prevent form submission on Enter key unless on final step
+             if (e.key === 'Enter' && activeStep !== steps.length - 1) {
+               e.preventDefault();
+               e.stopPropagation();
+               return false;
+             }
+           }} noValidate>
             <Box sx={{ width: '100%', mb: 4 }}>
               <Stepper activeStep={activeStep} alternativeLabel>
                 {steps.map((label) => (
@@ -1012,6 +1132,7 @@ const AddStudent = () => {
             )}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 2 }}>
               <Button
+                type="button"
                 disabled={activeStep === 0}
                 onClick={handleBack}
                 startIcon={<ArrowLeftOutlined />}
@@ -1033,16 +1154,22 @@ const AddStudent = () => {
                   </Button>
                 ) : (
                   <>
-                    <Button
-                      variant="contained"
-                      onClick={() => handleNext(values, { setTouched, setFieldError })}
-                      endIcon={<ArrowRightOutlined />}
-                    >
-                      Next
-                    </Button>
+                                         <Button
+                       type="button"
+                       variant="contained"
+                       onClick={(e) => {
+                         e.preventDefault();
+                         e.stopPropagation();
+                         handleNext(values, { setTouched, setFieldError });
+                       }}
+                       endIcon={<ArrowRightOutlined />}
+                     >
+                       Next
+                     </Button>
                     {/* Show Skip button for optional steps (3, 4, 5) */}
                     {activeStep >= 2 && activeStep < steps.length - 1 && (
                       <Button
+                        type="button"
                         variant="outlined"
                         onClick={() => setActiveStep((prevActiveStep) => prevActiveStep + 1)}
                       >

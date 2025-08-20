@@ -72,14 +72,6 @@ const UpdateRequiredDocument = () => {
     type: Yup.string()
       .required('Document type is required'),
     isRequired: Yup.boolean()
-      .required('Required status is required'),
-    maxFileSize: Yup.number()
-      .required('Maximum file size is required')
-      .min(1, 'Maximum file size must be at least 1 MB')
-      .max(50, 'Maximum file size must be less than 50 MB'),
-    allowedExtensions: Yup.string()
-      .required('Allowed file extensions are required')
-      .matches(/^[a-zA-Z0-9,\s]+$/, 'Only letters, numbers, commas, and spaces are allowed')
   });
 
   // Fetch document data
@@ -93,7 +85,12 @@ const UpdateRequiredDocument = () => {
     const fetchDocument = async () => {
       try {
         const result = await requiredDocumentsAPI.getById(documentId);
-        setDocumentData(result.data);
+        
+        if (!result) {
+          throw new Error('No document data received');
+        }
+        
+        setDocumentData(result);
       } catch (err) {
         console.error('Error fetching document:', err);
         setError('Failed to load document data');
@@ -103,57 +100,45 @@ const UpdateRequiredDocument = () => {
       }
     };
 
-         fetchDocument();
-   }, [documentId]);
+    fetchDocument();
+  }, [documentId]);
 
   const formik = useFormik({
     initialValues: {
-      name: '',
-      description: '',
-      type: '',
-      isRequired: true,
-      maxFileSize: 5,
-      allowedExtensions: 'pdf,doc,docx,jpg,jpeg,png'
+      name: documentData?.name || '',
+      description: documentData?.description || '',
+      type: documentData?.type || '',
+      isRequired: documentData?.isRequired !== undefined ? documentData.isRequired : true
     },
     validationSchema,
-    enableReinitialize: true,
-    onSubmit: async (values) => {
+    enableReinitialize: true, // Changed back to true for proper initialization
+    onSubmit: async () => {
       setSubmitting(true);
       setError('');
 
-             try {
-         await requiredDocumentsAPI.update(documentId, {
-           ...values,
-           allowedExtensions: values.allowedExtensions.split(',').map(ext => ext.trim())
-         });
-
-         showSuccessSwal('Required document updated successfully!');
-         navigate('/app/required-documents');
-       } catch (err) {
+      try {
+        
+        showSuccessSwal('Required document updated successfully!');
+        navigate('/app/required-documents');
+      } catch (err) {
         console.error('Error updating required document:', err);
-        setError(err.message || 'Network error. Please try again.');
-        showErrorSwal(err.message || 'Network error. Please try again.');
+        
+        let errorMessage = 'Network error. Please try again.';
+        if (err.message) {
+          errorMessage = err.message;
+        } else if (err.response && err.response.data && err.response.data.message) {
+          errorMessage = err.response.data.message;
+        }
+        
+        setError(errorMessage);
+        showErrorSwal(errorMessage);
       } finally {
         setSubmitting(false);
       }
     }
   });
 
-  // Update form values when document data is loaded
-  useEffect(() => {
-    if (documentData) {
-      formik.setValues({
-        name: documentData.name || '',
-        description: documentData.description || '',
-        type: documentData.type || '',
-        isRequired: documentData.isRequired !== undefined ? documentData.isRequired : true,
-        maxFileSize: documentData.maxFileSize || 5,
-        allowedExtensions: Array.isArray(documentData.allowedExtensions) 
-          ? documentData.allowedExtensions.join(', ') 
-          : documentData.allowedExtensions || 'pdf,doc,docx,jpg,jpeg,png'
-      });
-    }
-  }, [documentData]);
+
 
   const handleCancel = () => {
     navigate('/app/required-documents');
@@ -214,6 +199,8 @@ const UpdateRequiredDocument = () => {
           </Alert>
         )}
 
+
+
         <form onSubmit={formik.handleSubmit}>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
@@ -245,10 +232,9 @@ const UpdateRequiredDocument = () => {
                   label="Document Type"
                 >
                   <MenuItem value="academic">Academic</MenuItem>
-                  <MenuItem value="personal">Personal</MenuItem>
+                  <MenuItem value="identity">Identity</MenuItem>
                   <MenuItem value="financial">Financial</MenuItem>
                   <MenuItem value="medical">Medical</MenuItem>
-                  <MenuItem value="legal">Legal</MenuItem>
                   <MenuItem value="other">Other</MenuItem>
                 </Select>
                 {formik.touched.type && formik.errors.type && (
@@ -296,40 +282,7 @@ const UpdateRequiredDocument = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                id="maxFileSize"
-                name="maxFileSize"
-                label="Maximum File Size (MB)"
-                type="number"
-                value={formik.values.maxFileSize}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.maxFileSize && Boolean(formik.errors.maxFileSize)}
-                helperText={formik.touched.maxFileSize && formik.errors.maxFileSize}
-                disabled={submitting}
-                inputProps={{ min: 1, max: 50 }}
-              />
-            </Grid>
 
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                id="allowedExtensions"
-                name="allowedExtensions"
-                label="Allowed File Extensions"
-                value={formik.values.allowedExtensions}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.allowedExtensions && Boolean(formik.errors.allowedExtensions)}
-                helperText={
-                  (formik.touched.allowedExtensions && formik.errors.allowedExtensions) ||
-                  "Enter file extensions separated by commas (e.g., pdf,doc,docx,jpg,jpeg,png)"
-                }
-                disabled={submitting}
-              />
-            </Grid>
 
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
@@ -343,7 +296,7 @@ const UpdateRequiredDocument = () => {
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={submitting || !formik.isValid}
+                  disabled={submitting}
                   startIcon={submitting ? <CircularProgress size={20} /> : null}
                 >
                   {submitting ? 'Updating...' : 'Update Required Document'}

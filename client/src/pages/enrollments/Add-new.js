@@ -256,8 +256,15 @@ const AddEnrollment = () => {
         }
         return;
       } else {
+        // Show success message with completion status information
         const successMessage = responseData.message || 'Enrollment created successfully';
         showSuccessSwal(successMessage);
+        
+        // If the response includes completion status, log it for debugging
+        if (responseData.data && responseData.data.completionStatus) {
+          console.log('Student completion status:', responseData.data.completionStatus);
+        }
+        
         // Reset form
         window.location.reload();
       }
