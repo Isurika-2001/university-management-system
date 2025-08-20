@@ -68,7 +68,8 @@ const UpdateStudent = () => {
       background: 'primary',
       showConfirmButton: false,
       timer: 3500,
-      timerProgressBar: true
+      timerProgressBar: true,
+      allowHtml: true
     })
   );
 
@@ -270,36 +271,39 @@ const UpdateStudent = () => {
     })
   });
 
-  const handleNext = (values, { setTouched, setFieldError }) => {
-    // Reset submit button clicked state when moving to next step
-    setSubmitButtonClicked(false);
-    
-    // Validate current step before proceeding
-    if (activeStep === 0) {
-      // Validate Personal Details
-      const personalFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
-      let hasErrors = false;
-      
-      personalFields.forEach(field => {
-        if (!values[field]) {
-          setFieldError(field, 'This field is required');
-          hasErrors = true;
-        }
-      });
-      
-      if (hasErrors) {
-        setTouched({ firstName: true, lastName: true, dob: true, nic: true, address: true, mobile: true, email: true });
-        return;
-      }
-    }
-    
-    if (activeStep === 1) {
-      // Course Details step is read-only, no validation needed
-      // Users can proceed without any course enrollments
-    }
-    
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
-  };
+     const handleNext = (values, { setTouched, setFieldError }) => {
+     console.log('handleNext called, activeStep:', activeStep);
+     
+     // Reset submit button clicked state when moving to next step
+     setSubmitButtonClicked(false);
+     
+     // Validate current step before proceeding
+     if (activeStep === 0) {
+       // Validate Personal Details
+       const personalFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
+       let hasErrors = false;
+       
+       personalFields.forEach(field => {
+         if (!values[field]) {
+           setFieldError(field, 'This field is required');
+           hasErrors = true;
+         }
+       });
+       
+       if (hasErrors) {
+         setTouched({ firstName: true, lastName: true, dob: true, nic: true, address: true, mobile: true, email: true });
+         return;
+       }
+     }
+     
+     if (activeStep === 1) {
+       // Course Details step is read-only, no validation needed
+       // Users can proceed without any course enrollments
+     }
+     
+     console.log('Moving to next step from', activeStep, 'to', activeStep + 1);
+     setActiveStep((prevActiveStep) => prevActiveStep + 1);
+   };
 
   const handleBack = () => {
     // Reset submit button clicked state when going back
@@ -369,7 +373,21 @@ const UpdateStudent = () => {
       if (!studentResponse.ok) {
         const errorData = await studentResponse.json();
         console.error('Student update failed:', errorData);
-        showErrorSwal(errorData.message || 'Failed to update student');
+        
+        // Format error message with message in bold and error as sub-text
+        let errorMessage = 'Failed to update student';
+        
+        if (errorData.message && errorData.error) {
+          errorMessage = `<strong>${errorData.message}</strong><br/><small>${errorData.error}</small>`;
+        } else if (errorData.message) {
+          errorMessage = `<strong>${errorData.message}</strong>`;
+        } else if (errorData.error) {
+          errorMessage = `<strong>Error:</strong><br/><small>${errorData.error}</small>`;
+        }
+        
+        showErrorSwal(errorMessage);
+        setSubmitting(false);
+        setSubmitButtonClicked(false);
         return;
       }
 
@@ -405,8 +423,18 @@ const UpdateStudent = () => {
 
       console.log('Student updated successfully');
     } catch (error) {
-      console.error(error);
-      showErrorSwal('Error updating student: ' + error.message);
+      console.error('Error in handleSubmit:', error);
+      
+      // Show a user-friendly error message
+      let errorMessage = 'An unexpected error occurred while updating student. Please try again.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      showErrorSwal(errorMessage);
     } finally {
       setSubmitting(false);
       setSubmitButtonClicked(false); // Reset submit button state
@@ -866,6 +894,7 @@ const UpdateStudent = () => {
             
             <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 2 }}>
               <Button
+                type="button"
                 disabled={activeStep === 0}
                 onClick={handleBack}
                 startIcon={<ArrowLeftOutlined />}
@@ -877,6 +906,7 @@ const UpdateStudent = () => {
               <Box sx={{ display: 'flex', gap: 1 }}>
                 {activeStep >= 2 && activeStep < steps.length - 1 && (
                   <Button
+                    type="button"
                     variant="outlined"
                     onClick={() => setActiveStep((prevActiveStep) => prevActiveStep + 1)}
                   >
@@ -899,13 +929,18 @@ const UpdateStudent = () => {
                   {submitting ? 'Updating...' : 'Update Student'}
                 </Button>
                 ) : (
-                  <Button
-                    variant="contained"
-                    onClick={() => handleNext(values, { setTouched, setFieldError })}
-                    endIcon={<ArrowRightOutlined />}
-                  >
-                    Next
-                </Button>
+                                     <Button
+                     type="button"
+                     variant="contained"
+                     onClick={(e) => {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       handleNext(values, { setTouched, setFieldError });
+                     }}
+                     endIcon={<ArrowRightOutlined />}
+                   >
+                     Next
+                 </Button>
                 )}
               </Box>
             </Box>
