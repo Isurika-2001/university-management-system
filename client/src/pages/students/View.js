@@ -497,14 +497,37 @@ const View = () => {
                     {student.registrationDate ? new Date(student.registrationDate).toLocaleDateString() : 'N/A'}
                   </TableCell>
                   <TableCell>
-                    <Chip 
-                      label={student.status || 'pending'} 
-                      color={
-                        student.status === 'completed' ? 'success' : 
-                        student.status === 'incomplete' ? 'warning' : 'default'
-                      }
-                      size="small"
-                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip 
+                        label={student.status || 'pending'} 
+                        color={
+                          student.status === 'completed' ? 'success' : 
+                          student.status === 'incomplete' ? 'warning' : 'default'
+                        }
+                        size="small"
+                      />
+                      {student.completionStatus && (
+                        <Box sx={{ display: 'flex', gap: 0.3 }}>
+                          {['step1', 'step2', 'step3', 'step4', 'step5'].map((step, index) => (
+                            <Box
+                              key={step}
+                              sx={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: '50%',
+                                bgcolor: student.completionStatus[step] ? 'success.main' : 'grey.300',
+                                border: '1px solid',
+                                borderColor: student.completionStatus[step] ? 'success.main' : 'grey.400'
+                              }}
+                              title={`Step ${index + 1}: ${step === 'step1' ? 'Personal Details' : 
+                                                        step === 'step2' ? 'Course Enrollment' :
+                                                        step === 'step3' ? 'Academic Details' :
+                                                        step === 'step4' ? 'Required Documents' : 'Emergency Contact'}`}
+                            />
+                          ))}
+                        </Box>
+                      )}
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <Button

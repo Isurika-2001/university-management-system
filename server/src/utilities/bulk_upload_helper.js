@@ -48,6 +48,19 @@ async function registerCourse(studentId, courseCode, batchName, studentRegNo) {
 
   await newEnrollment.save();
 
+  // Check completion status after adding the new enrollment
+  const student = await Student.findById(studentId);
+  if (student) {
+    const { getStudentCompletionStatus } = require('../controllers/student');
+    const completionStatus = await getStudentCompletionStatus(student);
+    
+    // Update student status if it has changed
+    if (student.status !== completionStatus.overall) {
+      student.status = completionStatus.overall;
+      await student.save();
+    }
+  }
+
   return { success: true };
 }
 
@@ -84,10 +97,19 @@ async function createStudentAndRegister(data) {
     courseRegStatus = await registerCourse(savedStudent._id, data.courseCode, data.batchName, studentRegNo);
   }
 
+  // Check completion status after student creation and course registration
+  const { getStudentCompletionStatus } = require('../controllers/student');
+  const completionStatus = await getStudentCompletionStatus(savedStudent);
+  
+  // Update student status
+  savedStudent.status = completionStatus.overall;
+  await savedStudent.save();
+
   return {
     studentId: savedStudent._id,
     registration_no: studentRegNo,
-    courseRegStatus
+    courseRegStatus,
+    completionStatus
   };
 }
 

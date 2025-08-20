@@ -68,7 +68,8 @@ const UpdateStudent = () => {
       background: 'primary',
       showConfirmButton: false,
       timer: 3500,
-      timerProgressBar: true
+      timerProgressBar: true,
+      allowHtml: true
     })
   );
 
@@ -173,10 +174,12 @@ const UpdateStudent = () => {
         }
         return;
       }
-      setRequiredDocuments(data);
+      // Handle both structured response and direct array
+      const documents = data.data || data;
+      setRequiredDocuments(Array.isArray(documents) ? documents : []);
     } catch (error) {
       console.error('Error fetching required documents:', error);
-      return [];
+      setRequiredDocuments([]);
     }
   }
 
@@ -220,7 +223,7 @@ const UpdateStudent = () => {
       qualificationDescription: data.qualificationDescription || '',
       
       // Required Documents (Step 4)
-      requiredDocuments: data.requiredDocuments ? data.requiredDocuments.map(doc => doc.documentId || doc._id) : [],
+      requiredDocuments: data.requiredDocuments && Array.isArray(data.requiredDocuments) ? data.requiredDocuments.map(doc => doc.documentId || doc._id) : [],
       
       // Emergency Contact (Step 5)
       emergencyContact: data.emergencyContact || {
@@ -268,36 +271,39 @@ const UpdateStudent = () => {
     })
   });
 
-  const handleNext = (values, { setTouched, setFieldError }) => {
-    // Reset submit button clicked state when moving to next step
-    setSubmitButtonClicked(false);
-    
-    // Validate current step before proceeding
-    if (activeStep === 0) {
-      // Validate Personal Details
-      const personalFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
-      let hasErrors = false;
-      
-      personalFields.forEach(field => {
-        if (!values[field]) {
-          setFieldError(field, 'This field is required');
-          hasErrors = true;
-        }
-      });
-      
-      if (hasErrors) {
-        setTouched({ firstName: true, lastName: true, dob: true, nic: true, address: true, mobile: true, email: true });
-        return;
-      }
-    }
-    
-    if (activeStep === 1) {
-      // Course Details step is read-only, no validation needed
-      // Users can proceed without any course enrollments
-    }
-    
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
-  };
+     const handleNext = (values, { setTouched, setFieldError }) => {
+     console.log('handleNext called, activeStep:', activeStep);
+     
+     // Reset submit button clicked state when moving to next step
+     setSubmitButtonClicked(false);
+     
+     // Validate current step before proceeding
+     if (activeStep === 0) {
+       // Validate Personal Details
+       const personalFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
+       let hasErrors = false;
+       
+       personalFields.forEach(field => {
+         if (!values[field]) {
+           setFieldError(field, 'This field is required');
+           hasErrors = true;
+         }
+       });
+       
+       if (hasErrors) {
+         setTouched({ firstName: true, lastName: true, dob: true, nic: true, address: true, mobile: true, email: true });
+         return;
+       }
+     }
+     
+     if (activeStep === 1) {
+       // Course Details step is read-only, no validation needed
+       // Users can proceed without any course enrollments
+     }
+     
+     console.log('Moving to next step from', activeStep, 'to', activeStep + 1);
+     setActiveStep((prevActiveStep) => prevActiveStep + 1);
+   };
 
   const handleBack = () => {
     // Reset submit button clicked state when going back
@@ -347,10 +353,10 @@ const UpdateStudent = () => {
         email: values.email,
         highestAcademicQualification: values.highestAcademicQualification,
         qualificationDescription: values.qualificationDescription,
-        requiredDocuments: values.requiredDocuments.map(docId => ({
+        requiredDocuments: Array.isArray(values.requiredDocuments) ? values.requiredDocuments.map(docId => ({
           documentId: docId,
           isProvided: true
-        })),
+        })) : [],
         emergencyContact: values.emergencyContact
       };
 
@@ -367,39 +373,68 @@ const UpdateStudent = () => {
       if (!studentResponse.ok) {
         const errorData = await studentResponse.json();
         console.error('Student update failed:', errorData);
-        showErrorSwal(errorData.message || 'Failed to update student');
+        
+        // Format error message with message in bold and error as sub-text
+        let errorMessage = 'Failed to update student';
+        
+        if (errorData.message && errorData.error) {
+          errorMessage = `<strong>${errorData.message}</strong><br/><small>${errorData.error}</small>`;
+        } else if (errorData.message) {
+          errorMessage = `<strong>${errorData.message}</strong>`;
+        } else if (errorData.error) {
+          errorMessage = `<strong>Error:</strong><br/><small>${errorData.error}</small>`;
+        }
+        
+        showErrorSwal(errorMessage);
+        setSubmitting(false);
+        setSubmitButtonClicked(false);
         return;
       }
 
-             // Enrollments are read-only in the wizard, no updates needed
-
-             // Get the updated student data to check the new status
-       const updatedStudentResponse = await fetch(apiRoutes.studentRoute + id, {
-         method: 'GET',
-         headers: {
-           'Content-Type': 'application/json',
-           Authorization: `Bearer ${user.token}`
-         },
-       });
-       
-       let statusMessage = 'Student updated successfully';
-       if (updatedStudentResponse.ok) {
-         const updatedStudent = await updatedStudentResponse.json();
-         if (updatedStudent.status === 'completed') {
-           statusMessage = 'Student updated successfully! Registration is now complete.';
-         } else if (updatedStudent.status === 'incomplete') {
-           statusMessage = 'Student updated successfully! Some required fields are still missing.';
-         }
-       }
-       
-       showSuccessSwal(statusMessage);
-       // Redirect back to students list
-       window.location.href = '/app/students';
+      // Get the response data which includes completion status
+      const responseData = await studentResponse.json();
+      
+      // Show appropriate message based on completion status
+      let statusMessage = responseData.message || 'Student updated successfully';
+      
+      // If we have completion status details, provide more specific feedback
+      if (responseData.data && responseData.data.completionStatus) {
+        const completionStatus = responseData.data.completionStatus;
+        
+        if (completionStatus.overall === 'completed') {
+          statusMessage = 'Student updated successfully! Registration is now complete.';
+        } else if (completionStatus.overall === 'incomplete') {
+          const missingSteps = [];
+          if (!completionStatus.step1) missingSteps.push('Personal Details');
+          if (!completionStatus.step2) missingSteps.push('Course Enrollment');
+          if (!completionStatus.step3) missingSteps.push('Academic Details');
+          if (!completionStatus.step4) missingSteps.push('Required Documents');
+          if (!completionStatus.step5) missingSteps.push('Emergency Contact');
+          
+          statusMessage = `Student updated successfully! To complete registration, please provide: ${missingSteps.join(', ')}`;
+        } else {
+          statusMessage = 'Student updated successfully! Registration is still pending.';
+        }
+      }
+      
+      showSuccessSwal(statusMessage);
+      // Redirect back to students list
+      window.location.href = '/app/students';
 
       console.log('Student updated successfully');
     } catch (error) {
-      console.error(error);
-      showErrorSwal('Error updating student: ' + error.message);
+      console.error('Error in handleSubmit:', error);
+      
+      // Show a user-friendly error message
+      let errorMessage = 'An unexpected error occurred while updating student. Please try again.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      showErrorSwal(errorMessage);
     } finally {
       setSubmitting(false);
       setSubmitButtonClicked(false); // Reset submit button state
@@ -623,44 +658,108 @@ const UpdateStudent = () => {
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                 <FileTextOutlined style={{ marginRight: 8, fontSize: 24 }} />
-                <Typography variant="h5">Required Documents (Optional)</Typography>
+                <Typography variant="h5">Required Documents</Typography>
               </Box>
               
               <Typography variant="body2" color="textSecondary" sx={{ mb: 3, p: 2, bgcolor: 'info.50', borderRadius: 1 }}>
-                This step is optional. You can skip it if you don&apos;t want to update document information.
+                This step can be skipped during update, but all required documents must be provided to complete the student&apos;s registration status.
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <Typography variant="subtitle2" gutterBottom>
                     Select documents that have been provided:
                   </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {requiredDocuments.map((doc) => (
-                      <FormControlLabel
-                        key={doc._id}
-                        control={
-                          <Checkbox
-                            checked={values.requiredDocuments.includes(doc._id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFieldValue('requiredDocuments', [...values.requiredDocuments, doc._id]);
-                              } else {
-                                setFieldValue('requiredDocuments', values.requiredDocuments.filter(id => id !== doc._id));
-                              }
-                            }}
+                  
+                  {/* Required Documents Section */}
+                  {Array.isArray(requiredDocuments) && requiredDocuments.filter(doc => doc.isRequired).length > 0 && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold', color: 'error.main' }}>
+                        Required Documents *
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: 'block' }}>
+                        These documents are mandatory for completing your registration
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {requiredDocuments.filter(doc => doc.isRequired).map((doc) => (
+                          <FormControlLabel
+                            key={doc._id}
+                            control={
+                              <Checkbox
+                                checked={values.requiredDocuments.includes(doc._id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFieldValue('requiredDocuments', [...values.requiredDocuments, doc._id]);
+                                  } else {
+                                    setFieldValue('requiredDocuments', values.requiredDocuments.filter(id => id !== doc._id));
+                                  }
+                                }}
+                              />
+                            }
+                            label={
+                              <Box sx={{ border: '1px solid', borderColor: 'error.main', borderRadius: 1, p: 1, backgroundColor: 'rgba(244, 67, 54, 0.1)' }}>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                  {doc.name} *
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                  {doc.description}
+                                </Typography>
+                              </Box>
+                            }
                           />
-                        }
-                        label={
-                          <Box>
-                            <Typography variant="body2">{doc.name}</Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              {doc.description}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    ))}
-                  </Box>
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                  
+                  {/* Optional Documents Section */}
+                  {Array.isArray(requiredDocuments) && requiredDocuments.filter(doc => !doc.isRequired).length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold', color: 'success.main' }}>
+                        Optional Documents
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: 'block' }}>
+                        These documents are optional and can be provided later
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {requiredDocuments.filter(doc => !doc.isRequired).map((doc) => (
+                          <FormControlLabel
+                            key={doc._id}
+                            control={
+                              <Checkbox
+                                checked={values.requiredDocuments.includes(doc._id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFieldValue('requiredDocuments', [...values.requiredDocuments, doc._id]);
+                                  } else {
+                                    setFieldValue('requiredDocuments', values.requiredDocuments.filter(id => id !== doc._id));
+                                  }
+                                }}
+                              />
+                            }
+                            label={
+                              <Box sx={{ border: '1px solid', borderColor: 'success.main', borderRadius: 1, p: 1, backgroundColor: 'rgba(76, 175, 80, 0.1)' }}>
+                                <Typography variant="body2">
+                                  {doc.name}
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                  {doc.description}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                  
+                  {/* No Documents Message */}
+                  {(!Array.isArray(requiredDocuments) || requiredDocuments.length === 0) && (
+                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                      <Typography variant="body2" color="textSecondary">
+                        No documents configured. You can skip this step.
+                      </Typography>
+                    </Box>
+                  )}
                 </Grid>
               </Grid>
             </CardContent>
@@ -765,19 +864,45 @@ const UpdateStudent = () => {
       title={
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="h4">Update Student - Registration Wizard</Typography>
-          {data && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" color="textSecondary">Status:</Typography>
-              <Chip 
-                label={data.status || 'pending'} 
-                color={
-                  data.status === 'completed' ? 'success' : 
-                  data.status === 'incomplete' ? 'warning' : 'default'
-                }
-                size="small"
-              />
-            </Box>
-          )}
+                     {data && (
+             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+               <Typography variant="body2" color="textSecondary">Status:</Typography>
+               <Chip 
+                 label={data.status || 'pending'} 
+                 color={
+                   data.status === 'completed' ? 'success' : 
+                   data.status === 'incomplete' ? 'warning' : 'default'
+                 }
+                 size="small"
+               />
+               {data.completionStatus && (
+                 <Box sx={{ ml: 2 }}>
+                   <Typography variant="caption" color="textSecondary" display="block">
+                     Completion Progress:
+                   </Typography>
+                   <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
+                     {['step1', 'step2', 'step3', 'step4', 'step5'].map((step, index) => (
+                       <Box
+                         key={step}
+                         sx={{
+                           width: 8,
+                           height: 8,
+                           borderRadius: '50%',
+                           bgcolor: data.completionStatus[step] ? 'success.main' : 'grey.300',
+                           border: '1px solid',
+                           borderColor: data.completionStatus[step] ? 'success.main' : 'grey.400'
+                         }}
+                         title={`Step ${index + 1}: ${step === 'step1' ? 'Personal Details' : 
+                                                   step === 'step2' ? 'Course Enrollment' :
+                                                   step === 'step3' ? 'Academic Details' :
+                                                   step === 'step4' ? 'Required Documents' : 'Emergency Contact'}`}
+                       />
+                     ))}
+                   </Box>
+                 </Box>
+               )}
+             </Box>
+           )}
         </Box>
       }
     >
@@ -833,6 +958,7 @@ const UpdateStudent = () => {
             
             <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 2 }}>
               <Button
+                type="button"
                 disabled={activeStep === 0}
                 onClick={handleBack}
                 startIcon={<ArrowLeftOutlined />}
@@ -844,6 +970,7 @@ const UpdateStudent = () => {
               <Box sx={{ display: 'flex', gap: 1 }}>
                 {activeStep >= 2 && activeStep < steps.length - 1 && (
                   <Button
+                    type="button"
                     variant="outlined"
                     onClick={() => setActiveStep((prevActiveStep) => prevActiveStep + 1)}
                   >
@@ -866,13 +993,18 @@ const UpdateStudent = () => {
                   {submitting ? 'Updating...' : 'Update Student'}
                 </Button>
                 ) : (
-                  <Button
-                    variant="contained"
-                    onClick={() => handleNext(values, { setTouched, setFieldError })}
-                    endIcon={<ArrowRightOutlined />}
-                  >
-                    Next
-                </Button>
+                                     <Button
+                     type="button"
+                     variant="contained"
+                     onClick={(e) => {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       handleNext(values, { setTouched, setFieldError });
+                     }}
+                     endIcon={<ArrowRightOutlined />}
+                   >
+                     Next
+                 </Button>
                 )}
               </Box>
             </Box>

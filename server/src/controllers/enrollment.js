@@ -8,6 +8,9 @@ const { getRequestInfo } = require("../middleware/requestInfo");
 const { getNextSequenceValue } = require("../utilities/counter");
 const { generateCSV, generateExcel, enrollmentExportHeaders } = require("../utils/exportUtils");
 
+// Import getStudentCompletionStatus from student controller
+const { getStudentCompletionStatus } = require("./student");
+
 async function getAllEnrollments(req, res) {
   try {
     const { search = '', courseId, batchId, page = 1, limit = 10, sortBy = 'enrollment_no', sortOrder = 'asc' } = req.query;
@@ -362,12 +365,42 @@ async function createEnrollment(req, res) {
     });
     await enrollment.save();
 
+    // Check completion status after adding the new enrollment
+    const completionStatus = await getStudentCompletionStatus(student);
+    const previousStatus = student.status;
+    
+    // Update student status if it has changed
+    if (student.status !== completionStatus.overall) {
+      student.status = completionStatus.overall;
+      await student.save();
+    }
+
     await ActivityLogger.logActivity(req.user, 'CREATE', 'Enrollment', `Created enrollment ${enrollment.enrollment_no}`, requestInfo);
+
+    // Prepare response message based on completion status
+    let message = 'Enrollment created successfully';
+    if (completionStatus.overall === 'completed' && previousStatus !== 'completed') {
+      message = 'Enrollment created successfully. Student registration is now complete!';
+    } else if (completionStatus.overall === 'incomplete') {
+      const missingSteps = [];
+      if (!completionStatus.step1) missingSteps.push('Personal Details');
+      if (!completionStatus.step2) missingSteps.push('Course Enrollment');
+      if (!completionStatus.step3) missingSteps.push('Academic Details');
+      if (!completionStatus.step4) missingSteps.push('Required Documents');
+      if (!completionStatus.step5) missingSteps.push('Emergency Contact');
+      
+      if (missingSteps.length > 0) {
+        message = `Enrollment created successfully. Student registration is incomplete. Missing: ${missingSteps.join(', ')}`;
+      }
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Enrollment created successfully',
-      data: enrollment
+      message: message,
+      data: {
+        ...enrollment.toObject(),
+        completionStatus: completionStatus
+      }
     });
   } catch (error) {
     console.error('Error in createEnrollment:', error);

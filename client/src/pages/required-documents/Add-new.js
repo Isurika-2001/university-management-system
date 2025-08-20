@@ -66,14 +66,7 @@ const AddRequiredDocument = () => {
     type: Yup.string()
       .required('Document type is required'),
     isRequired: Yup.boolean()
-      .required('Required status is required'),
-    maxFileSize: Yup.number()
-      .required('Maximum file size is required')
-      .min(1, 'Maximum file size must be at least 1 MB')
-      .max(50, 'Maximum file size must be less than 50 MB'),
-    allowedExtensions: Yup.string()
-      .required('Allowed file extensions are required')
-      .matches(/^[a-zA-Z0-9,\s]+$/, 'Only letters, numbers, commas, and spaces are allowed')
+      .required('Required status is required')
   });
 
   const formik = useFormik({
@@ -81,20 +74,15 @@ const AddRequiredDocument = () => {
       name: '',
       description: '',
       type: '',
-      isRequired: true,
-      maxFileSize: 5,
-      allowedExtensions: 'pdf,doc,docx,jpg,jpeg,png'
+      isRequired: true
     },
     validationSchema,
     onSubmit: async (values) => {
       setSubmitting(true);
       setError('');
 
-             try {
-         await requiredDocumentsAPI.create({
-           ...values,
-           allowedExtensions: values.allowedExtensions.split(',').map(ext => ext.trim())
-         });
+                          try {
+        await requiredDocumentsAPI.create(values);
 
          showSuccessSwal('Required document created successfully!');
          navigate('/app/required-documents');
@@ -152,10 +140,9 @@ const AddRequiredDocument = () => {
                   label="Document Type"
                 >
                   <MenuItem value="academic">Academic</MenuItem>
-                  <MenuItem value="personal">Personal</MenuItem>
+                  <MenuItem value="identity">Identity</MenuItem>
                   <MenuItem value="financial">Financial</MenuItem>
                   <MenuItem value="medical">Medical</MenuItem>
-                  <MenuItem value="legal">Legal</MenuItem>
                   <MenuItem value="other">Other</MenuItem>
                 </Select>
                 {formik.touched.type && formik.errors.type && (
@@ -203,40 +190,7 @@ const AddRequiredDocument = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                id="maxFileSize"
-                name="maxFileSize"
-                label="Maximum File Size (MB)"
-                type="number"
-                value={formik.values.maxFileSize}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.maxFileSize && Boolean(formik.errors.maxFileSize)}
-                helperText={formik.touched.maxFileSize && formik.errors.maxFileSize}
-                disabled={submitting}
-                inputProps={{ min: 1, max: 50 }}
-              />
-            </Grid>
 
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                id="allowedExtensions"
-                name="allowedExtensions"
-                label="Allowed File Extensions"
-                value={formik.values.allowedExtensions}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.allowedExtensions && Boolean(formik.errors.allowedExtensions)}
-                helperText={
-                  (formik.touched.allowedExtensions && formik.errors.allowedExtensions) ||
-                  "Enter file extensions separated by commas (e.g., pdf,doc,docx,jpg,jpeg,png)"
-                }
-                disabled={submitting}
-              />
-            </Grid>
 
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>

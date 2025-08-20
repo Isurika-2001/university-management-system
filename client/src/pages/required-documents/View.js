@@ -139,7 +139,7 @@ const RequiredDocumentsView = () => {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = data.map((doc) => doc._id);
+      const newSelecteds = Array.isArray(data) ? data.map((doc) => doc._id) : [];
       setSelected(newSelecteds);
       return;
     }
@@ -238,15 +238,13 @@ const RequiredDocumentsView = () => {
                                  <TableCell>Description</TableCell>
                  <TableCell>Type</TableCell>
                  <TableCell>Required</TableCell>
-                 <TableCell>Max Size (MB)</TableCell>
-                 <TableCell>Allowed Extensions</TableCell>
                  <TableCell>Created Date</TableCell>
                  <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
             {loading && <LinearProgress sx={{ width: '100%' }} />}
             <TableBody>
-              {data.map((document) => (
+              {Array.isArray(data) && data.map((document) => (
                 <TableRow key={document._id} selected={isSelected(document._id)}>
                   <TableCell padding="checkbox">
                     <Checkbox checked={isSelected(document._id)} onChange={(event) => handleCheckboxClick(event, document._id)} />
@@ -274,12 +272,6 @@ const RequiredDocumentsView = () => {
                        variant="outlined" 
                        size="small" 
                      />
-                   </TableCell>
-                   <TableCell>{document.maxFileSize || 'N/A'}</TableCell>
-                   <TableCell>
-                     {Array.isArray(document.allowedExtensions) 
-                       ? document.allowedExtensions.join(', ') 
-                       : document.allowedExtensions || 'N/A'}
                    </TableCell>
                    <TableCell>
                      {document.createdAt ? new Date(document.createdAt).toLocaleDateString() : 'N/A'}
