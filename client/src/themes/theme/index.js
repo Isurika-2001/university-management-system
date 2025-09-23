@@ -23,17 +23,32 @@ const Theme = (colors) => {
 
   const contrastText = '#fff';
 
+  // const customPrimary = [
+  //   '#f2e9e9', // lighter
+  //   '#d9c2c2', // 100
+  //   '#c19999', // 200
+  //   '#a97373', // light
+  //   '#8f4e4e', // 400
+  //   '#492121', // main
+  //   '#3f1c1c', // dark
+  //   '#351717', // 700
+  //   '#2b1212', // darker
+  //   '#1f0d0d' // 900
+  // ];
+
+  // create new custom primary with #ffce03 color
+
   const customPrimary = [
-    '#f2e9e9', // lighter
-    '#d9c2c2', // 100
-    '#c19999', // 200
-    '#a97373', // light
-    '#8f4e4e', // 400
-    '#492121', // main
-    '#3f1c1c', // dark
-    '#351717', // 700
-    '#2b1212', // darker
-    '#1f0d0d'  // 900
+    '#fff8e1', // lighter
+    '#ffecb3', // 100
+    '#ffe082', // 200
+    '#ffd54f', // light
+    '#ffca28', // 400
+    '#ffce03', // main
+    '#e6b800', // dark
+    '#cc9900', // 700
+    '#b38600', // darker
+    '#996f00' // 900
   ];
 
   return {
