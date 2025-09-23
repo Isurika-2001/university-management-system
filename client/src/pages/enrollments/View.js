@@ -436,7 +436,7 @@ const EnrollmentsView = () => {
                 </TableCell>
                 <TableCell>NIC</TableCell>
                 <TableCell>Course</TableCell>
-                <TableCell>Batch</TableCell>
+                <TableCell>Intake</TableCell>
                 <TableCell>Enrollment Date</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>

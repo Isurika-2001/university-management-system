@@ -78,8 +78,8 @@ const EditForm = () => {
         registrationDeadline: data.data.registrationDeadline ? dayjs(data.data.registrationDeadline).format('YYYY-MM-DD') : ''
       });
     } catch (error) {
-      console.error('Error fetching batch:', error);
-      showErrorSwal('Error fetching batch details');
+      console.error('Error fetching intake:', error);
+      showErrorSwal('Error fetching intake details');
     } finally {
       setLoading(false);
     }
@@ -98,10 +98,10 @@ const EditForm = () => {
       };
 
       await batchesAPI.update(id, updatedData);
-      showSuccessSwal('Batch updated successfully');
+      showSuccessSwal('Intake updated successfully');
     } catch (error) {
       console.error(error);
-      showErrorSwal(error.message || 'An error occurred while updating the batch');
+      showErrorSwal(error.message || 'An error occurred while updating the intake');
     } finally {
       setSubmitting(false);
     }
