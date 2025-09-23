@@ -60,11 +60,11 @@ async function createCourse(req, res) {
     const newCourse = await course.save();
 
     // Ensure a dedicated counter exists for this course's enrollments
-    // Counter document id format: [course_code]_sequence (e.g., 30DF_sequence)
+    // Counter document id format: [course_code]_sequence (e.g., B1_sequence)
     try {
       await Counter.updateOne(
         { _id: `${code}_sequence` },
-        { $setOnInsert: { sequence_value: 999 } },
+        { $setOnInsert: { sequence_value: 0 } },
         { upsert: true }
       );
     } catch (counterErr) {

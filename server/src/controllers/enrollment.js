@@ -5,7 +5,7 @@ const Student = require("../models/student");
 const mongoose = require('mongoose');
 const ActivityLogger = require("../utils/activityLogger");
 const { getRequestInfo } = require("../middleware/requestInfo");
-const { getNextSequenceValue } = require("../utilities/counter");
+const { getNextSequenceValue, getAndFormatCourseEnrollmentNumber } = require("../utilities/counter");
 const { generateCSV, generateExcel, enrollmentExportHeaders } = require("../utils/exportUtils");
 
 // Import getStudentCompletionStatus from student controller
@@ -354,13 +354,18 @@ async function createEnrollment(req, res) {
       });
     }
 
-    // Generate enrollment number
-    const courseSequenceValue = await getNextSequenceValue("course_id_sequence");
+    // Generate enrollment number: batch.name + course.code + 3-digit per-course sequence
+    const course = await require('../models/course').findById(enrollmentData.courseId);
+    const batch = await require('../models/batch').findById(enrollmentData.batchId);
+    if (!course || !batch) {
+      return res.status(400).json({ success: false, message: 'Invalid course or batch' });
+    }
+    const formattedEnrollmentNo = await getAndFormatCourseEnrollmentNumber(course.code, batch.name);
 
     const enrollment = new Enrollment({
       ...enrollmentData,
       registration_no: student.registration_no,
-      enrollment_no: courseSequenceValue,
+      enrollment_no: formattedEnrollmentNo,
       enrollmentDate: new Date(),
     });
     await enrollment.save();
