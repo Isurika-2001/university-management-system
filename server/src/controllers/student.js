@@ -35,7 +35,7 @@ function checkStudentCompletion(student) {
   // This is handled by the enrollment creation, so we assume it exists if student is created
 
   // Step 3: Academic Details (Required for completion)
-  if (!student.highestAcademicQualification || !student.qualificationDescription) {
+  if (!student.highestAcademicQualification) {
     return false;
   }
 
@@ -47,7 +47,6 @@ function checkStudentCompletion(student) {
 
   // We need to check against the actual required documents that have isRequired=true
   // This will be handled in the detailed status check function
-  return true; // Simplified for now, detailed check in getStudentCompletionStatus
 
   // Step 5: Emergency Contact (Required for completion)
   if (!student.emergencyContact || 
@@ -88,7 +87,7 @@ async function getStudentCompletionStatus(student) {
   status.step2 = enrollmentCount > 0;
 
   // Step 3: Academic Details
-  status.step3 = !!(student.highestAcademicQualification && student.qualificationDescription);
+  status.step3 = !!(student.highestAcademicQualification);
 
   // Step 4: Required Documents
   // Get all required documents from the database
@@ -112,7 +111,7 @@ async function getStudentCompletionStatus(student) {
   status.step5 = !!(student.emergencyContact && 
                    student.emergencyContact.name && 
                    student.emergencyContact.relationship && 
-                   student.emergencyContact.phone);
+                   student.emergencyContact.phone);              
 
   // Determine overall status
   if (status.step1 && status.step2 && status.step3 && status.step4 && status.step5) {
@@ -344,8 +343,6 @@ async function createStudent(req, res) {
     const newStudent = await student.save();
 
     // Get detailed completion status and update
-    const completionStatus = await getStudentCompletionStatus(newStudent);
-    newStudent.status = completionStatus.overall;
     await newStudent.save();
 
     const course = await require('../models/course').findById(courseId);
@@ -366,6 +363,11 @@ async function createStudent(req, res) {
     // Log the student creation
     await ActivityLogger.logStudentCreate(req.user, newStudent, requestInfo.ipAddress, requestInfo.userAgent);
     
+    // Update student status
+    const completionStatus = await getStudentCompletionStatus(newStudent);
+    newStudent.status = completionStatus.overall;
+    await newStudent.save();
+
     let message = "New student registered for the course";
     if (completionStatus.overall === 'completed') {
       message = "Student registered successfully! Registration is complete.";
@@ -375,6 +377,8 @@ async function createStudent(req, res) {
       if (!completionStatus.step4) missingSteps.push('Required Documents');
       if (!completionStatus.step5) missingSteps.push('Emergency Contact');
       message = `Student registered successfully! To complete registration, please provide: ${missingSteps.join(', ')}`;
+    } else {
+      message = "Student registered successfully! Registration is still pending.";
     }
 
     res.status(201).json({
