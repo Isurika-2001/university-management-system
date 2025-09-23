@@ -1,5 +1,6 @@
 // Import any necessary dependencies
 const Course = require("../models/course");
+const Counter = require("../models/counter");
 
 // Function to get all courses
 async function getAllCourses(req, res) {
@@ -57,6 +58,19 @@ async function createCourse(req, res) {
       weekendBatch,
     });
     const newCourse = await course.save();
+
+    // Ensure a dedicated counter exists for this course's enrollments
+    // Counter document id format: [course_code]_sequence (e.g., 30DF_sequence)
+    try {
+      await Counter.updateOne(
+        { _id: `${code}_sequence` },
+        { $setOnInsert: { sequence_value: 999 } },
+        { upsert: true }
+      );
+    } catch (counterErr) {
+      // Log and proceed; course creation succeeded even if counter upsert failed
+      console.error("Error ensuring course counter:", counterErr);
+    }
 
     res.status(201).json({
       success: true,
