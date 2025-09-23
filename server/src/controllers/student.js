@@ -10,7 +10,7 @@ const multer = require('multer');
 const xlsx = require('xlsx');
 
 // utility calling
-const { getNextSequenceValue } = require('../utilities/counter'); 
+const { getNextSequenceValue, getAndFormatCourseEnrollmentNumber } = require('../utilities/counter'); 
 const { generateCSV, generateExcel, studentExportHeaders } = require("../utils/exportUtils");
 
 // Function to check if student has all required fields completed
@@ -277,7 +277,11 @@ async function createStudent(req, res) {
         });
       } else {
         // Register the existing student for the new course and batch
-        const courseSequenceValue = await getNextSequenceValue("course_id_sequence");
+        const course = await require('../models/course').findById(courseId);
+        const batch = await require('../models/batch').findById(batchId);
+        const courseSequenceValue = course && batch 
+          ? await getAndFormatCourseEnrollmentNumber(course.code, batch.name)
+          : await getNextSequenceValue("course_id_sequence");
 
         await courseRegistration(
           student._id,
@@ -344,7 +348,11 @@ async function createStudent(req, res) {
     newStudent.status = completionStatus.overall;
     await newStudent.save();
 
-    const courseSequenceValue = await getNextSequenceValue("course_id_sequence");
+    const course = await require('../models/course').findById(courseId);
+    const batch = await require('../models/batch').findById(batchId);
+    const courseSequenceValue = course && batch 
+      ? await getAndFormatCourseEnrollmentNumber(course.code, batch.name)
+      : await getNextSequenceValue("course_id_sequence");
 
     // Register new student for course and batch
     await courseRegistration(
@@ -516,7 +524,11 @@ async function AddCourseRegistration(req, res) {
       });
     }
 
-    const courseSequenceValue = await getNextSequenceValue("course_id_sequence");
+    const course = await require('../models/course').findById(courseId);
+    const batch = await require('../models/batch').findById(batchId);
+    const courseSequenceValue = course && batch 
+      ? await getAndFormatCourseEnrollmentNumber(course.code, batch.name)
+      : await getNextSequenceValue("course_id_sequence");
 
     const student = await Student.findById(studentId);
     if (!student) {
@@ -947,7 +959,7 @@ async function importStudentsFromExcel(req, res) {
 
         // Create enrollment (only if course and batch are provided)
         if (course && batch) {
-          const courseSequenceValue = await getNextSequenceValue("course_id_sequence");
+          const courseSequenceValue = await getAndFormatCourseEnrollmentNumber(course.code, batch.name);
           await courseRegistration(
             newStudent._id,
             course._id,

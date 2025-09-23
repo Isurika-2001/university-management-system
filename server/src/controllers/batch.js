@@ -1,6 +1,6 @@
 const Batch = require("../models/batch");
 
-// Get all batches with search, filter, pagination
+// Get all intakes (batches) with search, filter, pagination
 async function getAllBatches(req, res) {
   try {
     const { search = '', courseId, page = 1, limit = 10, sortBy = 'name', sortOrder = 'asc' } = req.query;
@@ -84,51 +84,6 @@ async function getAllBatches(req, res) {
         totalPages: Math.ceil(total / limitNum),
         data: batches,
       });
-    } else if (sortBy === 'name') {
-      // For batch name sorting, treat as numbers (e.g., "2024.1", "2024.2")
-      const aggregationPipeline = [
-        { $match: filter },
-        {
-          $lookup: {
-            from: 'courses',
-            localField: 'courseId',
-            foreignField: '_id',
-            as: 'course'
-          }
-        },
-        { $unwind: '$course' },
-        {
-          $addFields: {
-            nameParts: { $split: ['$name', '.'] },
-            yearPart: { $toInt: { $arrayElemAt: [{ $split: ['$name', '.'] }, 0] } },
-            numberPart: { $toInt: { $arrayElemAt: [{ $split: ['$name', '.'] }, 1] } }
-          }
-        },
-        { $sort: { yearPart: sortOrderNum, numberPart: sortOrderNum } },
-        { $skip: skip },
-        { $limit: limitNum },
-        {
-          $project: {
-            _id: 1,
-            name: 1,
-            courseId: '$course._id',
-            courseName: '$course.name',
-            orientationDate: 1,
-            startDate: 1,
-            registrationDeadline: 1
-          }
-        }
-      ];
-
-      const batches = await Batch.aggregate(aggregationPipeline);
-      
-      res.status(200).json({
-        total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum),
-        data: batches,
-      });
     } else {
       // For other sorting (date fields), use regular find with populate
       const batches = await Batch.find(filter)
@@ -185,11 +140,11 @@ async function getBatchesByCourseId(req, res) {
   }
 }
 
-// Create new batch
+// Create new intake (batch)
 async function createBatch(req, res) {
-  const { courseId, year, number, orientationDate, startDate, registrationDeadline } = req.body;
+  const { courseId, term, orientationDate, startDate, registrationDeadline } = req.body;
 
-  const name = `${year}.${number}`;
+  const name = term;
 
   try {
     if (await checkDuplicateBatch(courseId, name)) {
@@ -211,7 +166,7 @@ async function createBatch(req, res) {
 
     res.status(201).json({
       success: true,
-      message: "Batch created successfully",
+      message: "Intake created successfully",
       data: newBatch,
     });
   } catch (error) {
@@ -220,19 +175,19 @@ async function createBatch(req, res) {
     if (error.code === 11000) {
       res.status(400).json({
         success: false,
-        message: "Batch name already exists (duplicate key error)",
+        message: "Intake name already exists (duplicate key error)",
       });
     } else {
       res.status(500).json({
         success: false,
-        message: "Error creating batch",
+        message: "Error creating intake",
         error: error.message,
       });
     }
   }
 }
 
-// Get batch by ID
+// Get intake (batch) by ID
 async function getBatchById(req, res) {
   const { id } = req.params;
 
@@ -242,13 +197,13 @@ async function getBatchById(req, res) {
     if (!batch) {
       return res.status(404).json({
         success: false,
-        message: "Batch not found",
+        message: "Intake not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Batch retrieved successfully",
+      message: "Intake retrieved successfully",
       data: batch,
     });
   } catch (error) {
@@ -267,7 +222,7 @@ async function checkDuplicateBatch(courseId, name) {
   return !!batch;
 }
 
-// Delete batch
+// Delete intake (batch)
 async function deleteBatch(req, res) {
   const { id } = req.params;
 
@@ -277,13 +232,13 @@ async function deleteBatch(req, res) {
     if (!deletedBatch) {
       return res.status(404).json({
         success: false,
-        message: "Batch not found",
+        message: "Intake not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Batch deleted successfully",
+      message: "Intake deleted successfully",
       data: deletedBatch,
     });
   } catch (error) {
@@ -296,12 +251,12 @@ async function deleteBatch(req, res) {
   }
 }
 
-// Update batch
+// Update intake (batch)
 async function updateBatch(req, res) {
   const { id } = req.params;
-  const { courseId, year, number, orientationDate, startDate, registrationDeadline } = req.body;
+  const { courseId, term, orientationDate, startDate, registrationDeadline } = req.body;
 
-  const name = `${year}.${number}`;
+  const name = term;
 
   try {
     const existingBatch = await Batch.findById(id);
@@ -309,7 +264,7 @@ async function updateBatch(req, res) {
     if (!existingBatch) {
       return res.status(404).json({
         success: false,
-        message: "Batch not found",
+      message: "Intake not found",
       });
     }
 
@@ -322,7 +277,7 @@ async function updateBatch(req, res) {
     if (duplicate) {
       return res.status(403).json({
         success: false,
-        message: "Batch name already exists for this course",
+        message: "Intake name already exists for this course",
       });
     }
 
@@ -336,7 +291,7 @@ async function updateBatch(req, res) {
 
     res.status(200).json({
       success: true,
-      message: "Batch updated successfully",
+      message: "Intake updated successfully",
       data: updatedBatch,
     });
   } catch (error) {

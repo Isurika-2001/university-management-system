@@ -9,7 +9,7 @@
  *
  */
 
-import logo from 'assets/images/logo.png';
+import logo from 'assets/images/logo.jpg';
 
 // ==============================|| LOGO SVG ||============================== //
 

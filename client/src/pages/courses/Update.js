@@ -251,7 +251,7 @@ const UpdateCourseForm = () => {
       {loading ? (
         <LinearProgress />
       ) : (
-        <MainCard title="Batch List" sx={{ marginTop: 5 }}>
+        <MainCard title="Intake List" sx={{ marginTop: 5 }}>
           <Grid container direction="column" justifyContent="center">
             <Grid container sx={{ p: 3 }} spacing={2} direction="column">
               {/* Hardcoded list of batches */}
