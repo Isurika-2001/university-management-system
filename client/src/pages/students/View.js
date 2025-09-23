@@ -359,6 +359,7 @@ const View = () => {
               onClick={exportToCSV} 
               startIcon={<UploadOutlined />}
               size="small"
+              style={{ display: 'none' }}
             >
               CSV
             </Button>
@@ -369,6 +370,7 @@ const View = () => {
               onClick={exportToExcel} 
               startIcon={<UploadOutlined />}
               size="small"
+              style={{ display: 'none' }}
             >
               Excel
             </Button>
@@ -379,6 +381,7 @@ const View = () => {
               onClick={importFromExcel}
               startIcon={isUploading ? <CircularProgress size={16} /> : <DownloadOutlined />}
               size="small"
+              style={{ display: 'none' }}
             >
               Import
             </Button>
