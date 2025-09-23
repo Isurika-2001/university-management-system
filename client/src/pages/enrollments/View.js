@@ -354,7 +354,7 @@ const EnrollmentsView = () => {
               <InputLabel>Filter by Batch</InputLabel>
               <Select
                 value={batchFilter}
-                label="Filter by Batch"
+                label="Filter by Intake"
                 onChange={(e) => setBatchFilter(e.target.value)}
                 disabled={!courseFilter}
               >
@@ -374,7 +374,7 @@ const EnrollmentsView = () => {
               onClick={exportToCSV} 
               startIcon={<UploadOutlined />}
               size="small"
-              style={{ display: 'none' }}
+              // style={{ display: 'none' }}
             >
               CSV
             </Button>
@@ -384,7 +384,7 @@ const EnrollmentsView = () => {
               onClick={exportToExcel} 
               startIcon={<UploadOutlined />}
               size="small"
-              style={{ display: 'none' }}
+              // style={{ display: 'none' }}
             >
               Excel
             </Button>
