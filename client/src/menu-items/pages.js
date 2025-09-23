@@ -55,10 +55,10 @@ const pages = {
       icon: icons.AppstoreOutlined
     },
     {
-      id: 'batches',
-      title: 'Batches',
+      id: 'intakes',
+      title: 'Intakes',
       type: 'item',
-      url: '/app/batches',
+      url: '/app/intakes',
       icon: icons.BranchesOutlined
     },
     {

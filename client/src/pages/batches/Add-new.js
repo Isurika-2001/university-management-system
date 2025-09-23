@@ -42,8 +42,7 @@ const AddForm = () => {
   };
   const initialValues = {
     courseId: '',
-    year: '',
-    number: '',
+    term: '',
     orientationDate: '',
     startDate: '',
     registrationDeadline: ''
@@ -51,8 +50,7 @@ const AddForm = () => {
 
   const validationSchema = Yup.object().shape({
     courseId: Yup.string().required('Course is required'),
-    year: Yup.string().required('Year is required'),
-    number: Yup.string().required('Batch number is required'),
+    term: Yup.string().required('Intake term is required'),
     orientationDate: Yup.date().nullable(),
     startDate: Yup.date().nullable(),
     registrationDeadline: Yup.date().nullable()
@@ -82,23 +80,19 @@ const AddForm = () => {
       console.log('Batch added successfully');
     } catch (error) {
       console.error(error);
-      showErrorSwal(error.message || 'Failed to add batch');
+      showErrorSwal(error.message || 'Failed to add intake');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <MainCard title="Add New Batch">
+    <MainCard title="Add New Intake">
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
-        onChange={(event, form) => {
-          const { year, number } = form.values;
-          // Update grade field with year and number combination
-          form.setFieldValue('grade', `${year}-${number}`);
-        }}
+        onChange={undefined}
       >
         {({ errors, touched }) => (
           <Form>
@@ -132,32 +126,16 @@ const AddForm = () => {
                 <Grid item xs={12} sm={6}>
                   <Field
                     as={TextField}
-                    label="Year"
+                    label="Intake Term"
                     variant="outlined"
-                    name="year"
+                    name="term"
                     fullWidth
-                    error={touched.year && !!errors.year}
-                    helperText={<ErrorMessage name="year" />}
+                    error={touched.term && !!errors.term}
+                    helperText={<ErrorMessage name="term" />}
                     InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
+                      sx: { px: 2, py: 1 }
                     }}
-                    sx={{ mb: 3 }} // Margin bottom added
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Field
-                    as={TextField}
-                    label="Number"
-                    variant="outlined"
-                    type="number"
-                    name="number"
-                    fullWidth
-                    error={touched.number && !!errors.number}
-                    helperText={<ErrorMessage name="number" />}
-                    InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
-                    }}
-                    sx={{ mb: 3 }} // Margin bottom added
+                    sx={{ mb: 3 }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -222,7 +200,7 @@ const AddForm = () => {
                   disabled={submitting}
                   endIcon={submitting ? <CircularProgress size={20} color="inherit" /> : null}
                 >
-                  Add Batch
+                  Add Intake
                 </Button>
               </Grid>
             </Grid>

@@ -46,7 +46,7 @@ export const enrollmentsAPI = {
     return api.post(`${apiRoutes.studentRoute}enrollment/${studentId}`, enrollmentData);
   },
 
-  // Add batch transfer to enrollment
+  // add intake transfer to enrollment
   addBatchTransfer: async (enrollmentId, transferData) => {
     return api.post(`${apiRoutes.enrollmentRoute}${enrollmentId}/batch-transfer`, transferData);
   },

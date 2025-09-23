@@ -137,11 +137,11 @@ const View = () => {
   };
 
   const handleClickAddNew = () => {
-    navigate('/app/batches/add');
+    navigate('/app/intakes/add');
   };
 
   const handleRowClick = (row) => {
-    navigate('/app/batches/update?id=' + row._id);
+    navigate('/app/intakes/update?id=' + row._id);
   };
 
   const handleDeleteBatch = async (id) => {
@@ -240,14 +240,9 @@ const View = () => {
     <DataTable
       title={
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <span>Batch List</span>
-          <Button 
-            onClick={handleClickAddNew} 
-            variant="contained" 
-            startIcon={<FileAddOutlined />}
-            size="small"
-          >
-            Add Batch
+          <span>Intake List</span>
+          <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />} size="small">
+            Add Intake
           </Button>
         </Box>
       }
@@ -277,7 +272,7 @@ const View = () => {
       showActions={true}
       showPagination={true}
       showSelection={true}
-      emptyMessage="No batches found"
+      emptyMessage="No intakes found"
     />
   );
 };

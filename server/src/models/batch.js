@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-// Define the schema for the Batch model
+// Define the schema for the Intake (Batch) model
 const batchSchema = new mongoose.Schema({
   courseId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -8,6 +8,7 @@ const batchSchema = new mongoose.Schema({
     required: true,
   },
   name: {
+    // term (e.g., B11, B12)
     type: String,
     required: true,
   },
