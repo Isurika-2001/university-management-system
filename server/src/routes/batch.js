@@ -1,4 +1,4 @@
-// batchRoutes.js
+// intakeRoutes.js (formerly batchRoutes)
 
 const express = require("express");
 const { getAllBatches, createBatch, getBatchesByCourseId, deleteBatch, getBatchById, updateBatch } = require("../controllers/batch");

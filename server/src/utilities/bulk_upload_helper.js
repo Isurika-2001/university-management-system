@@ -2,7 +2,7 @@ const Student = require('../models/student');
 const Enrollment = require('../models/enrollment');
 const Course = require('../models/course');
 const Batch = require('../models/batch');
-const { getNextSequenceValue } = require('./counter');
+const { getNextSequenceValue, getAndFormatCourseEnrollmentNumber } = require('./counter');
 
 // Find existing student by NIC
 async function findStudentByNIC(nic) {
@@ -35,7 +35,7 @@ async function registerCourse(studentId, courseCode, batchName, studentRegNo) {
 
   if (isRegistered) return { success: false, reason: 'Duplicate enrollment' };
 
-  const courseSequence = await getNextSequenceValue("course_id_sequence");
+  const courseSequence = await getAndFormatCourseEnrollmentNumber(course.code, batch.name);
 
   const newEnrollment = new Enrollment({
     studentId,

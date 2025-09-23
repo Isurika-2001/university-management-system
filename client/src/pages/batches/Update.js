@@ -44,8 +44,7 @@ const EditForm = () => {
 
   const validationSchema = Yup.object().shape({
     courseId: Yup.string().required('Course is required'),
-    year: Yup.string().required('Year is required'),
-    number: Yup.string().required('Batch number is required'),
+    term: Yup.string().required('Intake term is required'),
     orientationDate: Yup.date().nullable(),
     startDate: Yup.date().nullable(),
     registrationDeadline: Yup.date().nullable()
@@ -54,7 +53,8 @@ const EditForm = () => {
   useEffect(() => {
     fetchCourses();
     fetchBatch();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   // Fetch courses for dropdown
   async function fetchCourses() {
@@ -66,18 +66,16 @@ const EditForm = () => {
     }
   }
 
-  // Fetch existing batch data
+  // Fetch existing intake data
   async function fetchBatch() {
     try {
       const data = await batchesAPI.getById(id);
-      const [year, number] = data.data.name.split('.');
       setInitialValues({
         courseId: data.data.courseId,
-        year: year,
-        number: number,
+        term: data.data.name,
         orientationDate: data.data.orientationDate ? dayjs(data.data.orientationDate).format('YYYY-MM-DD') : '',
         startDate: data.data.startDate ? dayjs(data.data.startDate).format('YYYY-MM-DD') : '',
-        registrationDeadline: data.data.registrationDeadline ? dayjs(data.data.registrationDeadline).format('YYYY-MM-DD') : '',
+        registrationDeadline: data.data.registrationDeadline ? dayjs(data.data.registrationDeadline).format('YYYY-MM-DD') : ''
       });
     } catch (error) {
       console.error('Error fetching batch:', error);
@@ -93,8 +91,7 @@ const EditForm = () => {
 
       const updatedData = {
         courseId: values.courseId,
-        year: values.year,
-        number: values.number,
+        term: values.term,
         orientationDate: values.orientationDate || null,
         startDate: values.startDate || null,
         registrationDeadline: values.registrationDeadline || null
@@ -115,7 +112,7 @@ const EditForm = () => {
   }
 
   return (
-    <MainCard title="Edit Batch">
+    <MainCard title="Edit Intake">
       <Formik initialValues={initialValues} enableReinitialize validationSchema={validationSchema} onSubmit={handleSubmit}>
         {({ errors, touched }) => (
           <Form>
@@ -147,26 +144,12 @@ const EditForm = () => {
                 <Grid item xs={12} sm={6}>
                   <Field
                     as={TextField}
-                    label="Year"
+                    label="Intake Term"
                     variant="outlined"
-                    name="year"
+                    name="term"
                     fullWidth
-                    error={touched.year && !!errors.year}
-                    helperText={<ErrorMessage name="year" />}
-                    InputProps={{ sx: { px: 2, py: 1 } }}
-                    sx={{ mb: 3 }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Field
-                    as={TextField}
-                    label="Number"
-                    variant="outlined"
-                    type="number"
-                    name="number"
-                    fullWidth
-                    error={touched.number && !!errors.number}
-                    helperText={<ErrorMessage name="number" />}
+                    error={touched.term && !!errors.term}
+                    helperText={<ErrorMessage name="term" />}
                     InputProps={{ sx: { px: 2, py: 1 } }}
                     sx={{ mb: 3 }}
                   />
@@ -233,7 +216,7 @@ const EditForm = () => {
                   disabled={submitting}
                   endIcon={submitting ? <CircularProgress size={20} color="inherit" /> : null}
                 >
-                  Update Batch
+                  Update Intake
                 </Button>
               </Grid>
             </Grid>

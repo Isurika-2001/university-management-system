@@ -120,7 +120,7 @@ export default function ThemeRoutes() {
         </Route>
 
         {/* Batch section */}
-        <Route path="batches" element={<Outlet />}>
+        <Route path="intakes" element={<Outlet />}>
           <Route index element={permissions?.batch?.includes('R') ? <Batches /> : <Navigate to="/app/access-denied" replace />} />
           <Route
             path="add"
