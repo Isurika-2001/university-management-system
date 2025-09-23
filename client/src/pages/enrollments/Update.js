@@ -144,7 +144,7 @@ const UpdateForm = () => {
       const response = await batchesAPI.getByCourseId(courseId);
       setBatchOptions(response.data || response || []);
     } catch (error) {
-      console.error('Error fetching batches:', error);
+      console.error('Error fetching intakes:', error);
       setBatchOptions([]);
     }
   }
@@ -211,17 +211,17 @@ const UpdateForm = () => {
       console.log('Selected enrollment:', selectedEnrollment);
       
       if (!transferData.batchId || !transferData.reason) {
-        showErrorSwal('Please select a new batch and provide a transfer reason');
+        showErrorSwal('Please select a new intake and provide a transfer reason');
         return;
       }
 
       const responseData = await enrollmentsAPI.addBatchTransfer(selectedEnrollment._id, transferData);
-      showSuccessSwal(responseData.message || 'Batch transfer completed successfully');
+      showSuccessSwal(responseData.message || 'Intake transfer completed successfully');
       closeTransferDialog();
       fetchEnrollments();
     } catch (error) {
       console.error('Transfer error:', error);
-      showErrorSwal(error.message || 'Failed to complete batch transfer');
+      showErrorSwal(error.message || 'Failed to complete intake transfer');
     } finally {
       setSubmitting(false);
     }
@@ -240,7 +240,7 @@ const UpdateForm = () => {
 
   const validationSchema = Yup.object().shape({
     courseId: Yup.string().required('Course is required'),
-    batchId: Yup.string().required('Batch is required')
+    batchId: Yup.string().required('Intake is required')
   });
 
   if (loading) {
@@ -287,7 +287,7 @@ const UpdateForm = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Course</TableCell>
-                    <TableCell>Batch</TableCell>
+                    <TableCell>Intake</TableCell>
                     <TableCell>Enrollment Date</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
@@ -374,7 +374,7 @@ const UpdateForm = () => {
                   </Grid>
                   <Grid item xs={12}>
                     <FormControl fullWidth>
-                      <InputLabel>Batch</InputLabel>
+                      <InputLabel>Intake</InputLabel>
                       <Select
                         value={selectedBatch}
                         onChange={(e) => {
@@ -417,7 +417,7 @@ const UpdateForm = () => {
 
        {/* Batch Transfer Dialog */}
        <Dialog open={openTransferDialog} onClose={closeTransferDialog} maxWidth="sm" fullWidth>
-         <DialogTitle>Batch Transfer</DialogTitle>
+         <DialogTitle>Intake Transfer</DialogTitle>
          <DialogContent>
            <Box sx={{ pt: 2 }}>
              {selectedEnrollment && (
@@ -429,16 +429,16 @@ const UpdateForm = () => {
                    Course: {selectedEnrollment.course?.name || 'N/A'}
                  </Typography>
                  <Typography variant="body2">
-                   Current Batch: {selectedEnrollment.batch?.name || 'N/A'}
+                   Current Intake: {selectedEnrollment.batch?.name || 'N/A'}
                  </Typography>
                </Box>
              )}
              
              <FormControl fullWidth sx={{ mb: 2 }}>
-               <InputLabel>New Batch</InputLabel>
+               <InputLabel>New Intake</InputLabel>
                <Select
                  value={transferData.batchId}
-                 label="New Batch"
+                 label="New Intake"
                  onChange={(e) => setTransferData({ ...transferData, batchId: e.target.value })}
                >
                  {batchOptions.map((batch) => (
@@ -457,7 +457,7 @@ const UpdateForm = () => {
                rows={3}
                value={transferData.reason}
                onChange={(e) => setTransferData({ ...transferData, reason: e.target.value })}
-               placeholder="Please provide a reason for the batch transfer..."
+               placeholder="Please provide a reason for the intake transfer..."
              />
            </Box>
          </DialogContent>

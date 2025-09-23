@@ -314,7 +314,7 @@ const AddStudent = () => {
          if (!enrollment.courseId || !enrollment.batchId) {
            console.log(`Enrollment ${index} has missing data:`, { courseId: enrollment.courseId, batchId: enrollment.batchId });
            if (!enrollment.courseId) setFieldError(`enrollments.${index}.courseId`, 'Course is required');
-           if (!enrollment.batchId) setFieldError(`enrollments.${index}.batchId`, 'Batch is required');
+           if (!enrollment.batchId) setFieldError(`enrollments.${index}.batchId`, 'Intake is required');
            hasErrors = true;
          }
        });
@@ -463,7 +463,7 @@ const AddStudent = () => {
            console.log('Processing additional enrollment:', enrollment);
            if (!enrollment.courseId || !enrollment.batchId) {
              console.error('Invalid enrollment data:', enrollment);
-             showErrorSwal('Invalid enrollment data: missing courseId or batchId');
+             showErrorSwal('Invalid enrollment data: missing courseId or intake');
              return;
            }
            
@@ -668,7 +668,7 @@ const AddStudent = () => {
                         </Grid>
                         <Grid item xs={12} sm={4}>
                           <Typography variant="body2" color="textSecondary">
-                            Batch: {enrollment.batchName || 'Not selected'}
+                            Intake: {enrollment.batchName || 'Not selected'}
                           </Typography>
                         </Grid>
                         <Grid item xs={12} sm={4}>
@@ -720,7 +720,7 @@ const AddStudent = () => {
                 </Grid>
                   <Grid item xs={12} sm={5}>
                     <FormControl fullWidth>
-                      <InputLabel>Batch</InputLabel>
+                      <InputLabel>Intake</InputLabel>
                                               <Select
                           value=""
                           onChange={(e) => {
@@ -746,7 +746,7 @@ const AddStudent = () => {
                             // Reset selections
                             setSelectedCourse('');
                           }}
-                          label="Batch"
+                          label="Intake"
                           disabled={!selectedCourse}
                         >
                       {batchOptions.map((batch) => (
@@ -821,7 +821,7 @@ const AddStudent = () => {
                         </Grid>
                         <Grid item xs={12} sm={5}>
                           <FormControl fullWidth>
-                            <InputLabel>Batch</InputLabel>
+                            <InputLabel>Intake</InputLabel>
                                                           <Select
                                 value={enrollment.batchId || ''}
                                 onChange={(e) => {
@@ -835,7 +835,7 @@ const AddStudent = () => {
                                   };
                                   setFieldValue('enrollments', updatedEnrollments);
                                 }}
-                                label="Batch"
+                                label="Intake"
                                 disabled={!enrollment.courseId}
                               >
                                 {(batchOptionsMap[enrollment.courseId] || []).map((batch) => (
