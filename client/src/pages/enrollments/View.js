@@ -374,6 +374,7 @@ const EnrollmentsView = () => {
               onClick={exportToCSV} 
               startIcon={<UploadOutlined />}
               size="small"
+              style={{ display: 'none' }}
             >
               CSV
             </Button>
@@ -383,6 +384,7 @@ const EnrollmentsView = () => {
               onClick={exportToExcel} 
               startIcon={<UploadOutlined />}
               size="small"
+              style={{ display: 'none' }}
             >
               Excel
             </Button>
