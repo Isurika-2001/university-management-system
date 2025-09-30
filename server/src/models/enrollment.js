@@ -31,6 +31,35 @@ const enrollmentSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    // Payment Schema for this enrollment
+    paymentSchema: {
+      courseFee: {
+        type: Number,
+      },
+      isDiscountApplicable: {
+        type: Boolean,
+      },
+      discountType: {
+        type: String,
+        enum: ['amount', 'percentage']
+      },
+      discountValue: {
+        type: Number,
+      },
+      downPayment: {
+        type: Number,
+      },
+      numberOfInstallments: {
+        type: Number,
+      },
+      installmentStartDate: {
+        type: Date,
+      },
+      paymentFrequency: {
+        type: String,
+        enum: ['monthly', 'each_3_months', 'each_6_months']
+      }
+    },
     // Batch transfer tracking
     batchTransfers: [{
       batch: {
