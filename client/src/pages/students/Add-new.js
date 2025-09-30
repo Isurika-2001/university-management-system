@@ -16,7 +16,8 @@ import {
   Step,
   StepLabel,
   Card,
-  CardContent
+  CardContent,
+  FormHelperText
 } from '@mui/material';
 import { 
   UserOutlined, 
@@ -39,6 +40,7 @@ import { useAuthContext } from 'context/useAuthContext';
 const steps = [
   'Personal Details',
   'Course Details',
+  'Payment Schema',
   'Academic Details (Optional)',
   'Required Documents',
   'Emergency Contact (Optional)'
@@ -214,6 +216,18 @@ const AddStudent = () => {
      // Course Details (Step 2)
      enrollments: [],
 
+    // Payment Schema (Step 3 - Required)
+     paymentSchema: {
+       courseFee: '',
+       isDiscountApplicable: false,
+       discountType: 'amount', // 'amount' | 'percentage'
+       discountValue: '',
+       downPayment: '',
+       numberOfInstallments: '',
+      installmentStartDate: '',
+      paymentFrequency: 'monthly'
+     },
+
      // Academic Details (Step 3 - Optional)
      highestAcademicQualification: '',
      qualificationDescription: '',
@@ -259,14 +273,51 @@ const AddStudent = () => {
       })
     ).min(1, 'At least one course enrollment is required'),
 
-    // Academic Details validation (Step 3 - Optional)
+    // Payment Schema validation (Step 3 - Required)
+    paymentSchema: Yup.object().shape({
+      courseFee: Yup.number()
+        .transform((value, originalValue) => (originalValue === '' || originalValue === null ? undefined : Number(originalValue)))
+        .typeError('Course fee is required')
+        .min(0, 'Must be >= 0')
+        .required('Course fee is required'),
+      isDiscountApplicable: Yup.boolean().optional(),
+      discountType: Yup.string()
+        .oneOf(['amount', 'percentage'])
+        .when('isDiscountApplicable', {
+          is: true,
+          then: (schema) => schema.required('Discount type is required'),
+          otherwise: (schema) => schema.optional()
+        }),
+      discountValue: Yup.number()
+        .transform((value, originalValue) => (originalValue === '' || originalValue === null ? 0 : Number(originalValue)))
+        .when('isDiscountApplicable', {
+          is: true,
+          then: (schema) => schema.typeError('Discount is required').min(0, 'Must be >= 0').required('Discount is required'),
+          otherwise: (schema) => schema.min(0, 'Must be >= 0')
+        }),
+      downPayment: Yup.number()
+        .transform((value, originalValue) => (originalValue === '' || originalValue === null ? undefined : Number(originalValue)))
+        .typeError('Downpayment is required')
+        .min(0, 'Must be >= 0')
+        .required('Downpayment is required'),
+      numberOfInstallments: Yup.number()
+        .transform((value, originalValue) => (originalValue === '' || originalValue === null ? undefined : Number(originalValue)))
+        .typeError('No. of installments is required')
+        .integer('Must be an integer')
+        .min(1, 'At least 1')
+        .required('No. of installments is required'),
+      installmentStartDate: Yup.string().required('Installment start date is required'),
+      paymentFrequency: Yup.string().oneOf(['monthly', 'each_3_months', 'each_6_months']).required('Payment frequency is required'),
+    }),
+    
+    // Academic Details validation (Step 4 - Optional)
     highestAcademicQualification: Yup.string().optional(),
     qualificationDescription: Yup.string().optional(),
 
-    // Required Documents validation (Step 4 - Optional)
+    // Required Documents validation (Step 5 - Optional)
     requiredDocuments: Yup.array().optional(),
 
-    // Emergency Contact validation (Step 5 - Optional)
+    // Emergency Contact validation (Step 6 - Optional)
     emergencyContact: Yup.object().shape({
       name: Yup.string().optional(),
       relationship: Yup.string().optional(),
@@ -276,10 +327,10 @@ const AddStudent = () => {
     }).optional()
   });
 
-     const handleNext = (values, { setTouched, setFieldError }) => {
+     const handleNext = async (values, { setTouched, setFieldError, validateForm }) => {
      console.log('handleNext called, activeStep:', activeStep);
      
-     // Only validate steps 1 and 2 (Personal Details and Course Details)
+    // Validate steps 1, 2 and 3 (Personal Details, Course Details and Payment Schema)
      if (activeStep === 0) {
        // Validate Personal Details (Step 1 - Required)
        const personalFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
@@ -325,7 +376,28 @@ const AddStudent = () => {
        }
      }
 
-     // Steps 3, 4, and 5 are optional - no validation needed
+    if (activeStep === 2) {
+      // Validate Payment Schema (Step 3 - Required via Yup)
+      const formErrors = await validateForm();
+      if (formErrors && formErrors.paymentSchema) {
+        // mark all paymentSchema fields as touched for error display
+        setTouched({
+          paymentSchema: {
+            courseFee: true,
+            isDiscountApplicable: true,
+            discountType: true,
+            discountValue: true,
+            downPayment: true,
+            numberOfInstallments: true,
+            installmentStartDate: true,
+            paymentFrequency: true
+          }
+        }, true);
+        return;
+      }
+    }
+
+    // Steps 4, and 5 are optional - no validation needed
      console.log('Moving to next step from', activeStep, 'to', activeStep + 1);
      setActiveStep((prevActiveStep) => prevActiveStep + 1);
    };
@@ -358,6 +430,7 @@ const AddStudent = () => {
          mobile: values.mobile,
          homeContact: values.homeContact,
          email: values.email,
+        paymentSchema: values.paymentSchema,
          // Optional fields - only include if they have non-empty values
          ...(values.highestAcademicQualification && values.highestAcademicQualification.trim() !== '' && { 
            highestAcademicQualification: values.highestAcademicQualification 
@@ -856,6 +929,178 @@ const AddStudent = () => {
         );
 
       case 2:
+        // Payment Schema (Required)
+        {
+          const courseFee = parseFloat(values.paymentSchema?.courseFee || 0) || 0;
+          const discountApplicable = !!values.paymentSchema?.isDiscountApplicable;
+          const discountType = values.paymentSchema?.discountType || 'amount';
+          const discountValueRaw = parseFloat(values.paymentSchema?.discountValue || 0) || 0;
+          const downPayment = parseFloat(values.paymentSchema?.downPayment || 0) || 0;
+          const numberOfInstallments = parseInt(values.paymentSchema?.numberOfInstallments || 0, 10) || 0;
+
+          const discountAmount = discountApplicable
+            ? (discountType === 'percentage'
+                ? (courseFee * discountValueRaw) / 100
+                : discountValueRaw)
+            : 0;
+          const discountedFee = Math.max(courseFee - discountAmount, 0);
+          const amountToFinance = Math.max(discountedFee - downPayment, 0);
+          const installmentAmount = numberOfInstallments > 0 ? amountToFinance / numberOfInstallments : 0;
+
+          return (
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <ReadOutlined style={{ marginRight: 8, fontSize: 24 }} />
+                  <Typography variant="h5">Payment Schema</Typography>
+                </Box>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                  {`Configure the student's payment plan. All fields are required.`}
+                </Typography>
+
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Field
+                      as={TextField}
+                      label="Course Fee"
+                      variant="outlined"
+                      name="paymentSchema.courseFee"
+                      type="number"
+                      fullWidth
+                      InputProps={{ sx: { px: 2, py: 1 } }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={values.paymentSchema?.isDiscountApplicable || false}
+                          onChange={(e) => setFieldValue('paymentSchema.isDiscountApplicable', e.target.checked)}
+                        />
+                      }
+                      label="Discount Applicable?"
+                    />
+                  </Grid>
+
+                  {discountApplicable && (
+                    <>
+                      <Grid item xs={12} sm={6}>
+                        <FormControl fullWidth error={touched?.paymentSchema?.discountType && !!errors?.paymentSchema?.discountType}>
+                          <InputLabel>Discount Type</InputLabel>
+                          <Select
+                            label="Discount Type"
+                            value={discountType}
+                            onChange={(e) => setFieldValue('paymentSchema.discountType', e.target.value)}
+                          >
+                            <MenuItem value="amount">Amount</MenuItem>
+                            <MenuItem value="percentage">Percentage</MenuItem>
+                          </Select>
+                          {touched?.paymentSchema?.discountType && errors?.paymentSchema?.discountType && (
+                            <FormHelperText>{errors.paymentSchema.discountType}</FormHelperText>
+                          )}
+                        </FormControl>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Field
+                          as={TextField}
+                          label={discountType === 'percentage' ? 'Discount (%)' : 'Discount Amount'}
+                          variant="outlined"
+                          name="paymentSchema.discountValue"
+                          type="number"
+                          fullWidth
+                          error={touched?.paymentSchema?.discountValue && !!errors?.paymentSchema?.discountValue}
+                          helperText={<ErrorMessage name="paymentSchema.discountValue" />}
+                          InputProps={{ sx: { px: 2, py: 1 } }}
+                        />
+                      </Grid>
+                    </>
+                  )}
+
+                  <Grid item xs={12} sm={6}>
+                    <Field
+                      as={TextField}
+                      label="Downpayment"
+                      variant="outlined"
+                      name="paymentSchema.downPayment"
+                      type="number"
+                      fullWidth
+                      error={touched?.paymentSchema?.downPayment && !!errors?.paymentSchema?.downPayment}
+                      helperText={<ErrorMessage name="paymentSchema.downPayment" />}
+                      InputProps={{ sx: { px: 2, py: 1 } }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field
+                      as={TextField}
+                      label="No. of Installments"
+                      variant="outlined"
+                      name="paymentSchema.numberOfInstallments"
+                      type="number"
+                      fullWidth
+                      error={touched?.paymentSchema?.numberOfInstallments && !!errors?.paymentSchema?.numberOfInstallments}
+                      helperText={<ErrorMessage name="paymentSchema.numberOfInstallments" />}
+                      InputProps={{ sx: { px: 2, py: 1 } }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <Field
+                      as={TextField}
+                      label="Installment Start Date"
+                      variant="outlined"
+                      name="paymentSchema.installmentStartDate"
+                      type="date"
+                      InputLabelProps={{ shrink: true }}
+                      fullWidth
+                      error={touched?.paymentSchema?.installmentStartDate && !!errors?.paymentSchema?.installmentStartDate}
+                      helperText={<ErrorMessage name="paymentSchema.installmentStartDate" />}
+                      InputProps={{ sx: { px: 2, py: 1 } }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth error={touched?.paymentSchema?.paymentFrequency && !!errors?.paymentSchema?.paymentFrequency}>
+                      <InputLabel>Payment to be made</InputLabel>
+                      <Select
+                        label="Payment to be made"
+                        value={values.paymentSchema?.paymentFrequency || 'monthly'}
+                        onChange={(e) => setFieldValue('paymentSchema.paymentFrequency', e.target.value)}
+                      >
+                        <MenuItem value="monthly">Monthly</MenuItem>
+                        <MenuItem value="each_3_months">Each 3 months</MenuItem>
+                        <MenuItem value="each_6_months">Each 6 months</MenuItem>
+                      </Select>
+                      {touched?.paymentSchema?.paymentFrequency && errors?.paymentSchema?.paymentFrequency && (
+                        <FormHelperText>{errors.paymentSchema.paymentFrequency}</FormHelperText>
+                      )}
+                    </FormControl>
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <Box sx={{ p: 2, border: '1px dashed #e0e0e0', borderRadius: 1 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1 }}>Calculated Summary</Typography>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="body2">Discounted Course Fee: {discountedFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                          <Typography variant="caption" color="textSecondary">(Course Fee - Discount)</Typography>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="body2">Amount to Finance: {amountToFinance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                          <Typography variant="caption" color="textSecondary">(Discounted Fee - Downpayment)</Typography>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="body2">Installment Amount (Premium): {installmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                          <Typography variant="caption" color="textSecondary">Auto-calculated per installment</Typography>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          );
+        }
+
+      case 3:
         return (
           <Card>
             <CardContent>
@@ -898,7 +1143,7 @@ const AddStudent = () => {
           </Card>
         );
 
-      case 3:
+      case 4:
         return (
           <Card>
             <CardContent>
@@ -1011,7 +1256,7 @@ const AddStudent = () => {
           </Card>
         );
 
-      case 4:
+      case 5:
         return (
           <Card>
             <CardContent>
@@ -1088,7 +1333,7 @@ const AddStudent = () => {
   return (
     <MainCard title="Student Registration Wizard">
              <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
-         {({ errors, handleSubmit, touched, values, setFieldValue, setTouched, setFieldError }) => {
+         {({ errors, handleSubmit, touched, values, setFieldValue, setTouched, setFieldError, validateForm }) => {
            console.log('Form values:', values);
            console.log('Current enrollments in form:', values.enrollments);
            return (
@@ -1160,14 +1405,14 @@ const AddStudent = () => {
                        onClick={(e) => {
                          e.preventDefault();
                          e.stopPropagation();
-                         handleNext(values, { setTouched, setFieldError });
+                         handleNext(values, { setTouched, setFieldError, validateForm });
                        }}
                        endIcon={<ArrowRightOutlined />}
                      >
                        Next
                      </Button>
-                    {/* Show Skip button for optional steps (3, 4, 5) */}
-                    {activeStep >= 2 && activeStep < steps.length - 1 && (
+                   {/* Show Skip button for optional steps (4, 5) */}
+                   {activeStep >= 3 && activeStep < steps.length - 1 && (
                       <Button
                         type="button"
                         variant="outlined"
@@ -1181,9 +1426,35 @@ const AddStudent = () => {
               </Box>
                          </Box>
           </Form>
-         );
-         }}
+        );
+        }}
       </Formik>
+      {/** Completion Progress (6 steps) **/}
+      <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography variant="caption" color="textSecondary">Completion Progress:</Typography>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          {['step1', 'step2', 'step3', 'step4', 'step5', 'step6'].map((step, index) => (
+            <Box
+              key={step}
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                bgcolor: 'grey.300',
+                border: '1px solid',
+                borderColor: 'grey.400'
+              }}
+              title={`Step ${index + 1}: ${
+                step === 'step1' ? 'Personal Details' :
+                step === 'step2' ? 'Course Enrollment' :
+                step === 'step3' ? 'Payment Schema' :
+                step === 'step4' ? 'Academic Details' :
+                step === 'step5' ? 'Required Documents' : 'Emergency Contact'
+              }`}
+            />
+          ))}
+        </Box>
+      </Box>
     </MainCard>
   );
 };

@@ -246,6 +246,7 @@ async function createStudent(req, res) {
     email,
     courseId,
     batchId,
+    paymentSchema,
     // New fields
     highestAcademicQualification,
     qualificationDescription,
@@ -300,6 +301,21 @@ async function createStudent(req, res) {
           },
         });
       }
+    }
+
+    // Validate payment schema required fields
+    if (!paymentSchema ||
+        paymentSchema.courseFee === undefined ||
+        paymentSchema.discountType === undefined ||
+        paymentSchema.discountValue === undefined ||
+        paymentSchema.downPayment === undefined ||
+        paymentSchema.numberOfInstallments === undefined ||
+        paymentSchema.installmentStartDate === undefined ||
+        paymentSchema.paymentFrequency === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment schema is required with all fields'
+      });
     }
 
     // New student registration
@@ -357,7 +373,8 @@ async function createStudent(req, res) {
       courseId,
       batchId,
       sequenceValue,
-      courseSequenceValue
+      courseSequenceValue,
+      paymentSchema
     );
 
     // Log the student creation
@@ -784,6 +801,7 @@ async function courseRegistration(
   batchId,
   sequenceValue,
   courseSequenceValue,
+  paymentSchema
 ) {
   console.log('courseRegistration called with:', { studentId, courseId, batchId, sequenceValue, courseSequenceValue });
   
@@ -794,6 +812,7 @@ async function courseRegistration(
     registration_no: sequenceValue,
     enrollment_no: courseSequenceValue,
     enrollmentDate: new Date(),
+    ...(paymentSchema ? { paymentSchema } : {})
   });
 
   console.log('Creating enrollment with data:', enrollment);
