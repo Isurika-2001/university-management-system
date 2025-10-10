@@ -78,31 +78,14 @@ export default function ThemeRoutes() {
 
         {/* Enrollments section */}
         <Route path="enrollments" element={<Outlet />}>
-          <Route
-            index
-            element={
-              permissions?.enrollments?.includes('R') ? <Enrollments /> : <Navigate to="/app/access-denied" replace />
-            }
-          />
+          <Route index element={permissions?.enrollments?.includes('R') ? <Enrollments /> : <Navigate to="/app/access-denied" replace />} />
           <Route
             path="add"
-            element={
-              permissions?.enrollments?.includes('C') ? (
-                <AddEnrollmentForm />
-              ) : (
-                <Navigate to="/app/access-denied" replace />
-              )
-            }
+            element={permissions?.enrollments?.includes('C') ? <AddEnrollmentForm /> : <Navigate to="/app/access-denied" replace />}
           />
           <Route
             path="update"
-            element={
-              permissions?.enrollments?.includes('U') ? (
-                <UpdateEnrollmentForm />
-              ) : (
-                <Navigate to="/app/access-denied" replace />
-              )
-            }
+            element={permissions?.enrollments?.includes('U') ? <UpdateEnrollmentForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
 
@@ -122,10 +105,7 @@ export default function ThemeRoutes() {
         {/* Batch section */}
         <Route path="intakes" element={<Outlet />}>
           <Route index element={permissions?.batch?.includes('R') ? <Batches /> : <Navigate to="/app/access-denied" replace />} />
-          <Route
-            path="add"
-            element={permissions?.batch?.includes('C') ? <AddBatchForm /> : <Navigate to="/app/access-denied" replace />}
-          />
+          <Route path="add" element={permissions?.batch?.includes('C') ? <AddBatchForm /> : <Navigate to="/app/access-denied" replace />} />
           <Route
             path="update"
             element={permissions?.batch?.includes('U') ? <UpdateBatchForm /> : <Navigate to="/app/access-denied" replace />}
@@ -135,10 +115,7 @@ export default function ThemeRoutes() {
         {/* User section */}
         <Route path="users" element={<Outlet />}>
           <Route index element={permissions?.user?.includes('R') ? <Users /> : <Navigate to="/app/access-denied" replace />} />
-          <Route
-            path="add"
-            element={permissions?.user?.includes('C') ? <AddUserForm /> : <Navigate to="/app/access-denied" replace />}
-          />
+          <Route path="add" element={permissions?.user?.includes('C') ? <AddUserForm /> : <Navigate to="/app/access-denied" replace />} />
           <Route
             path="update"
             element={permissions?.user?.includes('U') ? <UpdateUserForm /> : <Navigate to="/app/access-denied" replace />}
@@ -147,14 +124,21 @@ export default function ThemeRoutes() {
 
         {/* Required Documents section */}
         <Route path="required-documents" element={<Outlet />}>
-          <Route index element={permissions?.requiredDocument?.includes('R') ? <RequiredDocuments /> : <Navigate to="/app/access-denied" replace />} />
+          <Route
+            index
+            element={permissions?.requiredDocument?.includes('R') ? <RequiredDocuments /> : <Navigate to="/app/access-denied" replace />}
+          />
           <Route
             path="add"
-            element={permissions?.requiredDocument?.includes('C') ? <AddRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />}
+            element={
+              permissions?.requiredDocument?.includes('C') ? <AddRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />
+            }
           />
           <Route
             path="update"
-            element={permissions?.requiredDocument?.includes('U') ? <UpdateRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />}
+            element={
+              permissions?.requiredDocument?.includes('U') ? <UpdateRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />
+            }
           />
         </Route>
 
