@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Grid, 
-  Typography, 
-  Avatar, 
+import {
+  Box,
+  Grid,
+  Typography,
+  Avatar,
   List,
   ListItem,
   ListItemAvatar,
@@ -16,11 +16,7 @@ import {
   Chip,
   Grow
 } from '@mui/material';
-import { 
-  UserOutlined, 
-  ClockCircleOutlined,
-  MailOutlined
-} from '@ant-design/icons';
+import { UserOutlined, ClockCircleOutlined, MailOutlined } from '@ant-design/icons';
 
 import { useAuthContext } from 'context/useAuthContext';
 import { statsAPI } from '../../../api/stats';
@@ -34,7 +30,7 @@ const RecentStudents = () => {
 
   useEffect(() => {
     const hasPermission = user?.permissions?.student?.includes('R');
-    
+
     if (!hasPermission) {
       setLoading(false);
       return;
@@ -51,7 +47,6 @@ const RecentStudents = () => {
         if (studentData.success) {
           setRecentStudents(studentData.data || []);
         }
-
       } catch (err) {
         setError('Error fetching recent activities');
         console.error(err);
@@ -67,14 +62,14 @@ const RecentStudents = () => {
     const now = new Date();
     const time = new Date(timestamp);
     const diffInMinutes = Math.floor((now - time) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  const hasPermission = user?.permissions?.student?.includes('R');
+  const hasPermission = user?.permissions?.reports?.includes('C');
 
   if (!hasPermission) {
     return null;
@@ -83,25 +78,29 @@ const RecentStudents = () => {
   if (loading) {
     return (
       <Grid item xs={12}>
-        <Card sx={{ 
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(255,255,255,0.9) 100%)'
-        }}>
+        <Card
+          sx={{
+            borderRadius: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(255,255,255,0.9) 100%)'
+          }}
+        >
           <CardContent sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-              <Box sx={{ 
-                width: 48, 
-                height: 48, 
-                borderRadius: 2, 
-                backgroundColor: 'rgba(25, 118, 210, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: theme.palette.primary.main,
-                fontSize: '24px',
-                mr: 2
-              }}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 2,
+                  backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: theme.palette.primary.main,
+                  fontSize: '24px',
+                  mr: 2
+                }}
+              >
                 <UserOutlined />
               </Box>
               <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.grey[800] }}>
@@ -124,11 +123,13 @@ const RecentStudents = () => {
   if (error) {
     return (
       <Grid item xs={12}>
-        <Card sx={{ 
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          background: 'linear-gradient(135deg, rgba(244, 67, 54, 0.05) 0%, rgba(255,255,255,0.9) 100%)'
-        }}>
+        <Card
+          sx={{
+            borderRadius: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            background: 'linear-gradient(135deg, rgba(244, 67, 54, 0.05) 0%, rgba(255,255,255,0.9) 100%)'
+          }}
+        >
           <CardContent sx={{ p: 3 }}>
             <Typography color="error" variant="h6" sx={{ textAlign: 'center' }}>
               {error}
@@ -142,29 +143,33 @@ const RecentStudents = () => {
   return (
     <Grid item xs={12}>
       <Grow in={!loading} timeout={300}>
-        <Card sx={{ 
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(255,255,255,0.9) 100%)',
-          transition: 'all 0.3s ease-in-out',
-          '&:hover': {
-            boxShadow: '0 8px 25px rgba(0,0,0,0.12)'
-          }
-        }}>
+        <Card
+          sx={{
+            borderRadius: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(255,255,255,0.9) 100%)',
+            transition: 'all 0.3s ease-in-out',
+            '&:hover': {
+              boxShadow: '0 8px 25px rgba(0,0,0,0.12)'
+            }
+          }}
+        >
           <CardContent sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-              <Box sx={{ 
-                width: 48, 
-                height: 48, 
-                borderRadius: 2, 
-                backgroundColor: 'rgba(25, 118, 210, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: theme.palette.primary.main,
-                fontSize: '24px',
-                mr: 2
-              }}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 2,
+                  backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: theme.palette.primary.main,
+                  fontSize: '24px',
+                  mr: 2
+                }}
+              >
                 <UserOutlined />
               </Box>
               <Box>
@@ -182,10 +187,10 @@ const RecentStudents = () => {
                 <List sx={{ p: 0 }}>
                   {recentStudents.map((student, index) => (
                     <React.Fragment key={student._id || index}>
-                      <ListItem 
-                        sx={{ 
-                          p: 2, 
-                          mb: 1, 
+                      <ListItem
+                        sx={{
+                          p: 2,
+                          mb: 1,
                           borderRadius: 2,
                           backgroundColor: 'rgba(255,255,255,0.7)',
                           border: '1px solid rgba(0,0,0,0.05)',
@@ -198,8 +203,8 @@ const RecentStudents = () => {
                         }}
                       >
                         <ListItemAvatar>
-                          <Avatar 
-                            sx={{ 
+                          <Avatar
+                            sx={{
                               bgcolor: theme.palette.primary.main,
                               width: 48,
                               height: 48,
@@ -216,15 +221,15 @@ const RecentStudents = () => {
                               <Typography variant="subtitle1" sx={{ fontWeight: 600, color: theme.palette.grey[800] }}>
                                 {student.firstName} {student.lastName}
                               </Typography>
-                              <Chip 
-                                label="New" 
-                                size="small" 
-                                sx={{ 
+                              <Chip
+                                label="New"
+                                size="small"
+                                sx={{
                                   backgroundColor: theme.palette.success.main,
                                   color: 'white',
                                   fontSize: '0.7rem',
                                   height: 20
-                                }} 
+                                }}
                               />
                             </Box>
                           }
@@ -248,25 +253,23 @@ const RecentStudents = () => {
                           }
                         />
                       </ListItem>
-                      {index < recentStudents.length - 1 && (
-                        <Divider sx={{ my: 1, opacity: 0.3 }} />
-                      )}
+                      {index < recentStudents.length - 1 && <Divider sx={{ my: 1, opacity: 0.3 }} />}
                     </React.Fragment>
                   ))}
                 </List>
               ) : (
-                <Box sx={{ 
-                  textAlign: 'center', 
-                  py: 4,
-                  color: theme.palette.grey[500]
-                }}>
+                <Box
+                  sx={{
+                    textAlign: 'center',
+                    py: 4,
+                    color: theme.palette.grey[500]
+                  }}
+                >
                   <UserOutlined style={{ fontSize: '48px', marginBottom: '16px' }} />
                   <Typography variant="h6" sx={{ mb: 1 }}>
                     No Recent Registrations
                   </Typography>
-                  <Typography variant="body2">
-                    No new students have been registered recently
-                  </Typography>
+                  <Typography variant="body2">No new students have been registered recently</Typography>
                 </Box>
               )}
             </Box>
@@ -277,4 +280,4 @@ const RecentStudents = () => {
   );
 };
 
-export default RecentStudents; 
+export default RecentStudents;

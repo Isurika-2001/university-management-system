@@ -41,13 +41,6 @@ const counselor_pages = {
       icon: icons.FileAddOutlined
     },
     {
-      id: 'required-documents',
-      title: 'Required Documents',
-      type: 'item',
-      url: '/app/required-documents',
-      icon: icons.FileAddOutlined
-    },
-    {
       id: 'courses',
       title: 'Courses',
       type: 'item',
