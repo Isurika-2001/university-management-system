@@ -6,6 +6,17 @@ const jwt = require("jsonwebtoken");
 const ActivityLogger = require("../utils/activityLogger");
 const { getRequestInfo } = require("../middleware/requestInfo");
 
+/**
+ * Helper: Returns the current JWT version. This should be set in your environment
+ * and manually incremented (e.g., after a server update, set JWT_VERSION=2, etc.)
+ * All newly issued tokens will include the current version. If you want to force
+ * logout of users after a release, increment JWT_VERSION and redeploy/rebuild.
+ */
+function getJwtVersion() {
+  // fallback 1 if not set
+  return process.env.JWT_VERSION ? Number(process.env.JWT_VERSION) : 1;
+}
+
 async function getUsers(req, res) {
   // fetch users with optional status filter and user_type populated
   try {
@@ -103,6 +114,18 @@ async function createUser(req, res) {
   }
 }
 
+/**
+ * JWT tokens now include a version (jwtVersion).
+ * After you set JWT_VERSION=2 (or higher) and rebuild/redeploy the app,
+ * all previous tokens (signed with older version) will become invalid
+ * whenever you start checking it in frontend or backend.
+ *
+ * To force users to relogin after update/maintenance:
+ *   1. Increment JWT_VERSION in your environment (e.g., .env file or server config)
+ *   2. Rebuild and redeploy (Vercel, or any server)
+ *   3. In frontend, on API error (401/403 or specific token version mismatch), force logout.
+ *   4. Optionally, on backend protected routes, verify token version and reject old ones.
+ */
 async function login(req, res) {
   try {
     const { email, password } = req.body;
@@ -173,6 +196,9 @@ async function login(req, res) {
       requiredDocument: userType.requiredDocument,
     };
 
+    // Include jwtVersion in payload
+    const jwtVersion = getJwtVersion();
+
     // Create JWT token
     const token = jwt.sign(
       {
@@ -181,6 +207,7 @@ async function login(req, res) {
         userEmail,
         userType, // include full userType object here
         permissions,
+        jwtVersion
       },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
@@ -189,7 +216,7 @@ async function login(req, res) {
     // Log successful login
     await ActivityLogger.logLogin(user, requestInfo.ipAddress, requestInfo.userAgent);
 
-    // Respond with expected structure
+    // Respond with expected structure (including jwtVersion for client awareness)
     res.status(200).json({
       message: "Login successful",
       token,
@@ -198,6 +225,7 @@ async function login(req, res) {
       userName,
       userEmail,
       userType, // full userType object
+      jwtVersion
     });
   } catch (error) {
     console.error(error);

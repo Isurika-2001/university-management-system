@@ -1,6 +1,6 @@
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-const User = require("../models/user"); 
+const User = require("../models/user");
 
 async function authenticate(req, res, next) {
   try {
@@ -18,9 +18,24 @@ async function authenticate(req, res, next) {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Fetch user from DB (optional but recommended)
-    const user = await User.findById(decoded.userId);
+    // 💠 Compare token version with current server version
+    const currentVersion = process.env.JWT_VERSION
+      ? Number(process.env.JWT_VERSION)
+      : 1;
 
+    if (!decoded.jwtVersion || decoded.jwtVersion !== currentVersion) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Token version mismatch. Please login again after system update.",
+        code: "TOKEN_VERSION_MISMATCH",
+        expectedVersion: currentVersion,
+        tokenVersion: decoded.jwtVersion || null,
+      });
+    }
+
+    // Fetch user from DB
+    const user = await User.findById(decoded.userId);
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -28,11 +43,10 @@ async function authenticate(req, res, next) {
       });
     }
 
-    // Attach user to request object for later use
+    // Attach user
     req.user = user;
 
-    // Example of an extra condition:
-    // If you want to restrict only active users
+    // Restrict blocked users
     if (user.status === "blocked") {
       return res.status(403).json({
         success: false,
@@ -40,12 +54,9 @@ async function authenticate(req, res, next) {
       });
     }
 
-    // Continue to next middleware/route handler
     next();
-
   } catch (error) {
     console.error("Authentication error:", error.message);
-
     return res.status(401).json({
       success: false,
       message: "Invalid or expired token",
