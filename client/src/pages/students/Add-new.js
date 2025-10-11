@@ -101,37 +101,7 @@ const validationSchema = Yup.object().shape({
     )
     .min(1, 'At least one course enrollment is required'),
 
-  paymentSchema: Yup.object().shape({
-    courseFee: Yup.number()
-      .transform((v, o) => (o === '' || o === null ? undefined : Number(o)))
-      .typeError('Course fee is required')
-      .min(0, 'Must be >= 0')
-      .required('Course fee is required'),
-    isDiscountApplicable: Yup.boolean().optional(),
-    discountType: Yup.string()
-      .oneOf(['amount', 'percentage'])
-      .when('isDiscountApplicable', { is: true, then: (s) => s.required('Discount type is required') }),
-    discountValue: Yup.number()
-      .transform((v, o) => (o === '' || o === null ? 0 : Number(o)))
-      .when('isDiscountApplicable', {
-        is: true,
-        then: (s) => s.typeError('Discount is required').min(0, 'Must be >= 0').required('Discount is required'),
-        otherwise: (s) => s.min(0, 'Must be >= 0')
-      }),
-    downPayment: Yup.number()
-      .transform((v, o) => (o === '' || o === null ? undefined : Number(o)))
-      .typeError('Downpayment is required')
-      .min(0, 'Must be >= 0')
-      .required('Downpayment is required'),
-    numberOfInstallments: Yup.number()
-      .transform((v, o) => (o === '' || o === null ? undefined : Number(o)))
-      .typeError('No. of installments is required')
-      .integer('Must be an integer')
-      .min(1, 'At least 1')
-      .required('No. of installments is required'),
-    installmentStartDate: Yup.string().required('Installment start date is required'),
-    paymentFrequency: Yup.string().oneOf(['monthly', 'each_3_months', 'each_6_months']).required('Payment frequency is required')
-  }),
+  paymentSchema: Yup.object().optional(),
 
   highestAcademicQualification: Yup.string().optional(),
   qualificationDescription: Yup.string().optional(),
@@ -242,7 +212,7 @@ const AddStudent = () => {
     else setBatchOptions([]);
   }, [selectedCourse, fetchBatches]);
 
-  const handleNext = async (values, { setTouched, setFieldError, validateForm }) => {
+  const handleNext = async (values, { setTouched, setFieldError }) => {
     if (activeStep === 0) {
       const personalFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
       let hasErrors = false;
@@ -282,25 +252,9 @@ const AddStudent = () => {
     }
 
     if (activeStep === 2) {
-      const formErrors = await validateForm();
-      if (formErrors && formErrors.paymentSchema) {
-        setTouched(
-          {
-            paymentSchema: {
-              courseFee: true,
-              isDiscountApplicable: true,
-              discountType: true,
-              discountValue: true,
-              downPayment: true,
-              numberOfInstallments: true,
-              installmentStartDate: true,
-              paymentFrequency: true
-            }
-          },
-          true
-        );
-        return;
-      }
+      // For Payment Schema step, we rely on the component's own validation
+      // The StepPaymentSchema component manages its own validation and sets nextDisabled
+      // We don't need to validate here since the component handles it
     }
 
     setActiveStep((s) => s + 1);
@@ -528,8 +482,8 @@ const AddStudent = () => {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          const { setTouched, setFieldError, validateForm } = formBag;
-                          handleNext(values, { setTouched, setFieldError, validateForm });
+                          const { setTouched, setFieldError } = formBag;
+                          handleNext(values, { setTouched, setFieldError });
                         }}
                         endIcon={<ArrowRightOutlined />}
                         disabled={nextDisabled} // Only difference: disables "Next" if nextDisabled is true
