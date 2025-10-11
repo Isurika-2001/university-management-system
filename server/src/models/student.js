@@ -31,15 +31,6 @@ const studentSchema = new mongoose.Schema({
   // Step 2: Academic and document information (Optional)
   highestAcademicQualification: {
     type: String,
-    enum: [
-      'O-Level',
-      'A-Level',
-      'Diploma',
-      'Bachelor\'s Degree',
-      'Master\'s Degree',
-      'PhD',
-      'Other'
-    ],
     required: false,
   },
   qualificationDescription: {

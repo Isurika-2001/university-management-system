@@ -21,6 +21,8 @@ import { UserOutlined, ClockCircleOutlined, MailOutlined } from '@ant-design/ico
 import { useAuthContext } from 'context/useAuthContext';
 import { statsAPI } from '../../../api/stats';
 
+const CARD_MIN_HEIGHT = 645;
+
 const RecentStudents = () => {
   const { user } = useAuthContext();
   const [recentStudents, setRecentStudents] = useState([]);
@@ -82,10 +84,11 @@ const RecentStudents = () => {
           sx={{
             borderRadius: 3,
             boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(255,255,255,0.9) 100%)'
+            background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(255,255,255,0.9) 100%)',
+            minHeight: CARD_MIN_HEIGHT
           }}
         >
-          <CardContent sx={{ p: 3 }}>
+          <CardContent sx={{ p: 3, minHeight: CARD_MIN_HEIGHT - 48 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
               <Box
                 sx={{
@@ -127,10 +130,11 @@ const RecentStudents = () => {
           sx={{
             borderRadius: 3,
             boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            background: 'linear-gradient(135deg, rgba(244, 67, 54, 0.05) 0%, rgba(255,255,255,0.9) 100%)'
+            background: 'linear-gradient(135deg, rgba(244, 67, 54, 0.05) 0%, rgba(255,255,255,0.9) 100%)',
+            minHeight: CARD_MIN_HEIGHT
           }}
         >
-          <CardContent sx={{ p: 3 }}>
+          <CardContent sx={{ p: 3, minHeight: CARD_MIN_HEIGHT - 48, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <Typography color="error" variant="h6" sx={{ textAlign: 'center' }}>
               {error}
             </Typography>
@@ -151,10 +155,11 @@ const RecentStudents = () => {
             transition: 'all 0.3s ease-in-out',
             '&:hover': {
               boxShadow: '0 8px 25px rgba(0,0,0,0.12)'
-            }
+            },
+            minHeight: CARD_MIN_HEIGHT
           }}
         >
-          <CardContent sx={{ p: 3 }}>
+          <CardContent sx={{ p: 3, minHeight: CARD_MIN_HEIGHT - 48, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
               <Box
                 sx={{
@@ -182,9 +187,9 @@ const RecentStudents = () => {
               </Box>
             </Box>
 
-            <Box>
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               {recentStudents.length > 0 ? (
-                <List sx={{ p: 0 }}>
+                <List sx={{ p: 0, flex: 1 }}>
                   {recentStudents.map((student, index) => (
                     <React.Fragment key={student._id || index}>
                       <ListItem
@@ -262,7 +267,13 @@ const RecentStudents = () => {
                   sx={{
                     textAlign: 'center',
                     py: 4,
-                    color: theme.palette.grey[500]
+                    color: theme.palette.grey[500],
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: 180 // Similar height as list of 3 students
                   }}
                 >
                   <UserOutlined style={{ fontSize: '48px', marginBottom: '16px' }} />

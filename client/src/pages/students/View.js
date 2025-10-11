@@ -14,7 +14,7 @@ import {
   LinearProgress,
   TextField,
   IconButton,
-  Chip,
+  Chip
 } from '@mui/material';
 import { UploadOutlined, DownloadOutlined, EditOutlined, FileAddOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -188,7 +188,7 @@ const View = () => {
     try {
       setIsUploading(true);
       console.log('Exporting CSV with URL:', `${apiRoutes.studentRoute}export?${params.toString()}`);
-      
+
       const response = await fetch(`${apiRoutes.studentRoute}export?${params.toString()}`, {
         method: 'GET',
         headers: {
@@ -208,7 +208,7 @@ const View = () => {
       const blob = await response.blob();
       console.log('Blob size:', blob.size);
       console.log('Blob type:', blob.type);
-      
+
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
       link.download = 'students_export.csv';
@@ -233,7 +233,7 @@ const View = () => {
     try {
       setIsUploading(true);
       console.log('Exporting Excel with URL:', `${apiRoutes.studentRoute}export?${params.toString()}`);
-      
+
       const response = await fetch(`${apiRoutes.studentRoute}export?${params.toString()}`, {
         method: 'GET',
         headers: {
@@ -253,7 +253,7 @@ const View = () => {
       const blob = await response.blob();
       console.log('Blob size:', blob.size);
       console.log('Blob type:', blob.type);
-      
+
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
       link.download = 'students_export.xlsx';
@@ -279,7 +279,7 @@ const View = () => {
 
       try {
         setIsUploading(true);
-        
+
         // Create FormData for file upload
         const formData = new FormData();
         formData.append('file', file);
@@ -302,7 +302,7 @@ const View = () => {
           console.log('Import result:', result);
           setShowModal(true);
           fetchData(); // Refresh the table
-          
+
           // Show success message
           Toast.fire({
             icon: 'success',
@@ -324,16 +324,11 @@ const View = () => {
 
   return (
     <>
-      <MainCard 
+      <MainCard
         title={
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <span>Student List</span>
-            <Button 
-              onClick={handleClick} 
-              variant="contained" 
-              startIcon={<FileAddOutlined />}
-              size="small"
-            >
+            <Button onClick={handleClick} variant="contained" startIcon={<FileAddOutlined />} size="small">
               Add Student
             </Button>
           </Box>
@@ -342,32 +337,32 @@ const View = () => {
         {/* Search and Actions Row */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2 }}>
           {/* Search Field */}
-          <TextField 
-            label="Search" 
-            variant="outlined" 
-            onChange={handleSearch} 
-            value={searchTerm} 
-            sx={{ minWidth: 300, flexGrow: 1, maxWidth: 400 }} 
+          <TextField
+            label="Search"
+            variant="outlined"
+            onChange={handleSearch}
+            value={searchTerm}
+            sx={{ minWidth: 300, flexGrow: 1, maxWidth: 400 }}
           />
-          
+
           {/* Action Buttons */}
           <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
-            <Button 
-              variant="outlined" 
-              disabled={isUploading} 
-              color="success" 
-              onClick={exportToCSV} 
+            <Button
+              variant="outlined"
+              disabled={isUploading}
+              color="success"
+              onClick={exportToCSV}
               startIcon={<UploadOutlined />}
               size="small"
               style={{ display: 'none' }}
             >
               CSV
             </Button>
-            <Button 
-              variant="outlined" 
-              disabled={isUploading} 
-              color="primary" 
-              onClick={exportToExcel} 
+            <Button
+              variant="outlined"
+              disabled={isUploading}
+              color="primary"
+              onClick={exportToExcel}
               startIcon={<UploadOutlined />}
               size="small"
               style={{ display: 'none' }}
@@ -400,13 +395,13 @@ const View = () => {
                   />
                 </TableCell>
                 <TableCell>
-                  <Box 
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
                       cursor: 'pointer',
                       '&:hover': { opacity: 0.7 }
-                    }} 
+                    }}
                     onClick={() => handleSort('registration_no')}
                   >
                     ID
@@ -416,13 +411,13 @@ const View = () => {
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Box 
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
                       cursor: 'pointer',
                       '&:hover': { opacity: 0.7 }
-                    }} 
+                    }}
                     onClick={() => handleSort('fullName')}
                   >
                     Name
@@ -432,13 +427,13 @@ const View = () => {
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Box 
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
                       cursor: 'pointer',
                       '&:hover': { opacity: 0.7 }
-                    }} 
+                    }}
                     onClick={() => handleSort('nic')}
                   >
                     NIC
@@ -448,13 +443,13 @@ const View = () => {
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Box 
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
                       cursor: 'pointer',
                       '&:hover': { opacity: 0.7 }
-                    }} 
+                    }}
                     onClick={() => handleSort('mobile')}
                   >
                     Contact
@@ -464,13 +459,13 @@ const View = () => {
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Box 
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
                       cursor: 'pointer',
                       '&:hover': { opacity: 0.7 }
-                    }} 
+                    }}
                     onClick={() => handleSort('address')}
                   >
                     Address
@@ -496,17 +491,12 @@ const View = () => {
                   <TableCell>{student.nic}</TableCell>
                   <TableCell>{student.mobile}</TableCell>
                   <TableCell>{student.address}</TableCell>
-                  <TableCell>
-                    {student.registrationDate ? new Date(student.registrationDate).toLocaleDateString() : 'N/A'}
-                  </TableCell>
+                  <TableCell>{student.registrationDate ? new Date(student.registrationDate).toLocaleDateString() : 'N/A'}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip 
-                        label={student.status || 'pending'} 
-                        color={
-                          student.status === 'completed' ? 'success' : 
-                          student.status === 'incomplete' ? 'warning' : 'default'
-                        }
+                      <Chip
+                        label={student.status || 'pending'}
+                        color={student.status === 'completed' ? 'success' : student.status === 'incomplete' ? 'warning' : 'default'}
                         size="small"
                       />
                       {student.completionStatus && (
@@ -522,10 +512,17 @@ const View = () => {
                                 border: '1px solid',
                                 borderColor: student.completionStatus[step] ? 'success.main' : 'grey.400'
                               }}
-                              title={`Step ${index + 1}: ${step === 'step1' ? 'Personal Details' : 
-                                                        step === 'step2' ? 'Course Enrollment' :
-                                                        step === 'step3' ? 'Academic Details' :
-                                                        step === 'step4' ? 'Required Documents' : 'Emergency Contact'}`}
+                              title={`Step ${index + 1}: ${
+                                step === 'step1'
+                                  ? 'Personal Details'
+                                  : step === 'step2'
+                                    ? 'Course Enrollment'
+                                    : step === 'step3'
+                                      ? 'Academic Details'
+                                      : step === 'step4'
+                                        ? 'Required Documents'
+                                        : 'Emergency Contact'
+                              }`}
                             />
                           ))}
                         </Box>

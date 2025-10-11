@@ -1,17 +1,17 @@
 // studentController.js
 
-const Student = require("../models/student");
-const Counter = require("../models/counter");
-const Enrollment = require("../models/enrollment");
-const RequiredDocument = require("../models/required_document");
-const ActivityLogger = require("../utils/activityLogger");
-const { getRequestInfo } = require("../middleware/requestInfo");
+const Student = require('../models/student');
+const Counter = require('../models/counter');
+const Enrollment = require('../models/enrollment');
+const RequiredDocument = require('../models/required_document');
+const ActivityLogger = require('../utils/activityLogger');
+const { getRequestInfo } = require('../middleware/requestInfo');
 const multer = require('multer');
 const xlsx = require('xlsx');
 
 // utility calling
 const { getNextSequenceValue, getAndFormatCourseEnrollmentNumber } = require('../utilities/counter'); 
-const { generateCSV, generateExcel, studentExportHeaders } = require("../utils/exportUtils");
+const { generateCSV, generateExcel, studentExportHeaders } = require('../utils/exportUtils');
 
 // Function to check if student has all required fields completed
 function checkStudentCompletion(student) {
@@ -823,7 +823,7 @@ async function courseRegistration(
 // Excel Import Function
 async function importStudentsFromExcel(req, res) {
   const requestInfo = getRequestInfo(req);
-  
+
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -838,10 +838,10 @@ async function importStudentsFromExcel(req, res) {
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    
+
     // Convert to JSON
     const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-    
+
     if (data.length < 2) {
       return res.status(400).json({
         success: false,
@@ -858,7 +858,7 @@ async function importStudentsFromExcel(req, res) {
 
     // Validate required headers
     const requiredHeaders = [
-      'First Name', 'Last Name', 'Date of Birth', 'NIC', 'Address', 
+      'First Name', 'Last Name', 'Date of Birth', 'NIC', 'Address',
       'Mobile', 'Email'
     ];
 
@@ -904,10 +904,14 @@ async function importStudentsFromExcel(req, res) {
           emergencyContactAddress: row[headers.indexOf('Emergency Contact Address')]?.toString().trim() || ''
         };
 
+        // Log the row's course and batch info for debugging
+        console.log(`Row ${rowNumber} courseCode:`, studentData.courseCode);
+        console.log(`Row ${rowNumber} batchName:`, studentData.batchName);
+
         // Validate required fields
         const requiredFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
         const missingFields = requiredFields.filter(field => !studentData[field]);
-        
+
         if (missingFields.length > 0) {
           results.failed++;
           results.errors.push(`Row ${rowNumber}: Missing required fields: ${missingFields.join(', ')}`);
@@ -925,10 +929,11 @@ async function importStudentsFromExcel(req, res) {
         // Find course and batch by code/name (optional)
         let course = null;
         let batch = null;
-        
+
         if (studentData.courseCode) {
           const Course = require('../models/course');
-          course = await Course.findOne({ courseCode: studentData.courseCode });
+          course = await Course.findOne({ code: studentData.courseCode });
+          console.log(`Row ${rowNumber} found course:`, course ? course.name : null);
           if (!course) {
             results.failed++;
             results.errors.push(`Row ${rowNumber}: Course with code "${studentData.courseCode}" not found`);
@@ -937,21 +942,26 @@ async function importStudentsFromExcel(req, res) {
 
           if (studentData.batchName) {
             const Batch = require('../models/batch');
-            batch = await Batch.findOne({ 
+            batch = await Batch.findOne({
               name: { $regex: new RegExp(studentData.batchName, 'i') },
-              courseId: course._id 
+              courseId: course._id
             });
+            console.log(`Row ${rowNumber} found batch:`, batch ? batch.name : null);
             if (!batch) {
               results.failed++;
               results.errors.push(`Row ${rowNumber}: Batch "${studentData.batchName}" not found for course "${course.name}" (Code: ${studentData.courseCode})`);
               continue;
             }
+          } else {
+            console.log(`Row ${rowNumber} - course was found, but no batchName supplied`);
           }
+        } else {
+          console.log(`Row ${rowNumber} - no courseCode supplied`);
         }
 
         // Create student
         const sequenceValue = await getNextSequenceValue("unique_id_sequence");
-        
+
         const student = new Student({
           firstName: studentData.firstName,
           lastName: studentData.lastName,
@@ -982,6 +992,7 @@ async function importStudentsFromExcel(req, res) {
 
         // Create enrollment (only if course and batch are provided)
         if (course && batch) {
+          console.log(`Row ${rowNumber} - Creating enrollment for student, course: ${course.name}, batch: ${batch.name}`);
           const courseSequenceValue = await getAndFormatCourseEnrollmentNumber(course.code, batch.name);
           await courseRegistration(
             newStudent._id,
@@ -990,6 +1001,8 @@ async function importStudentsFromExcel(req, res) {
             sequenceValue,
             courseSequenceValue
           );
+        } else {
+          console.log(`Row ${rowNumber} - Enrollment NOT created. Course:`, course ? course.name : null, ', Batch:', batch ? batch.name : null);
         }
 
         // Log the student creation
