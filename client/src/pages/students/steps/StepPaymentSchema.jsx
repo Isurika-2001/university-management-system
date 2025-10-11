@@ -50,7 +50,7 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled }) => {
   const handleToggle = (courseId) => {
     setExpanded((prev) => ({
       ...prev,
-      [courseId]: !prev[courseId],
+      [courseId]: !prev[courseId]
     }));
   };
 
@@ -178,7 +178,7 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled }) => {
                   sx={{
                     fontWeight: 600,
                     color: expanded[courseId] ? 'primary.main' : 'text.primary',
-                    flex: 1,
+                    flex: 1
                   }}
                 >
                   {courseName}
@@ -206,9 +206,7 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled }) => {
                         control={
                           <Checkbox
                             checked={!!schema?.isDiscountApplicable}
-                            onChange={(e) =>
-                              setFieldValue(getFieldName(courseId, 'isDiscountApplicable'), e.target.checked)
-                            }
+                            onChange={(e) => setFieldValue(getFieldName(courseId, 'isDiscountApplicable'), e.target.checked)}
                           />
                         }
                         label="Discount Applicable?"
@@ -219,17 +217,12 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled }) => {
                     {discountApplicable && (
                       <>
                         <Grid item xs={12} sm={6}>
-                          <FormControl
-                            fullWidth
-                            error={!!schemaTouched?.discountType && !!schemaErrors?.discountType}
-                          >
+                          <FormControl fullWidth error={!!schemaTouched?.discountType && !!schemaErrors?.discountType}>
                             <InputLabel>Discount Type</InputLabel>
                             <Select
                               label="Discount Type"
                               value={schema?.discountType || ''}
-                              onChange={(e) =>
-                                setFieldValue(getFieldName(courseId, 'discountType'), e.target.value)
-                              }
+                              onChange={(e) => setFieldValue(getFieldName(courseId, 'discountType'), e.target.value)}
                             >
                               <MenuItem value="amount">Amount</MenuItem>
                               <MenuItem value="percentage">Percentage</MenuItem>
@@ -295,30 +288,20 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled }) => {
                         type="date"
                         InputLabelProps={{ shrink: true }}
                         fullWidth
-                        error={
-                          !!schemaTouched?.installmentStartDate &&
-                          !!schemaErrors?.installmentStartDate
-                        }
-                        helperText={
-                          <ErrorMessage name={getFieldName(courseId, 'installmentStartDate')} />
-                        }
+                        error={!!schemaTouched?.installmentStartDate && !!schemaErrors?.installmentStartDate}
+                        helperText={<ErrorMessage name={getFieldName(courseId, 'installmentStartDate')} />}
                         InputProps={{ sx: { px: 2, py: 1 } }}
                       />
                     </Grid>
 
                     {/* Payment Frequency */}
                     <Grid item xs={12} sm={6}>
-                      <FormControl
-                        fullWidth
-                        error={!!schemaTouched?.paymentFrequency && !!schemaErrors?.paymentFrequency}
-                      >
+                      <FormControl fullWidth error={!!schemaTouched?.paymentFrequency && !!schemaErrors?.paymentFrequency}>
                         <InputLabel>Payment to be made</InputLabel>
                         <Select
                           label="Payment to be made"
                           value={schema?.paymentFrequency || ''}
-                          onChange={(e) =>
-                            setFieldValue(getFieldName(courseId, 'paymentFrequency'), e.target.value)
-                          }
+                          onChange={(e) => setFieldValue(getFieldName(courseId, 'paymentFrequency'), e.target.value)}
                         >
                           <MenuItem value="monthly">Monthly</MenuItem>
                           <MenuItem value="each_3_months">Each 3 months</MenuItem>
