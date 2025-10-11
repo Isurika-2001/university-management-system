@@ -1,0 +1,226 @@
+import React, { useEffect } from 'react';
+import { Card, CardContent, Box, Typography, Grid, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+
+const StepCourseDetails = ({
+  IconCmp,
+  formBag,
+  courseOptions,
+  batchOptions,
+  batchOptionsMap,
+  selectedCourse,
+  setSelectedCourse,
+  fetchBatches,
+  setNextDisabled // Controls wizard "Next" button
+}) => {
+  const { values, setFieldValue } = formBag;
+
+  // Sync selectedCourses + courseInfoById in Formik whenever enrollments change
+  useEffect(() => {
+    if (Array.isArray(values.enrollments)) {
+      const selectedIds = values.enrollments.map((enr) => enr.courseId).filter(Boolean);
+
+      // Update selectedCourses in formik for StepPaymentSchema
+      setFieldValue('selectedCourses', selectedIds);
+
+      // Build courseInfoById for displaying names later
+      const infoMap = {};
+      values.enrollments.forEach((enr) => {
+        if (enr.courseId) {
+          infoMap[enr.courseId] = { name: enr.courseName };
+        }
+      });
+      setFieldValue('courseInfoById', infoMap);
+    }
+  }, [values.enrollments, setFieldValue]);
+
+  // Enable/disable Next button based on enrollment availability
+  useEffect(() => {
+    const hasEnrollment = Array.isArray(values.enrollments) && values.enrollments.length > 0;
+    if (setNextDisabled) {
+      setNextDisabled(!hasEnrollment);
+    }
+  }, [values.enrollments, setNextDisabled]);
+
+  return (
+    <Card>
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <IconCmp style={{ marginRight: 8, fontSize: 24 }} />
+          <Typography variant="h5">Course Details</Typography>
+        </Box>
+
+        {/* Existing Enrollments */}
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Current Enrollments:
+          </Typography>
+          {values.enrollments?.length > 0 ? (
+            values.enrollments.map((enrollment, index) => (
+              <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                <Grid container spacing={2} alignItems="center">
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="body2" color="textSecondary">
+                      Course: {enrollment.courseName || 'Not selected'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="body2" color="textSecondary">
+                      Intake: {enrollment.batchName || 'Not selected'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Button
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                      onClick={() => {
+                        const newEnrollments = values.enrollments.filter((_, i) => i !== index);
+                        setFieldValue('enrollments', newEnrollments);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Box>
+            ))
+          ) : (
+            <Typography variant="body2" color="textSecondary">
+              No enrollments yet
+            </Typography>
+          )}
+        </Box>
+
+        {/* Add New Enrollment */}
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Add New Enrollment:
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={5}>
+              <FormControl fullWidth>
+                <InputLabel>Course</InputLabel>
+                <Select
+                  value={selectedCourse}
+                  onChange={(e) => {
+                    setSelectedCourse(e.target.value);
+                    fetchBatches(e.target.value);
+                  }}
+                  label="Course"
+                >
+                  {courseOptions.map((course) => (
+                    <MenuItem key={course._id} value={course._id}>
+                      {course.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={5}>
+              <FormControl fullWidth>
+                <InputLabel>Intake</InputLabel>
+                <Select
+                  value=""
+                  onChange={(e) => {
+                    const selectedBatch = e.target.value;
+                    const newEnrollment = {
+                      courseId: selectedCourse,
+                      batchId: selectedBatch,
+                      courseName: courseOptions.find((c) => c._id === selectedCourse)?.name || '',
+                      batchName: batchOptions.find((b) => b._id === selectedBatch)?.name || ''
+                    };
+                    const currentEnrollments = values.enrollments || [];
+                    setFieldValue('enrollments', [...currentEnrollments, newEnrollment]);
+                    setSelectedCourse('');
+                  }}
+                  label="Intake"
+                  disabled={!selectedCourse}
+                >
+                  {batchOptions.map((batch) => (
+                    <MenuItem key={batch._id} value={batch._id}>
+                      {batch.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Edit Enrollments */}
+        {values.enrollments?.length > 0 && (
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Edit Enrollments:
+            </Typography>
+            {values.enrollments.map((enrollment, index) => (
+              <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={5}>
+                    <FormControl fullWidth>
+                      <InputLabel>Course</InputLabel>
+                      <Select
+                        value={enrollment.courseId || ''}
+                        onChange={(e) => {
+                          const selected = e.target.value;
+                          const updated = [...values.enrollments];
+                          updated[index] = {
+                            ...updated[index],
+                            courseId: selected,
+                            courseName: courseOptions.find((c) => c._id === selected)?.name || '',
+                            batchId: '',
+                            batchName: ''
+                          };
+                          setFieldValue('enrollments', updated);
+                          if (selected) fetchBatches(selected);
+                        }}
+                        label="Course"
+                      >
+                        {courseOptions.map((course) => (
+                          <MenuItem key={course._id} value={course._id}>
+                            {course.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid item xs={12} sm={5}>
+                    <FormControl fullWidth>
+                      <InputLabel>Intake</InputLabel>
+                      <Select
+                        value={enrollment.batchId || ''}
+                        onChange={(e) => {
+                          const selected = e.target.value;
+                          const updated = [...values.enrollments];
+                          const courseBatches = batchOptionsMap[enrollment.courseId] || [];
+                          updated[index] = {
+                            ...updated[index],
+                            batchId: selected,
+                            batchName: courseBatches.find((b) => b._id === selected)?.name || ''
+                          };
+                          setFieldValue('enrollments', updated);
+                        }}
+                        label="Intake"
+                        disabled={!enrollment.courseId}
+                      >
+                        {(batchOptionsMap[enrollment.courseId] || []).map((batch) => (
+                          <MenuItem key={batch._id} value={batch._id}>
+                            {batch.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </Box>
+            ))}
+          </Box>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default StepCourseDetails;
