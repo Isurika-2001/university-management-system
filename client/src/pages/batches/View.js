@@ -141,7 +141,7 @@ const View = () => {
   };
 
   const handleRowClick = (row) => {
-    navigate('/app/intakes/update?id=' + row._id);
+    navigate(`/app/intakes/update/${row._id}`);
   };
 
   const handleDeleteBatch = async (id) => {
@@ -172,20 +172,20 @@ const View = () => {
   const columns = [
     { key: 'name', label: 'Name' },
     { key: 'courseName', label: 'Course' },
-    { 
-      key: 'orientationDate', 
+    {
+      key: 'orientationDate',
       label: 'Orientation Date',
-      render: (value) => value ? dayjs(value).format('YYYY-MM-DD') : ''
+      render: (value) => (value ? dayjs(value).format('YYYY-MM-DD') : '')
     },
-    { 
-      key: 'startDate', 
+    {
+      key: 'startDate',
       label: 'Start Date',
-      render: (value) => value ? dayjs(value).format('YYYY-MM-DD') : ''
+      render: (value) => (value ? dayjs(value).format('YYYY-MM-DD') : '')
     },
-    { 
-      key: 'registrationDeadline', 
+    {
+      key: 'registrationDeadline',
       label: 'Registration Deadline',
-      render: (value) => value ? dayjs(value).format('YYYY-MM-DD') : ''
+      render: (value) => (value ? dayjs(value).format('YYYY-MM-DD') : '')
     },
     {
       key: 'actions',
@@ -204,13 +204,13 @@ const View = () => {
           >
             Edit
           </Button>
-          <Button 
+          <Button
             onClick={(e) => {
               e.stopPropagation();
               handleDeleteBatch(row._id);
-            }} 
-            variant="outlined" 
-            color="error" 
+            }}
+            variant="outlined"
+            color="error"
             startIcon={<DeleteOutlined />}
           >
             Delete
@@ -226,7 +226,7 @@ const View = () => {
       key: 'courseId',
       label: 'Course Filter',
       allLabel: 'All Courses',
-      options: courses.map(course => ({ value: course._id, label: course.name }))
+      options: courses.map((course) => ({ value: course._id, label: course.name }))
     }
   ];
 

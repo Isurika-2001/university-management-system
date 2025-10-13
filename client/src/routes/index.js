@@ -71,7 +71,7 @@ export default function ThemeRoutes() {
           />
 
           <Route
-            path="update"
+            path="update/:id"
             element={permissions?.student?.includes('U') ? <UpdateStudentForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
@@ -84,7 +84,7 @@ export default function ThemeRoutes() {
             element={permissions?.enrollments?.includes('C') ? <AddEnrollmentForm /> : <Navigate to="/app/access-denied" replace />}
           />
           <Route
-            path="update"
+            path="update/:id"
             element={permissions?.enrollments?.includes('U') ? <UpdateEnrollmentForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
@@ -97,7 +97,7 @@ export default function ThemeRoutes() {
             element={permissions?.course?.includes('C') ? <AddCourseForm /> : <Navigate to="/app/access-denied" replace />}
           />
           <Route
-            path="update"
+            path="update/:id"
             element={permissions?.course?.includes('U') ? <UpdateCourseForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
@@ -107,7 +107,7 @@ export default function ThemeRoutes() {
           <Route index element={permissions?.batch?.includes('R') ? <Batches /> : <Navigate to="/app/access-denied" replace />} />
           <Route path="add" element={permissions?.batch?.includes('C') ? <AddBatchForm /> : <Navigate to="/app/access-denied" replace />} />
           <Route
-            path="update"
+            path="update/:id"
             element={permissions?.batch?.includes('U') ? <UpdateBatchForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
@@ -117,7 +117,7 @@ export default function ThemeRoutes() {
           <Route index element={permissions?.user?.includes('R') ? <Users /> : <Navigate to="/app/access-denied" replace />} />
           <Route path="add" element={permissions?.user?.includes('C') ? <AddUserForm /> : <Navigate to="/app/access-denied" replace />} />
           <Route
-            path="update"
+            path="update/:id"
             element={permissions?.user?.includes('U') ? <UpdateUserForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
@@ -135,7 +135,7 @@ export default function ThemeRoutes() {
             }
           />
           <Route
-            path="update"
+            path="update/:id"
             element={
               permissions?.requiredDocument?.includes('U') ? <UpdateRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />
             }
