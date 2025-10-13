@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Field } from 'formik';
 import { Card, CardContent, Box, Typography, Grid, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
-const StepAcademicDetails = ({ IconCmp, academicQualificationOptions }) => {
+const StepAcademicDetails = ({ IconCmp, academicQualificationOptions, formBag, updateStepCompletion }) => {
+  const { values } = formBag;
+
+  // Update completion status when values change
+  useEffect(() => {
+    if (updateStepCompletion) {
+      updateStepCompletion(values);
+    }
+  }, [values.highestAcademicQualification, values.qualificationDescription, updateStepCompletion]);
+
   return (
     <Card>
       <CardContent>

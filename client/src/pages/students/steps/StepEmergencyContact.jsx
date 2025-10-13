@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Field } from 'formik';
 import { Card, CardContent, Box, Typography, Grid, TextField } from '@mui/material';
 
-const StepEmergencyContact = ({ IconCmp }) => {
+const StepEmergencyContact = ({ IconCmp, formBag, updateStepCompletion }) => {
+  const { values } = formBag;
+
+  // Update completion status when values change
+  useEffect(() => {
+    if (updateStepCompletion) {
+      updateStepCompletion(values);
+    }
+  }, [values.emergencyContact, updateStepCompletion]);
+
   return (
     <Card>
       <CardContent>

@@ -21,9 +21,9 @@ import {
 } from '@mui/material';
 
 // Import Ant Design icons via @ant-design/icons
-import { CaretDownOutlined, CaretUpOutlined } from '@ant-design/icons';
+import { CaretDownOutlined, CaretUpOutlined, CheckCircleTwoTone } from '@ant-design/icons';
 
-const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled }) => {
+const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled, updateStepCompletion }) => {
   const { values, errors, touched, setFieldValue } = formBag;
 
   const selectedCourses = values.selectedCourses || [];
@@ -61,6 +61,36 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled }) => {
   // Utility to check if a value is empty
   const isEmpty = (val) => val === undefined || val === null || (typeof val === 'string' && val.trim() === '');
 
+  // Checks if schema for a course is completed and valid (no errors and all required fields filled)
+  const isSchemaComplete = (cid) => {
+    const schema = paymentSchemas[cid] || {};
+    const schemaErrors = getNested(errors, `paymentSchema.${cid}`) || {};
+    const requiredFields = ['courseFee', 'downPayment', 'numberOfInstallments', 'installmentStartDate', 'paymentFrequency'];
+
+    for (const field of requiredFields) {
+      if (isEmpty(schema[field])) {
+        return false;
+      }
+    }
+    if (schema.isDiscountApplicable) {
+      if (isEmpty(schema.discountValue) || isEmpty(schema.discountType)) {
+        return false;
+      }
+    }
+    // Check if any error exists for any field in paymentSchema for this course
+    const hasErrors = (obj) => {
+      if (!obj) return false;
+      if (typeof obj === 'string' && obj) return true;
+      if (typeof obj === 'object')
+        return Object.values(obj).some((value) => hasErrors(value));
+      return false;
+    };
+    if (hasErrors(schemaErrors)) {
+      return false;
+    }
+    return true;
+  };
+
   // Enable/disable Next button based on validation
   useEffect(() => {
     let hasError = false;
@@ -91,7 +121,19 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled }) => {
     }
 
     if (setNextDisabled) setNextDisabled(hasError);
-  }, [selectedCourses, paymentSchemas, setNextDisabled]);
+
+    // Update completion status
+    if (updateStepCompletion) {
+      updateStepCompletion(values);
+    }
+  }, [selectedCourses, paymentSchemas, setNextDisabled, updateStepCompletion, values]);
+
+  // Additional useEffect to ensure completion status is updated when payment schema changes
+  useEffect(() => {
+    if (updateStepCompletion) {
+      updateStepCompletion(values);
+    }
+  }, [values.paymentSchema, values.selectedCourses, updateStepCompletion, values]);
 
   return (
     <Card>
@@ -134,6 +176,7 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled }) => {
           const discountedFee = Math.max(courseFee - discountAmount, 0);
           const amountToFinance = Math.max(discountedFee - downPayment, 0);
           const installmentAmount = numberOfInstallments > 0 ? amountToFinance / numberOfInstallments : 0;
+          const completed = isSchemaComplete(courseId);
 
           return (
             <Paper
@@ -183,6 +226,15 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled }) => {
                 >
                   {courseName}
                 </Typography>
+                {completed && (
+                  <CheckCircleTwoTone
+                    twoToneColor="#52c41a"
+                    style={{
+                      fontSize: 22,
+                      marginLeft: 8
+                    }}
+                  />
+                )}
               </Box>
               <Collapse in={expanded[courseId]} timeout="auto" unmountOnExit>
                 <Box sx={{ px: 2, pt: 2, pb: 3 }}>

@@ -8,7 +8,8 @@ import {
   ReadOutlined,
   ArrowRightOutlined,
   ArrowLeftOutlined,
-  SaveOutlined
+  SaveOutlined,
+  CheckOutlined
 } from '@ant-design/icons';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
@@ -50,16 +51,7 @@ const initialValues = {
   // Step 2
   enrollments: [],
   // Step 3
-  paymentSchema: {
-    courseFee: '',
-    isDiscountApplicable: false,
-    discountType: 'amount',
-    discountValue: '',
-    downPayment: '',
-    numberOfInstallments: '',
-    installmentStartDate: '',
-    paymentFrequency: 'monthly'
-  },
+  paymentSchema: {},
   // Step 4
   highestAcademicQualification: '',
   qualificationDescription: '',
@@ -134,6 +126,16 @@ const AddStudent = () => {
   const [nextDisabled, setNextDisabled] = useState(false);
   // ------------------------------------------------------------
 
+  // Track completion status for each step
+  const [stepCompletionStatus, setStepCompletionStatus] = useState({
+    0: false, // Personal Details - required
+    1: false, // Course Details - required
+    2: false, // Payment Schema - required
+    3: false, // Academic Details - optional
+    4: false, // Required Documents - optional
+    5: false // Emergency Contact - optional
+  });
+
   const Toast = withReactContent(
     Swal.mixin({
       toast: true,
@@ -149,6 +151,137 @@ const AddStudent = () => {
 
   const showSuccessSwal = (e) => Toast.fire({ icon: 'success', title: e });
   const showErrorSwal = (e) => Toast.fire({ icon: 'error', title: e });
+
+  // Function to check if a step is completed
+  const checkStepCompletion = (stepIndex, values) => {
+    switch (stepIndex) {
+      case 0: // Personal Details
+        return !!(values.firstName && values.lastName && values.dob && values.nic && values.address && values.mobile && values.email);
+
+      case 1: // Course Details
+        return !!(values.enrollments && values.enrollments.length > 0 && values.enrollments.every((enr) => enr.courseId && enr.batchId));
+
+      case 2: {
+        // Payment Schema
+        // Check if all selected courses have complete payment schemas
+        const selectedCourses = values.selectedCourses || [];
+        if (selectedCourses.length === 0) return false;
+
+        const paymentSchemas = values.paymentSchema || {};
+        return selectedCourses.every((courseId) => {
+          const schema = paymentSchemas[courseId] || {};
+          const requiredFields = ['courseFee', 'downPayment', 'numberOfInstallments', 'installmentStartDate', 'paymentFrequency'];
+
+          // Check all required fields are filled
+          const allFieldsFilled = requiredFields.every((field) => {
+            const value = schema[field];
+            return value !== undefined && value !== null && value !== '';
+          });
+
+          // Check discount fields if applicable
+          const discountValid =
+            !schema.isDiscountApplicable ||
+            (schema.discountValue && schema.discountValue !== '' && schema.discountType && schema.discountType !== '');
+
+          return allFieldsFilled && discountValid;
+        });
+      }
+
+      case 3: // Academic Details (Optional)
+        // Only completed if highestAcademicQualification is selected (description alone doesn't count)
+        return !!(values.highestAcademicQualification && values.highestAcademicQualification.trim());
+
+      case 4: {
+        // Required Documents (Optional)
+        // Only completed if all required documents are selected
+        const required = requiredDocuments.filter((doc) => doc.isRequired);
+        if (required.length === 0) return true; // No required docs means completed
+        return required.every((doc) => values.requiredDocuments && values.requiredDocuments.includes(doc._id));
+      }
+
+      case 5: // Emergency Contact (Optional)
+        // Only completed if all required fields are provided
+        return !!(
+          values.emergencyContact &&
+          values.emergencyContact.name &&
+          values.emergencyContact.name.trim() &&
+          values.emergencyContact.relationship &&
+          values.emergencyContact.relationship.trim() &&
+          values.emergencyContact.phone &&
+          values.emergencyContact.phone.trim()
+        );
+
+      default:
+        return false;
+    }
+  };
+
+  // Function to update step completion status
+  const updateStepCompletion = (values) => {
+    const newStatus = {};
+    for (let i = 0; i < steps.length; i++) {
+      newStatus[i] = checkStepCompletion(i, values);
+    }
+    setStepCompletionStatus(newStatus);
+  };
+
+  // Custom StepIcon component to show completion status
+  const CustomStepIcon = ({ active, completed, icon }) => {
+    if (completed) {
+      return (
+        <Box
+          sx={{
+            width: 24,
+            height: 24,
+            borderRadius: '50%',
+            backgroundColor: 'success.main',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white'
+          }}
+        >
+          <CheckOutlined style={{ fontSize: 16 }} />
+        </Box>
+      );
+    }
+
+    if (active) {
+      return (
+        <Box
+          sx={{
+            width: 24,
+            height: 24,
+            borderRadius: '50%',
+            backgroundColor: 'primary.main',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white'
+          }}
+        >
+          {icon}
+        </Box>
+      );
+    }
+
+    return (
+      <Box
+        sx={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          backgroundColor: 'grey.300',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'grey.600'
+        }}
+      >
+        {icon}
+      </Box>
+    );
+  };
 
   // Fetchers
   const fetchCourses = useCallback(async () => {
@@ -211,6 +344,12 @@ const AddStudent = () => {
     if (selectedCourse) fetchBatches(selectedCourse);
     else setBatchOptions([]);
   }, [selectedCourse, fetchBatches]);
+
+  // Update step completion status when required documents change
+  useEffect(() => {
+    // This will be called when requiredDocuments change
+    // The actual completion check will be done in individual step components
+  }, [requiredDocuments]);
 
   const handleNext = async (values, { setTouched, setFieldError }) => {
     if (activeStep === 0) {
@@ -388,7 +527,7 @@ const AddStudent = () => {
 
     switch (step) {
       case 0:
-        return <StepPersonalDetails IconCmp={IconCmp} formBag={formBag} />;
+        return <StepPersonalDetails IconCmp={IconCmp} formBag={formBag} updateStepCompletion={updateStepCompletion} />;
       case 1:
         return (
           <StepCourseDetails
@@ -401,16 +540,38 @@ const AddStudent = () => {
             setSelectedCourse={setSelectedCourse}
             fetchBatches={fetchBatches}
             setNextDisabled={setNextDisabled}
+            updateStepCompletion={updateStepCompletion}
           />
         );
       case 2:
-        return <StepPaymentSchema IconCmp={IconCmp} formBag={formBag} setNextDisabled={setNextDisabled} />;
+        return (
+          <StepPaymentSchema
+            IconCmp={IconCmp}
+            formBag={formBag}
+            setNextDisabled={setNextDisabled}
+            updateStepCompletion={updateStepCompletion}
+          />
+        );
       case 3:
-        return <StepAcademicDetails IconCmp={IconCmp} formBag={formBag} academicQualificationOptions={academicQualificationOptions} />;
+        return (
+          <StepAcademicDetails
+            IconCmp={IconCmp}
+            formBag={formBag}
+            academicQualificationOptions={academicQualificationOptions}
+            updateStepCompletion={updateStepCompletion}
+          />
+        );
       case 4:
-        return <StepRequiredDocuments IconCmp={IconCmp} formBag={formBag} requiredDocuments={requiredDocuments} />;
+        return (
+          <StepRequiredDocuments
+            IconCmp={IconCmp}
+            formBag={formBag}
+            requiredDocuments={requiredDocuments}
+            updateStepCompletion={updateStepCompletion}
+          />
+        );
       case 5:
-        return <StepEmergencyContact IconCmp={IconCmp} formBag={formBag} />;
+        return <StepEmergencyContact IconCmp={IconCmp} formBag={formBag} updateStepCompletion={updateStepCompletion} />;
       default:
         return null;
     }
@@ -421,6 +582,7 @@ const AddStudent = () => {
       <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmitForm}>
         {(formBag) => {
           const { values } = formBag;
+
           return (
             <Form
               onSubmit={(e) => {
@@ -442,9 +604,9 @@ const AddStudent = () => {
             >
               <Box sx={{ width: '100%', mb: 4 }}>
                 <Stepper activeStep={activeStep} alternativeLabel>
-                  {steps.map((label) => (
-                    <Step key={label}>
-                      <StepLabel>{label}</StepLabel>
+                  {steps.map((label, index) => (
+                    <Step key={label} completed={stepCompletionStatus[index]}>
+                      <StepLabel StepIconComponent={(props) => <CustomStepIcon {...props} icon={index + 1} />}>{label}</StepLabel>
                     </Step>
                   ))}
                 </Stepper>
