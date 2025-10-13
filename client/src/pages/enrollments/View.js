@@ -431,7 +431,7 @@ const EnrollmentsView = () => {
                     {enrollment.student?.firstName} {enrollment.student?.lastName}
                   </TableCell>
                   <TableCell>{enrollment.student?.nic}</TableCell>
-                  <TableCell>{enrollment.course?.name}</TableCell>
+                  <TableCell>{enrollment.course?.code}</TableCell>
                   <TableCell>{enrollment.batch?.name}</TableCell>
                   <TableCell>{enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate).toLocaleDateString() : 'N/A'}</TableCell>
                   <TableCell>
@@ -442,7 +442,7 @@ const EnrollmentsView = () => {
                       startIcon={<EditOutlined />}
                       onClick={() => navigate(`/app/enrollments/update/${enrollment.studentId}`)}
                     >
-                      Manage Enrollment
+                      Manage
                     </Button>
                     <Button
                       variant="outlined"
@@ -470,10 +470,6 @@ const EnrollmentsView = () => {
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
-        {/* Debug info */}
-        <div style={{ padding: '10px', fontSize: '12px', color: '#666' }}>
-          Debug: Page {page}, Rows per page {rowsPerPage}, Total count {totalCount}, Data length {data.length}
-        </div>
       </MainCard>
     </>
   );

@@ -280,10 +280,6 @@ const RequiredDocumentsView = () => {
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
-        {/* Debug info */}
-        <div style={{ padding: '10px', fontSize: '12px', color: '#666' }}>
-          Debug: Page {page}, Rows per page {rowsPerPage}, Total count {totalCount}, Data length {data.length}
-        </div>
       </MainCard>
     </>
   );

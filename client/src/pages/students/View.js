@@ -376,7 +376,7 @@ const View = () => {
               onClick={importFromExcel}
               startIcon={isUploading ? <CircularProgress size={16} /> : <DownloadOutlined />}
               size="small"
-              // style={{ display: 'none' }}
+              style={{ display: 'none' }}
             >
               Import
             </Button>

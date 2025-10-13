@@ -110,7 +110,7 @@ async function getCourseEnrollments(req, res) {
       {
         $project: {
           courseId: "$_id",
-          courseName: "$courseDetails.name",
+          courseName: "$courseDetails.code",
           registrations: "$count"
         }
       }
@@ -266,7 +266,7 @@ async function getCourseDistribution(req, res) {
         $project: {
           courseId: "$_id",
           courseName: "$courseDetails.name",
-          courseCode: "$courseDetails.courseCode",
+          courseCode: "$courseDetails.code",
           registrations: "$count"
         }
       },
