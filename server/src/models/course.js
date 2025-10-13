@@ -31,7 +31,14 @@ const courseSchema = new mongoose.Schema({
   courseDuration: {
     type: String,
     required: true,
-    enum: ['3 months', '6 months', '1 year', '2 years', '3 years', '4 years', 'Other'],
+    enum: [
+      '6 months',
+      '9 months',
+      '12 months',
+      '15 months',
+      '18 months',
+      '24 months'
+    ],
   },
   weekdayBatch: {
     type: Boolean,

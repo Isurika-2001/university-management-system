@@ -7,7 +7,7 @@ import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
-import { useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 const UpdateCourseForm = () => {
   const [loading, setLoading] = useState([]);
@@ -15,10 +15,7 @@ const UpdateCourseForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [initialValues, setInitialValues] = useState(null);
   const { user } = useAuthContext();
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-
-  const courseId = queryParams.get('id');
+  const { id: courseId } = useParams();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -117,7 +114,7 @@ const UpdateCourseForm = () => {
 
       const response = await fetch(`${apiRoutes.batchRoute}?${params.toString()}`, {
         headers: {
-          Authorization: `Bearer ${user.token}`,
+          Authorization: `Bearer ${user.token}`
         }
       });
 

@@ -203,13 +203,12 @@ const AddForm = () => {
                         <MenuItem value="" disabled>
                           Course Duration
                         </MenuItem>
-                        <MenuItem value="3 months">3 months</MenuItem>
-                        <MenuItem value="6 months">6 months</MenuItem>
-                        <MenuItem value="1 year">1 year</MenuItem>
-                        <MenuItem value="2 years">2 years</MenuItem>
-                        <MenuItem value="3 years">3 years</MenuItem>
-                        <MenuItem value="4 years">4 years</MenuItem>
-                        <MenuItem value="Other">Other</MenuItem>
+                        <MenuItem value="6 months">6 Months</MenuItem>
+                        <MenuItem value="9 months">9 Months</MenuItem>
+                        <MenuItem value="12 months">12 Months</MenuItem>
+                        <MenuItem value="15 months">15 Months</MenuItem>
+                        <MenuItem value="18 months">18 Months</MenuItem>
+                        <MenuItem value="24 months">24 Months</MenuItem>
                       </Select>
                     )}
                   </Field>
