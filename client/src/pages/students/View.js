@@ -171,7 +171,7 @@ const View = () => {
   };
 
   const handleViewRow = (id) => {
-    navigate('/app/students/update?id=' + id);
+    navigate(`/app/students/update/${id}`);
   };
 
   const handleClick = () => {
@@ -376,7 +376,7 @@ const View = () => {
               onClick={importFromExcel}
               startIcon={isUploading ? <CircularProgress size={16} /> : <DownloadOutlined />}
               size="small"
-              style={{ display: 'none' }}
+              // style={{ display: 'none' }}
             >
               Import
             </Button>

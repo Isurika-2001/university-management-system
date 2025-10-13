@@ -38,7 +38,7 @@ const View = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  
+
   // User type filter state
   const [userTypes, setUserTypes] = useState([]);
   const [selectedUserType, setSelectedUserType] = useState('');
@@ -79,7 +79,7 @@ const View = () => {
     try {
       const response = await usersAPI.getAll();
       console.log('Response:', response);
-      
+
       // Handle both old and new response formats
       const users = response.data || response;
       console.log('Users:', users);
@@ -96,7 +96,7 @@ const View = () => {
     try {
       const response = await usersAPI.getUserTypes();
       console.log('User types response:', response);
-      
+
       // Handle both old and new response formats
       const userTypes = response.data || response;
       setUserTypes(formatUserTypes(userTypes));
@@ -193,17 +193,14 @@ const View = () => {
 
     // Apply search filter
     if (searchTerm) {
-      filteredValues = filteredValues.filter((user) => 
-        user.name.toLowerCase().includes(searchTerm) || 
-        user.email.toLowerCase().includes(searchTerm)
+      filteredValues = filteredValues.filter(
+        (user) => user.name.toLowerCase().includes(searchTerm) || user.email.toLowerCase().includes(searchTerm)
       );
     }
 
     // Apply user type filter
     if (userType) {
-      filteredValues = filteredValues.filter((user) => 
-        user.user_type && user.user_type._id === userType
-      );
+      filteredValues = filteredValues.filter((user) => user.user_type && user.user_type._id === userType);
     }
 
     // Apply status filter
@@ -222,7 +219,7 @@ const View = () => {
 
   const handleViewRow = (id) => {
     // Navigate to detailed view of the row with provided id
-    navigate('/app/users/update?id=' + id);
+    navigate(`/app/users/update/${id}`);
   };
 
   // const exportToCSV = () => {
@@ -268,9 +265,9 @@ const View = () => {
       try {
         const response = await usersAPI.disable(id);
         console.log('Disable user response:', response);
-              showSuccessSwal(response.message || 'User disabled successfully');
-      // Refetch data to ensure consistency and get updated user data
-      fetchData();
+        showSuccessSwal(response.message || 'User disabled successfully');
+        // Refetch data to ensure consistency and get updated user data
+        fetchData();
       } catch (error) {
         console.error('Error disabling user:', error);
         showErrorSwal(error.message || 'Error disabling user');
@@ -301,11 +298,11 @@ const View = () => {
       setDeleting(true);
       try {
         // Disable users one by one since we don't have a bulk disable endpoint
-        const promises = selected.map(id => usersAPI.disable(id));
+        const promises = selected.map((id) => usersAPI.disable(id));
         await Promise.all(promises);
-        
+
         showSuccessSwal(`${selected.length} user(s) disabled successfully`);
-        
+
         // Clear selection and refetch data
         setSelected([]);
         fetchData();
@@ -322,7 +319,7 @@ const View = () => {
     // Show confirmation dialog
     const result = await Swal.fire({
       title: 'Enable User?',
-      text: "This will allow the user to log in again. Are you sure?",
+      text: 'This will allow the user to log in again. Are you sure?',
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#28a745',
@@ -335,9 +332,9 @@ const View = () => {
       try {
         const response = await usersAPI.enable(id);
         console.log('Enable user response:', response);
-              showSuccessSwal(response.message || 'User enabled successfully');
-      // Refetch data to ensure consistency and get updated user data
-      fetchData();
+        showSuccessSwal(response.message || 'User enabled successfully');
+        // Refetch data to ensure consistency and get updated user data
+        fetchData();
       } catch (error) {
         console.error('Error enabling user:', error);
         showErrorSwal(error.message || 'Error enabling user');
@@ -356,18 +353,13 @@ const View = () => {
   useEffect(() => {
     setFilteredData(data);
   }, [data]);
-  
+
   return (
-    <MainCard 
+    <MainCard
       title={
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <span>User List</span>
-          <Button 
-            onClick={handleClickAddNew} 
-            variant="contained" 
-            startIcon={<FileAddOutlined />}
-            size="small"
-          >
+          <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />} size="small">
             Add User
           </Button>
         </Box>
@@ -376,20 +368,16 @@ const View = () => {
       <Box sx={{ marginBottom: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField 
-              label="Search" 
-              variant="outlined" 
+            <TextField
+              label="Search"
+              variant="outlined"
               onChange={handleSearch}
               placeholder="Search by name or email"
               sx={{ minWidth: 300, maxWidth: 400 }}
             />
             <FormControl sx={{ minWidth: 200 }}>
               <InputLabel>Filter by Role</InputLabel>
-              <Select
-                value={selectedUserType}
-                label="Filter by Role"
-                onChange={handleUserTypeFilter}
-              >
+              <Select value={selectedUserType} label="Filter by Role" onChange={handleUserTypeFilter}>
                 <MenuItem value="">
                   <em>All Roles</em>
                 </MenuItem>
@@ -402,11 +390,7 @@ const View = () => {
             </FormControl>
             <FormControl sx={{ minWidth: 200 }}>
               <InputLabel>Filter by Status</InputLabel>
-              <Select
-                value={selectedStatus}
-                label="Filter by Status"
-                onChange={handleStatusFilter}
-              >
+              <Select value={selectedStatus} label="Filter by Status" onChange={handleStatusFilter}>
                 <MenuItem value="">
                   <em>All Statuses</em>
                 </MenuItem>
@@ -417,21 +401,10 @@ const View = () => {
           </Box>
           {selected.length > 0 && (
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={() => setSelected([])}
-                size="small"
-              >
+              <Button variant="outlined" color="secondary" onClick={() => setSelected([])} size="small">
                 Clear Selection
               </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<DeleteOutlined />}
-                onClick={handleBulkDelete}
-                disabled={deleting}
-              >
+              <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={handleBulkDelete} disabled={deleting}>
                 Disable Selected ({selected.length})
               </Button>
             </Box>
@@ -481,11 +454,19 @@ const View = () => {
             </TableRow>
           </TableHead>
           {loading && <LinearProgress sx={{ width: '100%' }} />}
-                    <TableBody>
-            {console.log('Rendering table with data:', { filteredData: filteredData.length, data: data.length, users: stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy)).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage) })}
-            {stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy))
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .length === 0 ? (
+          <TableBody>
+            {console.log('Rendering table with data:', {
+              filteredData: filteredData.length,
+              data: data.length,
+              users: stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy)).slice(
+                page * rowsPerPage,
+                page * rowsPerPage + rowsPerPage
+              )
+            })}
+            {stableSort(filteredData.length > 0 ? filteredData : data, getComparator(order, orderBy)).slice(
+              page * rowsPerPage,
+              page * rowsPerPage + rowsPerPage
+            ).length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} align="center">
                   {loading ? 'Loading users...' : 'No users found'}

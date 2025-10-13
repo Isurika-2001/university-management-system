@@ -163,13 +163,18 @@ const AddStudent = () => {
 
       case 2: {
         // Payment Schema
-        // Check if all selected courses have complete payment schemas
+        // Check if at least one course has a complete payment schema
         const selectedCourses = values.selectedCourses || [];
+        console.log('Payment Schema - selectedCourses:', selectedCourses);
         if (selectedCourses.length === 0) return false;
 
         const paymentSchemas = values.paymentSchema || {};
-        return selectedCourses.every((courseId) => {
+        console.log('Payment Schema - paymentSchemas:', paymentSchemas);
+
+        // Check if any course has a complete payment schema
+        const result = selectedCourses.some((courseId) => {
           const schema = paymentSchemas[courseId] || {};
+          console.log(`Payment Schema - checking course ${courseId}:`, schema);
           const requiredFields = ['courseFee', 'downPayment', 'numberOfInstallments', 'installmentStartDate', 'paymentFrequency'];
 
           // Check all required fields are filled
@@ -183,8 +188,12 @@ const AddStudent = () => {
             !schema.isDiscountApplicable ||
             (schema.discountValue && schema.discountValue !== '' && schema.discountType && schema.discountType !== '');
 
-          return allFieldsFilled && discountValid;
+          const isComplete = allFieldsFilled && discountValid;
+          console.log(`Payment Schema - course ${courseId} complete:`, isComplete, { allFieldsFilled, discountValid });
+          return isComplete;
         });
+        console.log('Payment Schema - overall result:', result);
+        return result;
       }
 
       case 3: // Academic Details (Optional)
@@ -195,7 +204,11 @@ const AddStudent = () => {
         // Required Documents (Optional)
         // Only completed if all required documents are selected
         const required = requiredDocuments.filter((doc) => doc.isRequired);
-        if (required.length === 0) return true; // No required docs means completed
+        if (required.length === 0) {
+          // No required docs means completed, but only if we've actually loaded the documents
+          // This prevents the step from being marked complete before documents are fetched
+          return requiredDocuments.length > 0;
+        }
         return required.every((doc) => values.requiredDocuments && values.requiredDocuments.includes(doc._id));
       }
 
@@ -220,8 +233,11 @@ const AddStudent = () => {
   const updateStepCompletion = (values) => {
     const newStatus = {};
     for (let i = 0; i < steps.length; i++) {
-      newStatus[i] = checkStepCompletion(i, values);
+      const isCompleted = checkStepCompletion(i, values);
+      newStatus[i] = isCompleted;
+      console.log(`Step ${i} (${steps[i]}): ${isCompleted ? 'COMPLETED' : 'NOT COMPLETED'}`);
     }
+    console.log('Step completion status:', newStatus);
     setStepCompletionStatus(newStatus);
   };
 
@@ -351,6 +367,12 @@ const AddStudent = () => {
     // The actual completion check will be done in individual step components
   }, [requiredDocuments]);
 
+  // Update step completion when form values change
+  useEffect(() => {
+    // This will be called when the component mounts or when dependencies change
+    // The actual completion check will be done in individual step components
+  }, []);
+
   const handleNext = async (values, { setTouched, setFieldError }) => {
     if (activeStep === 0) {
       const personalFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
@@ -405,8 +427,7 @@ const AddStudent = () => {
     try {
       setSubmitting(true);
 
-      const firstEnrollment = values.enrollments?.[0] || null;
-      if (!firstEnrollment?.courseId || !firstEnrollment?.batchId) {
+      if (!values.enrollments || values.enrollments.length === 0) {
         showErrorSwal('At least one course enrollment is required');
         return;
       }
@@ -420,7 +441,9 @@ const AddStudent = () => {
         mobile: values.mobile,
         homeContact: values.homeContact,
         email: values.email,
-        paymentSchema: values.paymentSchema,
+        // Send all enrollments and payment schemas
+        enrollments: values.enrollments,
+        paymentSchema: values.paymentSchema || {},
         ...(values.highestAcademicQualification?.trim() && { highestAcademicQualification: values.highestAcademicQualification }),
         ...(values.qualificationDescription?.trim() && { qualificationDescription: values.qualificationDescription }),
         ...(Array.isArray(values.requiredDocuments) &&
@@ -432,9 +455,7 @@ const AddStudent = () => {
           values.emergencyContact.relationship?.trim() &&
           values.emergencyContact.phone?.trim() && {
             emergencyContact: values.emergencyContact
-          }),
-        courseId: firstEnrollment.courseId,
-        batchId: firstEnrollment.batchId
+          })
       };
 
       const studentResponse = await fetch(apiRoutes.studentRoute, {
@@ -473,41 +494,8 @@ const AddStudent = () => {
         }
       }
 
-      // Add extra enrollments (skip first)
-      if (values.enrollments && values.enrollments.length > 1) {
-        for (let i = 1; i < values.enrollments.length; i += 1) {
-          const enr = values.enrollments[i];
-          if (!enr.courseId || !enr.batchId) {
-            showErrorSwal('Invalid enrollment data: missing courseId or intake');
-            return;
-          }
-          const enrollmentData = {
-            studentId: studentResponseData.data.studentId,
-            courseId: enr.courseId,
-            batchId: enr.batchId
-          };
-          const enrollmentResponse = await fetch(apiRoutes.enrollmentRoute, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
-            body: JSON.stringify(enrollmentData)
-          });
-          if (!enrollmentResponse.ok) {
-            const errorData = await enrollmentResponse.json();
-            let msg = 'Student created but additional enrollment creation failed';
-            if (errorData.message && errorData.error) {
-              msg = `<strong>${errorData.message}</strong><br/><small>${errorData.error}</small>`;
-            } else if (errorData.message) {
-              msg = `<strong>${errorData.message}</strong>`;
-            } else if (errorData.error) {
-              msg = `<strong>Enrollment Error:</strong><br/><small>${errorData.error}</small>`;
-            } else {
-              msg = '<strong>Enrollment Error:</strong><br/><small>Unknown error</small>';
-            }
-            showErrorSwal(msg);
-            return;
-          }
-        }
-      }
+      // All enrollments are now handled by the createStudent API
+      // No need for separate enrollment API calls
 
       showSuccessSwal(successMessage);
       window.location.reload();
@@ -665,21 +653,6 @@ const AddStudent = () => {
           );
         }}
       </Formik>
-
-      {/* Completion dots (visual only) */}
-      <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="caption" color="textSecondary">
-          Completion Progress:
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          {['step1', 'step2', 'step3', 'step4', 'step5', 'step6'].map((_, idx) => (
-            <Box
-              key={idx}
-              sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'grey.300', border: '1px solid', borderColor: 'grey.400' }}
-            />
-          ))}
-        </Box>
-      </Box>
     </MainCard>
   );
 };

@@ -5,17 +5,14 @@ import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { formatUserTypes } from '../../utils/userTypeUtils';
 import { usersAPI } from '../../api/users';
 
 function UpdateUser() {
-  const location = useLocation();
+  const { id } = useParams();
   const navigate = useNavigate();
-  const queryParams = new URLSearchParams(location.search);
   const [submitting, setSubmitting] = useState(false);
-
-  const id = queryParams.get('id');
 
   const Toast = withReactContent(
     Swal.mixin({

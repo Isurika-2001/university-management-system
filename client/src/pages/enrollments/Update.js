@@ -7,7 +7,7 @@ import { Formik, Form } from 'formik';
 import { FileAddOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import { useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { studentsAPI } from '../../api/students';
@@ -26,7 +26,7 @@ const UpdateForm = () => {
   const [open, setOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('');
-  
+
   // Transfer dialog state
   const [openTransferDialog, setOpenTransferDialog] = useState(false);
   const [selectedEnrollment, setSelectedEnrollment] = useState(null);
@@ -35,8 +35,7 @@ const UpdateForm = () => {
     reason: ''
   });
 
-
-  const location = useLocation();
+  const { id } = useParams();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -71,24 +70,22 @@ const UpdateForm = () => {
     fetchCourses();
     fetchEnrollments();
   }, [location.search]);
-  
+
   useEffect(() => {
     fetchBatches(selectedCourse);
   }, [selectedCourse]);
 
   async function fetchData() {
     setLoading(true);
-    const searchParams = new URLSearchParams(location.search);
-    const id = searchParams.get('id');
     console.log('Fetching student data for ID:', id);
-    
+
     if (!id) {
       console.log('No student ID found in URL');
       setData(null);
       setLoading(false);
       return;
     }
-    
+
     try {
       const response = await studentsAPI.getById(id);
       console.log('Student response:', response);
@@ -102,16 +99,14 @@ const UpdateForm = () => {
   }
 
   async function fetchEnrollments() {
-    const searchParams = new URLSearchParams(location.search);
-    const id = searchParams.get('id');
     console.log('Fetching enrollments for student ID:', id);
-    
+
     if (!id) {
       console.log('No student ID found in URL');
       setEnrollments([]);
       return;
     }
-    
+
     try {
       setLoading(true);
       const response = await enrollmentsAPI.getByStudentId(id);
@@ -152,14 +147,12 @@ const UpdateForm = () => {
   const handleSubmit = async (values) => {
     try {
       setSubmitting(true);
-      const searchParams = new URLSearchParams(location.search);
-      const id = searchParams.get('id');
-      
+
       if (!id) {
         showErrorSwal('Student ID not found in URL');
         return;
       }
-      
+
       console.log('Submitting enrollment data:', values);
       const responseData = await enrollmentsAPI.createForStudent(id, values);
       showSuccessSwal(responseData.message || 'Enrollment added successfully');
@@ -197,7 +190,7 @@ const UpdateForm = () => {
       reason: ''
     });
     setOpenTransferDialog(true);
-    
+
     // Fetch batches for the enrollment's course
     if (enrollment.courseId) {
       await fetchBatches(enrollment.courseId);
@@ -209,7 +202,7 @@ const UpdateForm = () => {
       setSubmitting(true);
       console.log('Submitting transfer data:', transferData);
       console.log('Selected enrollment:', selectedEnrollment);
-      
+
       if (!transferData.batchId || !transferData.reason) {
         showErrorSwal('Please select a new intake and provide a transfer reason');
         return;
@@ -264,20 +257,22 @@ const UpdateForm = () => {
           <Grid item xs={12}>
             <Box sx={{ mb: 3 }}>
               <h3>Student Information</h3>
-              <p><strong>Name:</strong> {data.firstName} {data.lastName}</p>
-              <p><strong>Email:</strong> {data.email}</p>
-              <p><strong>Student ID:</strong> {data.registration_no || data.registrationNo || data._id}</p>
+              <p>
+                <strong>Name:</strong> {data.firstName} {data.lastName}
+              </p>
+              <p>
+                <strong>Email:</strong> {data.email}
+              </p>
+              <p>
+                <strong>Student ID:</strong> {data.registration_no || data.registrationNo || data._id}
+              </p>
             </Box>
           </Grid>
 
           <Grid item xs={12}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <h3>Current Enrollments</h3>
-              <Button
-                variant="contained"
-                startIcon={<FileAddOutlined />}
-                onClick={() => setOpen(true)}
-              >
+              <Button variant="contained" startIcon={<FileAddOutlined />} onClick={() => setOpen(true)}>
                 Add New Enrollment
               </Button>
             </Box>
@@ -305,30 +300,30 @@ const UpdateForm = () => {
                         <TableCell>{enrollment.course?.name || 'N/A'}</TableCell>
                         <TableCell>{enrollment.batch?.name || 'N/A'}</TableCell>
                         <TableCell>{new Date(enrollment.enrollmentDate).toLocaleDateString()}</TableCell>
-                                                 <TableCell>
-                           <Box sx={{ display: 'flex', gap: 1 }}>
-                             <Button
-                               variant="outlined"
-                               color="secondary"
-                               size="small"
-                               onClick={() => handleTransfer(enrollment)}
-                               disabled={submitting}
-                               startIcon={<SwapOutlined />}
-                             >
-                               Transfer
-                             </Button>
-                             <Button
-                               variant="outlined"
-                               color="error"
-                               size="small"
-                               onClick={() => handleDelete(enrollment._id)}
-                               disabled={submitting}
-                               startIcon={submitting ? <CircularProgress size={16} /> : <DeleteOutlined />}
-                             >
-                               Delete
-                             </Button>
-                           </Box>
-                         </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                              variant="outlined"
+                              color="secondary"
+                              size="small"
+                              onClick={() => handleTransfer(enrollment)}
+                              disabled={submitting}
+                              startIcon={<SwapOutlined />}
+                            >
+                              Transfer
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              onClick={() => handleDelete(enrollment._id)}
+                              disabled={submitting}
+                              startIcon={submitting ? <CircularProgress size={16} /> : <DeleteOutlined />}
+                            >
+                              Delete
+                            </Button>
+                          </Box>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -366,9 +361,7 @@ const UpdateForm = () => {
                         ))}
                       </Select>
                       {touched.courseId && errors.courseId && (
-                        <div style={{ color: 'red', fontSize: '0.75rem', marginTop: '4px' }}>
-                          {errors.courseId}
-                        </div>
+                        <div style={{ color: 'red', fontSize: '0.75rem', marginTop: '4px' }}>{errors.courseId}</div>
                       )}
                     </FormControl>
                   </Grid>
@@ -391,9 +384,7 @@ const UpdateForm = () => {
                         ))}
                       </Select>
                       {touched.batchId && errors.batchId && (
-                        <div style={{ color: 'red', fontSize: '0.75rem', marginTop: '4px' }}>
-                          {errors.batchId}
-                        </div>
+                        <div style={{ color: 'red', fontSize: '0.75rem', marginTop: '4px' }}>{errors.batchId}</div>
                       )}
                     </FormControl>
                   </Grid>
@@ -412,69 +403,65 @@ const UpdateForm = () => {
               </DialogActions>
             </Form>
           )}
-                 </Formik>
-       </Dialog>
+        </Formik>
+      </Dialog>
 
-       {/* Batch Transfer Dialog */}
-       <Dialog open={openTransferDialog} onClose={closeTransferDialog} maxWidth="sm" fullWidth>
-         <DialogTitle>Intake Transfer</DialogTitle>
-         <DialogContent>
-           <Box sx={{ pt: 2 }}>
-             {selectedEnrollment && (
-               <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-                 <Typography variant="subtitle2" color="textSecondary">
-                   Current Enrollment
-                 </Typography>
-                 <Typography variant="body2">
-                   Course: {selectedEnrollment.course?.name || 'N/A'}
-                 </Typography>
-                 <Typography variant="body2">
-                   Current Intake: {selectedEnrollment.batch?.name || 'N/A'}
-                 </Typography>
-               </Box>
-             )}
-             
-             <FormControl fullWidth sx={{ mb: 2 }}>
-               <InputLabel>New Intake</InputLabel>
-               <Select
-                 value={transferData.batchId}
-                 label="New Intake"
-                 onChange={(e) => setTransferData({ ...transferData, batchId: e.target.value })}
-               >
-                 {batchOptions.map((batch) => (
-                   <MenuItem key={batch._id} value={batch._id}>
-                     {batch.name}
-                   </MenuItem>
-                 ))}
-               </Select>
-             </FormControl>
-             
-             <TextField
-               label="Transfer Reason"
-               variant="outlined"
-               fullWidth
-               multiline
-               rows={3}
-               value={transferData.reason}
-               onChange={(e) => setTransferData({ ...transferData, reason: e.target.value })}
-               placeholder="Please provide a reason for the intake transfer..."
-             />
-           </Box>
-         </DialogContent>
-         <DialogActions>
-           <Button onClick={closeTransferDialog}>Cancel</Button>
-           <Button 
-             onClick={handleTransferSubmit} 
-             variant="contained"
-             disabled={submitting}
-             endIcon={submitting ? <CircularProgress size={20} /> : null}
-           >
-             Transfer
-           </Button>
-         </DialogActions>
-       </Dialog>
-     </MainCard>
-   );
- };
+      {/* Batch Transfer Dialog */}
+      <Dialog open={openTransferDialog} onClose={closeTransferDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Intake Transfer</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            {selectedEnrollment && (
+              <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Current Enrollment
+                </Typography>
+                <Typography variant="body2">Course: {selectedEnrollment.course?.name || 'N/A'}</Typography>
+                <Typography variant="body2">Current Intake: {selectedEnrollment.batch?.name || 'N/A'}</Typography>
+              </Box>
+            )}
+
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>New Intake</InputLabel>
+              <Select
+                value={transferData.batchId}
+                label="New Intake"
+                onChange={(e) => setTransferData({ ...transferData, batchId: e.target.value })}
+              >
+                {batchOptions.map((batch) => (
+                  <MenuItem key={batch._id} value={batch._id}>
+                    {batch.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="Transfer Reason"
+              variant="outlined"
+              fullWidth
+              multiline
+              rows={3}
+              value={transferData.reason}
+              onChange={(e) => setTransferData({ ...transferData, reason: e.target.value })}
+              placeholder="Please provide a reason for the intake transfer..."
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeTransferDialog}>Cancel</Button>
+          <Button
+            onClick={handleTransferSubmit}
+            variant="contained"
+            disabled={submitting}
+            endIcon={submitting ? <CircularProgress size={20} /> : null}
+          >
+            Transfer
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </MainCard>
+  );
+};
 
 export default UpdateForm;

@@ -5,20 +5,17 @@ import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { batchesAPI } from '../../api/batches';
 import { coursesAPI } from '../../api/courses';
 
 const EditForm = () => {
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
+  const { id } = useParams();
   const [courseOptions, setCourseOptions] = useState([]);
   const [initialValues, setInitialValues] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
-  const id = queryParams.get('id');
 
   const Toast = withReactContent(
     Swal.mixin({

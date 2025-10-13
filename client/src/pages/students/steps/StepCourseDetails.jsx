@@ -11,7 +11,8 @@ const StepCourseDetails = ({
   setSelectedCourse,
   fetchBatches,
   setNextDisabled, // Controls wizard "Next" button
-  updateStepCompletion
+  updateStepCompletion,
+  isUpdateMode = false // New prop to indicate if this is update mode
 }) => {
   const { values, setFieldValue } = formBag;
 
@@ -71,35 +72,46 @@ const StepCourseDetails = ({
         {/* Existing Enrollments */}
         <Box sx={{ mb: 2 }}>
           <Typography variant="subtitle2" gutterBottom>
-            Current Enrollments:
+            {isUpdateMode ? 'Current Enrollments (Read Only):' : 'Current Enrollments:'}
           </Typography>
           {values.enrollments?.length > 0 ? (
             values.enrollments.map((enrollment, index) => (
-              <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+              <Box
+                key={index}
+                sx={{
+                  mb: 2,
+                  p: 2,
+                  border: '1px solid #e0e0e0',
+                  borderRadius: 1,
+                  backgroundColor: isUpdateMode ? '#f5f5f5' : 'transparent'
+                }}
+              >
                 <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} sm={4}>
+                  <Grid item xs={12} sm={isUpdateMode ? 6 : 4}>
                     <Typography variant="body2" color="textSecondary">
-                      Course: {enrollment.courseName || 'Not selected'}
+                      <strong>Course:</strong> {enrollment.courseName || enrollment.courseId?.name || 'Not selected'}
                     </Typography>
                   </Grid>
-                  <Grid item xs={12} sm={4}>
+                  <Grid item xs={12} sm={isUpdateMode ? 6 : 4}>
                     <Typography variant="body2" color="textSecondary">
-                      Intake: {enrollment.batchName || 'Not selected'}
+                      <strong>Intake:</strong> {enrollment.batchName || enrollment.batchId?.name || 'Not selected'}
                     </Typography>
                   </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <Button
-                      size="small"
-                      color="error"
-                      variant="outlined"
-                      onClick={() => {
-                        const newEnrollments = values.enrollments.filter((_, i) => i !== index);
-                        setFieldValue('enrollments', newEnrollments);
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </Grid>
+                  {!isUpdateMode && (
+                    <Grid item xs={12} sm={4}>
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        onClick={() => {
+                          const newEnrollments = values.enrollments.filter((_, i) => i !== index);
+                          setFieldValue('enrollments', newEnrollments);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </Grid>
+                  )}
                 </Grid>
               </Box>
             ))
@@ -113,7 +125,7 @@ const StepCourseDetails = ({
         {/* Add New Enrollment */}
         <Box sx={{ mt: 3 }}>
           <Typography variant="subtitle2" gutterBottom>
-            Add New Enrollment:
+            {isUpdateMode ? 'Add Additional Enrollment:' : 'Add New Enrollment:'}
           </Typography>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={5}>
@@ -176,8 +188,8 @@ const StepCourseDetails = ({
           </Grid>
         </Box>
 
-        {/* Edit Enrollments */}
-        {values.enrollments?.length > 0 && (
+        {/* Edit Enrollments - Only show in non-update mode */}
+        {!isUpdateMode && values.enrollments?.length > 0 && (
           <Box sx={{ mt: 3 }}>
             <Typography variant="subtitle2" gutterBottom>
               Edit Enrollments:

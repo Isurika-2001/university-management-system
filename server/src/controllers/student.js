@@ -208,7 +208,7 @@ async function getAllStudents(req, res) {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -219,18 +219,34 @@ async function getStudentById(req, res) {
     const student = await Student.findById(studentId);
 
     if (!student) {
-      return res.status(404).json({ error: "Student not found" });
+      return res.status(404).json({ error: 'Student not found' });
     }
+
+    // Fetch enrollments for the student using correct reference field
+    const enrollments = await Enrollment.find({ studentId: student._id })
+      .populate({ path: 'courseId' })
+      .populate({ path: 'batchId' });
+
+    // If enrollments are not found, ensure empty array (but should not be null)
+    const enrollmentDetails = (Array.isArray(enrollments) && enrollments.length > 0)
+      ? enrollments.map(enrollment => ({
+        ...enrollment.toObject(),
+        course: enrollment.courseId,
+        batch: enrollment.batchId,
+        paymentSchema: enrollment.paymentSchema,
+      }))
+      : [];
 
     // Get completion status for the student
     const completionStatus = await getStudentCompletionStatus(student);
 
     res.status(200).json({
       ...student.toObject(),
-      completionStatus: completionStatus
+      enrollments: enrollmentDetails,
+      completionStatus,
     });
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -244,8 +260,8 @@ async function createStudent(req, res) {
     mobile,
     homeContact,
     email,
-    courseId,
-    batchId,
+    // Enrollment and payment schema fields
+    enrollments,
     paymentSchema,
     // New fields
     highestAcademicQualification,
@@ -257,69 +273,98 @@ async function createStudent(req, res) {
   const requestInfo = getRequestInfo(req);
 
   try {
+    // Validate enrollments
+    if (!enrollments || !Array.isArray(enrollments) || enrollments.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one course enrollment is required'
+      });
+    }
+
     // Check if the student is already registered in the system
     const isDuplicate = await checkDuplicateRegistration(nic);
 
     if (isDuplicate) {
       const student = await Student.findOne({ nic });
 
-      // Check if the student is already registered for the same course and batch
-      const isCourseDuplicate = await checkDuplicateCourseRegistration(
-        student._id,
-        courseId,
-        batchId
-      );
+      // Check if the student is already registered for any of the courses and batches
+      for (const enrollment of enrollments) {
+        const isCourseDuplicate = await checkDuplicateCourseRegistration(
+          student._id,
+          enrollment.courseId,
+          enrollment.batchId
+        );
 
-      if (isCourseDuplicate) {
-        return res.status(403).json({
-          success: false,
-          message: "Student already registered for this course with the same batch",
-        });
-      } else {
-        // Register the existing student for the new course and batch
-        const course = await require('../models/course').findById(courseId);
-        const batch = await require('../models/batch').findById(batchId);
+        if (isCourseDuplicate) {
+          return res.status(403).json({
+            success: false,
+            message: 'Student already registered for course with batch in enrollment',
+          });
+        }
+      }
+
+      // Register the existing student for all new courses and batches
+      for (const enrollment of enrollments) {
+        const course = await require('../models/course').findById(enrollment.courseId);
+        const batch = await require('../models/batch').findById(enrollment.batchId);
         const courseSequenceValue = course && batch 
           ? await getAndFormatCourseEnrollmentNumber(course.code, batch.name)
-          : await getNextSequenceValue("course_id_sequence");
+          : await getNextSequenceValue('course_id_sequence');
+
+        // Get payment schema for this course
+        const enrollmentPaymentSchema = paymentSchema && paymentSchema[enrollment.courseId] ? paymentSchema[enrollment.courseId] : {};
 
         await courseRegistration(
           student._id,
-          courseId,
-          batchId,
+          enrollment.courseId,
+          enrollment.batchId,
           student.registration_no,
-          courseSequenceValue
+          courseSequenceValue,
+          enrollmentPaymentSchema
         );
-
-        return res.status(201).json({
-          success: true,
-          message: "Existing student registered for the new course",
-          data: {
-            studentId: student._id,
-            courseId,
-            batchId,
-          },
-        });
       }
-    }
 
-    // Validate payment schema required fields
-    if (!paymentSchema ||
-        paymentSchema.courseFee === undefined ||
-        paymentSchema.discountType === undefined ||
-        paymentSchema.discountValue === undefined ||
-        paymentSchema.downPayment === undefined ||
-        paymentSchema.numberOfInstallments === undefined ||
-        paymentSchema.installmentStartDate === undefined ||
-        paymentSchema.paymentFrequency === undefined) {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment schema is required with all fields'
+      return res.status(201).json({
+        success: true,
+        message: 'Existing student registered for the new courses',
+        data: {
+          studentId: student._id,
+          enrollments: enrollments.length,
+        },
       });
     }
 
+    // Validate payment schema for each enrollment
+    for (const enrollment of enrollments) {
+      const enrollmentPaymentSchema = paymentSchema && paymentSchema[enrollment.courseId] ? paymentSchema[enrollment.courseId] : {};
+      
+      // Check required fields
+      if (!enrollmentPaymentSchema ||
+          enrollmentPaymentSchema.courseFee === undefined ||
+          enrollmentPaymentSchema.downPayment === undefined ||
+          enrollmentPaymentSchema.numberOfInstallments === undefined ||
+          enrollmentPaymentSchema.installmentStartDate === undefined ||
+          enrollmentPaymentSchema.paymentFrequency === undefined) {
+        return res.status(400).json({
+          success: false,
+          message: 'Payment schema is required with all fields for each course'
+        });
+      }
+
+      // Check discount fields only if discount is applicable
+      if (enrollmentPaymentSchema.isDiscountApplicable === true) {
+        if (enrollmentPaymentSchema.discountType === undefined ||
+            enrollmentPaymentSchema.discountValue === undefined) {
+          return res.status(400).json({
+            success: false,
+            message: 'Discount type and value are required when discount is applicable'
+          });
+        }
+      }
+    }
+
     // New student registration
-    const sequenceValue = await getNextSequenceValue("unique_id_sequence");
+    const sequenceValue = await getNextSequenceValue('unique_id_sequence');
 
     // Build student data object with only defined optional fields
     const studentData = {
@@ -358,24 +403,27 @@ async function createStudent(req, res) {
 
     const newStudent = await student.save();
 
-    // Get detailed completion status and update
-    await newStudent.save();
+    // Create enrollments for all courses
+    for (const enrollment of enrollments) {
+      const course = await require('../models/course').findById(enrollment.courseId);
+      const batch = await require('../models/batch').findById(enrollment.batchId);
+      const courseSequenceValue = course && batch 
+        ? await getAndFormatCourseEnrollmentNumber(course.code, batch.name)
+        : await getNextSequenceValue('course_id_sequence');
 
-    const course = await require('../models/course').findById(courseId);
-    const batch = await require('../models/batch').findById(batchId);
-    const courseSequenceValue = course && batch 
-      ? await getAndFormatCourseEnrollmentNumber(course.code, batch.name)
-      : await getNextSequenceValue("course_id_sequence");
+      // Get payment schema for this course
+      const enrollmentPaymentSchema = paymentSchema && paymentSchema[enrollment.courseId] ? paymentSchema[enrollment.courseId] : {};
 
-    // Register new student for course and batch
-    await courseRegistration(
-      newStudent._id,
-      courseId,
-      batchId,
-      sequenceValue,
-      courseSequenceValue,
-      paymentSchema
-    );
+      // Register new student for course and batch
+      await courseRegistration(
+        newStudent._id,
+        enrollment.courseId,
+        enrollment.batchId,
+        sequenceValue,
+        courseSequenceValue,
+        enrollmentPaymentSchema
+      );
+    }
 
     // Log the student creation
     await ActivityLogger.logStudentCreate(req.user, newStudent, requestInfo.ipAddress, requestInfo.userAgent);
@@ -385,9 +433,9 @@ async function createStudent(req, res) {
     newStudent.status = completionStatus.overall;
     await newStudent.save();
 
-    let message = "New student registered for the course";
+    let message = 'New student registered for the course';
     if (completionStatus.overall === 'completed') {
-      message = "Student registered successfully! Registration is complete.";
+      message = 'Student registered successfully! Registration is complete.';
     } else if (completionStatus.overall === 'incomplete') {
       const missingSteps = [];
       if (!completionStatus.step3) missingSteps.push('Academic Details');
@@ -395,17 +443,16 @@ async function createStudent(req, res) {
       if (!completionStatus.step5) missingSteps.push('Emergency Contact');
       message = `Student registered successfully! To complete registration, please provide: ${missingSteps.join(', ')}`;
     } else {
-      message = "Student registered successfully! Registration is still pending.";
+      message = 'Student registered successfully! Registration is still pending.';
     }
 
     res.status(201).json({
       success: true,
-      message: message,
+      message,
       data: {
         studentId: newStudent._id,
-        courseId,
-        batchId,
-        completionStatus: completionStatus
+        enrollments: enrollments.length,
+        completionStatus
       },
     });
   } catch (error) {
@@ -413,7 +460,7 @@ async function createStudent(req, res) {
 
     res.status(500).json({
       success: false,
-      message: "Error registering student",
+      message: 'Error registering student',
       error: error.message,
     });
   }
@@ -435,6 +482,9 @@ async function updateStudent(req, res) {
     qualificationDescription,
     requiredDocuments,
     emergencyContact,
+    // Enrollment and payment schema fields
+    enrollments,
+    paymentSchema,
   } = req.body;
   const requestInfo = getRequestInfo(req);
 
@@ -444,7 +494,7 @@ async function updateStudent(req, res) {
     if (!student) {
       return res.status(404).json({
         success: false,
-        message: "Student not found",
+        message: 'Student not found',
       });
     }
 
@@ -474,6 +524,39 @@ async function updateStudent(req, res) {
       student.emergencyContact = emergencyContact;
     }
 
+    // Handle enrollments and payment schemas
+    if (enrollments && Array.isArray(enrollments) && enrollments.length > 0) {
+      // Delete existing enrollments for this student
+      await Enrollment.deleteMany({ studentId });
+      
+      // Create new enrollments using the courseRegistration function
+      for (const enrollment of enrollments) {
+        if (enrollment.courseId && enrollment.batchId) {
+          // Get course and batch details for generating enrollment numbers
+          const course = await require('../models/course').findById(enrollment.courseId);
+          const batch = await require('../models/batch').findById(enrollment.batchId);
+          
+          if (course && batch) {
+            // Generate enrollment numbers
+            const courseSequenceValue = await getAndFormatCourseEnrollmentNumber(course.code, batch.name);
+            
+            // Get payment schema for this course
+            const enrollmentPaymentSchema = paymentSchema && paymentSchema[enrollment.courseId] ? paymentSchema[enrollment.courseId] : {};
+            
+            // Create enrollment using the courseRegistration function
+            await courseRegistration(
+              studentId,
+              enrollment.courseId,
+              enrollment.batchId,
+              student.registration_no, // Use existing student registration number
+              courseSequenceValue,
+              enrollmentPaymentSchema
+            );
+          }
+        }
+      }
+    }
+
     // Get detailed completion status and update
     const completionStatus = await getStudentCompletionStatus(student);
     student.status = completionStatus.overall;
@@ -494,14 +577,17 @@ async function updateStudent(req, res) {
       highestAcademicQualification: { from: originalStudent.highestAcademicQualification, to: highestAcademicQualification },
       qualificationDescription: { from: originalStudent.qualificationDescription, to: qualificationDescription },
       requiredDocuments: { from: originalStudent.requiredDocuments, to: requiredDocuments },
-      emergencyContact: { from: originalStudent.emergencyContact, to: emergencyContact }
+      emergencyContact: { from: originalStudent.emergencyContact, to: emergencyContact },
+      // Enrollment and payment schema changes
+      enrollments: { from: 'Previous enrollments', to: enrollments ? `${enrollments.length} enrollments` : 'No enrollments' },
+      paymentSchema: { from: 'Previous payment schemas', to: paymentSchema ? 'Updated payment schemas' : 'No payment schemas' }
     };
 
     await ActivityLogger.logStudentUpdate(req.user, student, changes, requestInfo.ipAddress, requestInfo.userAgent);
     
-    let message = "Student updated successfully";
+    let message = 'Student updated successfully';
     if (completionStatus.overall === 'completed') {
-      message = "Student updated successfully! Registration is now complete.";
+      message = 'Student updated successfully! Registration is now complete.';
     } else if (completionStatus.overall === 'incomplete') {
       const missingSteps = [];
       if (!completionStatus.step3) missingSteps.push('Academic Details');
@@ -512,17 +598,17 @@ async function updateStudent(req, res) {
 
     res.status(200).json({
       success: true,
-      message: message,
+      message,
       data: {
         studentId: student._id,
-        completionStatus: completionStatus
+        completionStatus
       },
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Error updating student",
+      message: 'Error updating student',
       error: error.message,
     });
   }
@@ -541,7 +627,7 @@ async function AddCourseRegistration(req, res) {
     if (isDuplicate) {
       return res.status(403).json({
         success: false,
-        message: "Student already registered for this course with the same batch",
+        message: 'Student already registered for this course with the same batch',
       });
     }
 
@@ -549,13 +635,13 @@ async function AddCourseRegistration(req, res) {
     const batch = await require('../models/batch').findById(batchId);
     const courseSequenceValue = course && batch 
       ? await getAndFormatCourseEnrollmentNumber(course.code, batch.name)
-      : await getNextSequenceValue("course_id_sequence");
+      : await getNextSequenceValue('course_id_sequence');
 
     const student = await Student.findById(studentId);
     if (!student) {
       return res.status(404).json({
         success: false,
-        message: "Student not found",
+        message: 'Student not found',
       });
     }
 
@@ -572,9 +658,9 @@ async function AddCourseRegistration(req, res) {
     }
 
     // Prepare response message based on completion status
-    let message = "Student registered for the course";
+    let message = 'Student registered for the course';
     if (completionStatus.overall === 'completed' && previousStatus !== 'completed') {
-      message = "Student registered for the course. Student registration is now complete!";
+      message = 'Student registered for the course. Student registration is now complete!';
     } else if (completionStatus.overall === 'incomplete') {
       const missingSteps = [];
       if (!completionStatus.step1) missingSteps.push('Personal Details');
@@ -590,19 +676,19 @@ async function AddCourseRegistration(req, res) {
 
     res.status(201).json({
       success: true,
-      message: message,
+      message,
       data: {
         studentId,
         courseId,
         batchId,
-        completionStatus: completionStatus
+        completionStatus
       },
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Error registering student for course",
+      message: 'Error registering student for course',
       error: error.message,
     });
   }
@@ -617,13 +703,13 @@ async function deleteCourseRegistration(req, res) {
     if (!enrollment) {
       return res.status(404).json({
         success: false,
-        message: "Enrollment not found",
+        message: 'Enrollment not found',
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Enrollment deleted successfully",
+      message: 'Enrollment deleted successfully',
       data: {
         courseRegistrationId,
       },
@@ -632,7 +718,7 @@ async function deleteCourseRegistration(req, res) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Error deleting enrollment",
+      message: 'Error deleting enrollment',
       error: error.message,
     });
   }
@@ -749,7 +835,7 @@ async function exportStudents(req, res) {
 
     // Log the export activity
     try {
-    await ActivityLogger.logStudentExport(req.user, exportData.length, requestInfo.ipAddress, requestInfo.userAgent);
+      await ActivityLogger.logStudentExport(req.user, exportData.length, requestInfo.ipAddress, requestInfo.userAgent);
     } catch (logError) {
       console.error('Error logging export activity:', logError);
       // Continue with export even if logging fails
@@ -771,7 +857,7 @@ async function exportStudents(req, res) {
         console.log('Excel file sent successfully');
       } catch (excelError) {
         console.error('Error generating Excel:', excelError);
-        res.status(500).json({ error: "Failed to generate Excel file: " + excelError.message });
+        res.status(500).json({ error: `Failed to generate Excel file: ${  excelError.message}` });
       }
     } else {
       // Default CSV format
@@ -786,12 +872,12 @@ async function exportStudents(req, res) {
         console.log('CSV file sent successfully');
       } catch (csvError) {
         console.error('Error generating CSV:', csvError);
-        res.status(500).json({ error: "Failed to generate CSV file: " + csvError.message });
+        res.status(500).json({ error: `Failed to generate CSV file: ${  csvError.message}` });
       }
     }
   } catch (error) {
     console.error('Error in exportStudents:', error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -828,7 +914,7 @@ async function importStudentsFromExcel(req, res) {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "No file uploaded"
+        message: 'No file uploaded'
       });
     }
 
@@ -845,7 +931,7 @@ async function importStudentsFromExcel(req, res) {
     if (data.length < 2) {
       return res.status(400).json({
         success: false,
-        message: "Excel file must contain at least a header row and one data row"
+        message: 'Excel file must contain at least a header row and one data row'
       });
     }
 
@@ -960,7 +1046,7 @@ async function importStudentsFromExcel(req, res) {
         }
 
         // Create student
-        const sequenceValue = await getNextSequenceValue("unique_id_sequence");
+        const sequenceValue = await getNextSequenceValue('unique_id_sequence');
 
         const student = new Student({
           firstName: studentData.firstName,
@@ -1029,7 +1115,7 @@ async function importStudentsFromExcel(req, res) {
     console.error('Error in importStudentsFromExcel:', error);
     res.status(500).json({
       success: false,
-      message: "Error processing Excel file",
+      message: 'Error processing Excel file',
       error: error.message
     });
   }
