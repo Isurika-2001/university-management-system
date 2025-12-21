@@ -1,8 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, Box, Typography, Grid, Checkbox, FormControlLabel } from '@mui/material';
 
-const StepRequiredDocuments = ({ IconCmp, formBag, requiredDocuments }) => {
+const StepRequiredDocuments = ({ IconCmp, formBag, requiredDocuments, updateStepCompletion }) => {
   const { values, setFieldValue } = formBag;
+
+  // Update completion status when values change
+  useEffect(() => {
+    if (updateStepCompletion) {
+      updateStepCompletion(values);
+    }
+  }, [values.requiredDocuments, updateStepCompletion]);
 
   const required = Array.isArray(requiredDocuments) ? requiredDocuments.filter((d) => d.isRequired) : [];
   const optional = Array.isArray(requiredDocuments) ? requiredDocuments.filter((d) => !d.isRequired) : [];

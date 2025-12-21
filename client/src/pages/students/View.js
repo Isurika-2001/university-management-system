@@ -171,7 +171,7 @@ const View = () => {
   };
 
   const handleViewRow = (id) => {
-    navigate('/app/students/update?id=' + id);
+    navigate(`/app/students/update/${id}`);
   };
 
   const handleClick = () => {

@@ -17,13 +17,7 @@ import {
   Chip,
   Tooltip
 } from '@mui/material';
-import { 
-  EditOutlined, 
-  ArrowUpOutlined, 
-  ArrowDownOutlined,
-  PlusOutlined,
-  DeleteOutlined
-} from '@ant-design/icons';
+import { EditOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import Swal from 'sweetalert2';
@@ -41,7 +35,6 @@ const RequiredDocumentsView = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
-
 
   const navigate = useNavigate();
 
@@ -89,7 +82,7 @@ const RequiredDocumentsView = () => {
     fetchData();
   }, [page, rowsPerPage, debouncedSearchTerm, sortBy, sortOrder]);
 
-    async function fetchData() {
+  async function fetchData() {
     setLoading(true);
 
     try {
@@ -171,8 +164,6 @@ const RequiredDocumentsView = () => {
     return sortOrder === 'asc' ? <ArrowUpOutlined /> : <ArrowDownOutlined />;
   };
 
-
-
   const handleDelete = async (id) => {
     try {
       await requiredDocumentsAPI.delete(id);
@@ -189,22 +180,12 @@ const RequiredDocumentsView = () => {
       <MainCard title="Required Documents Management">
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-            <TextField 
-              label="Search" 
-              variant="outlined" 
-              onChange={handleSearch} 
-              value={searchTerm} 
-              sx={{ width: 300 }} 
-            />
+            <TextField label="Search" variant="outlined" onChange={handleSearch} value={searchTerm} sx={{ width: 300 }} />
           </Box>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-                         <Button 
-               onClick={() => navigate('/app/required-documents/add')} 
-               variant="contained" 
-               startIcon={<PlusOutlined />}
-             >
-               Add Document
-             </Button>
+            <Button onClick={() => navigate('/app/required-documents/add')} variant="contained" startIcon={<PlusOutlined />}>
+              Add Document
+            </Button>
           </Box>
         </Box>
 
@@ -220,13 +201,13 @@ const RequiredDocumentsView = () => {
                   />
                 </TableCell>
                 <TableCell>
-                  <Box 
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
                       cursor: 'pointer',
                       '&:hover': { opacity: 0.7 }
-                    }} 
+                    }}
                     onClick={() => handleSort('name')}
                   >
                     Document Name
@@ -235,68 +216,57 @@ const RequiredDocumentsView = () => {
                     </IconButton>
                   </Box>
                 </TableCell>
-                                 <TableCell>Description</TableCell>
-                 <TableCell>Type</TableCell>
-                 <TableCell>Required</TableCell>
-                 <TableCell>Created Date</TableCell>
-                 <TableCell>Action</TableCell>
+                <TableCell>Description</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>Required</TableCell>
+                <TableCell>Created Date</TableCell>
+                <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
             {loading && <LinearProgress sx={{ width: '100%' }} />}
             <TableBody>
-              {Array.isArray(data) && data.map((document) => (
-                <TableRow key={document._id} selected={isSelected(document._id)}>
-                  <TableCell padding="checkbox">
-                    <Checkbox checked={isSelected(document._id)} onChange={(event) => handleCheckboxClick(event, document._id)} />
-                  </TableCell>
-                                     <TableCell>{document.name}</TableCell>
-                   <TableCell>
-                     <Tooltip title={document.description || 'No description available'}>
-                       <Box sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                         {document.description || 'N/A'}
-                       </Box>
-                     </Tooltip>
-                   </TableCell>
-                   <TableCell>
-                     <Chip 
-                       label={document.type || 'N/A'} 
-                       color="primary" 
-                       variant="outlined" 
-                       size="small" 
-                     />
-                   </TableCell>
-                   <TableCell>
-                     <Chip 
-                       label={document.isRequired ? 'Required' : 'Optional'} 
-                       color={document.isRequired ? 'error' : 'success'} 
-                       variant="outlined" 
-                       size="small" 
-                     />
-                   </TableCell>
-                   <TableCell>
-                     {document.createdAt ? new Date(document.createdAt).toLocaleDateString() : 'N/A'}
-                   </TableCell>
-                  <TableCell>
-                                         <Button
-                       variant="outlined"
-                       style={{ marginRight: '8px' }}
-                       color="primary"
-                       startIcon={<EditOutlined />}
-                       onClick={() => navigate(`/app/required-documents/update?id=${document._id}`)}
-                     >
-                       Edit
-                     </Button>
-                     <Button
-                       variant="outlined"
-                       color="error"
-                       startIcon={<DeleteOutlined />}
-                       onClick={() => handleDelete(document._id)}
-                     >
-                       Delete
-                     </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {Array.isArray(data) &&
+                data.map((document) => (
+                  <TableRow key={document._id} selected={isSelected(document._id)}>
+                    <TableCell padding="checkbox">
+                      <Checkbox checked={isSelected(document._id)} onChange={(event) => handleCheckboxClick(event, document._id)} />
+                    </TableCell>
+                    <TableCell>{document.name}</TableCell>
+                    <TableCell>
+                      <Tooltip title={document.description || 'No description available'}>
+                        <Box sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {document.description || 'N/A'}
+                        </Box>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={document.type || 'N/A'} color="primary" variant="outlined" size="small" />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={document.isRequired ? 'Required' : 'Optional'}
+                        color={document.isRequired ? 'error' : 'success'}
+                        variant="outlined"
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>{document.createdAt ? new Date(document.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outlined"
+                        style={{ marginRight: '8px' }}
+                        color="primary"
+                        startIcon={<EditOutlined />}
+                        onClick={() => navigate(`/app/required-documents/update/${document._id}`)}
+                      >
+                        Edit
+                      </Button>
+                      <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={() => handleDelete(document._id)}>
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </TableContainer>
@@ -309,14 +279,10 @@ const RequiredDocumentsView = () => {
           page={page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-                 />
-         {/* Debug info */}
-         <div style={{ padding: '10px', fontSize: '12px', color: '#666' }}>
-           Debug: Page {page}, Rows per page {rowsPerPage}, Total count {totalCount}, Data length {data.length}
-         </div>
-       </MainCard>
-     </>
-   );
- };
+        />
+      </MainCard>
+    </>
+  );
+};
 
 export default RequiredDocumentsView;

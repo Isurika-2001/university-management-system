@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Field, ErrorMessage } from 'formik';
 import { Card, CardContent, Box, Typography, Grid, TextField } from '@mui/material';
 
-const StepPersonalDetails = ({ IconCmp, formBag }) => {
-  const { errors, touched } = formBag;
+const StepPersonalDetails = ({ IconCmp, formBag, updateStepCompletion }) => {
+  const { errors, touched, values } = formBag;
+
+  // Update completion status when values change
+  useEffect(() => {
+    if (updateStepCompletion) {
+      updateStepCompletion(values);
+    }
+  }, [values.firstName, values.lastName, values.dob, values.nic, values.address, values.mobile, values.email, updateStepCompletion]);
 
   return (
     <Card>

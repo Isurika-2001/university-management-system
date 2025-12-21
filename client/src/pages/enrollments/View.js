@@ -19,14 +19,7 @@ import {
   Select,
   MenuItem
 } from '@mui/material';
-import { 
-  UploadOutlined, 
-  EditOutlined, 
-  ArrowUpOutlined, 
-  ArrowDownOutlined,
-  PlusOutlined,
-  DeleteOutlined
-} from '@ant-design/icons';
+import { UploadOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { useAuthContext } from 'context/useAuthContext';
@@ -311,16 +304,11 @@ const EnrollmentsView = () => {
 
   return (
     <>
-      <MainCard 
+      <MainCard
         title={
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <span>Enrollments Management</span>
-            <Button 
-              onClick={() => navigate('/app/enrollments/add')} 
-              variant="contained" 
-              startIcon={<PlusOutlined />}
-              size="small"
-            >
+            <Button onClick={() => navigate('/app/enrollments/add')} variant="contained" startIcon={<PlusOutlined />} size="small">
               Add Enrollment
             </Button>
           </Box>
@@ -328,20 +316,10 @@ const EnrollmentsView = () => {
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-            <TextField 
-              label="Search" 
-              variant="outlined" 
-              onChange={handleSearch} 
-              value={searchTerm} 
-              sx={{ width: 300 }} 
-            />
+            <TextField label="Search" variant="outlined" onChange={handleSearch} value={searchTerm} sx={{ width: 300 }} />
             <FormControl sx={{ minWidth: 200 }}>
               <InputLabel>Filter by Course</InputLabel>
-              <Select
-                value={courseFilter}
-                label="Filter by Course"
-                onChange={(e) => setCourseFilter(e.target.value)}
-              >
+              <Select value={courseFilter} label="Filter by Course" onChange={(e) => setCourseFilter(e.target.value)}>
                 <MenuItem value="">All Courses</MenuItem>
                 {courses.map((course) => (
                   <MenuItem key={course._id} value={course._id}>
@@ -368,20 +346,20 @@ const EnrollmentsView = () => {
             </FormControl>
           </Box>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-            <Button 
-              variant="outlined" 
-              color="success" 
-              onClick={exportToCSV} 
+            <Button
+              variant="outlined"
+              color="success"
+              onClick={exportToCSV}
               startIcon={<UploadOutlined />}
               size="small"
               // style={{ display: 'none' }}
             >
               CSV
             </Button>
-            <Button 
-              variant="outlined" 
-              color="primary" 
-              onClick={exportToExcel} 
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={exportToExcel}
               startIcon={<UploadOutlined />}
               size="small"
               // style={{ display: 'none' }}
@@ -403,13 +381,13 @@ const EnrollmentsView = () => {
                   />
                 </TableCell>
                 <TableCell>
-                  <Box 
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
                       cursor: 'pointer',
                       '&:hover': { opacity: 0.7 }
-                    }} 
+                    }}
                     onClick={() => handleSort('enrollment_no')}
                   >
                     Enrollment No
@@ -419,13 +397,13 @@ const EnrollmentsView = () => {
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Box 
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
                       cursor: 'pointer',
                       '&:hover': { opacity: 0.7 }
-                    }} 
+                    }}
                     onClick={() => handleSort('studentName')}
                   >
                     Student Name
@@ -449,28 +427,30 @@ const EnrollmentsView = () => {
                     <Checkbox checked={isSelected(enrollment._id)} onChange={(event) => handleCheckboxClick(event, enrollment._id)} />
                   </TableCell>
                   <TableCell>{enrollment.enrollment_no}</TableCell>
-                  <TableCell>{enrollment.student?.firstName} {enrollment.student?.lastName}</TableCell>
-                  <TableCell>{enrollment.student?.nic}</TableCell>
-                  <TableCell>{enrollment.course?.name}</TableCell>
-                  <TableCell>{enrollment.batch?.name}</TableCell>
                   <TableCell>
-                    {enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate).toLocaleDateString() : 'N/A'}
+                    {enrollment.student?.firstName} {enrollment.student?.lastName}
                   </TableCell>
+                  <TableCell>{enrollment.student?.nic}</TableCell>
+                  <TableCell>{enrollment.course?.code}</TableCell>
+                  <TableCell>{enrollment.batch?.name}</TableCell>
+                  <TableCell>{enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate).toLocaleDateString() : 'N/A'}</TableCell>
                   <TableCell>
                     <Button
                       variant="outlined"
                       style={{ marginRight: '8px' }}
                       color="primary"
                       startIcon={<EditOutlined />}
-                      onClick={() => navigate(`/app/enrollments/update?id=${enrollment.studentId}`)}
+                      onClick={() => navigate(`/app/enrollments/update/${enrollment.studentId}`)}
                     >
-                      Manage Enrollment
+                      Manage
                     </Button>
                     <Button
                       variant="outlined"
                       color="error"
                       startIcon={<DeleteOutlined />}
-                      onClick={() => {/* Handle delete */}}
+                      onClick={() => {
+                        /* Handle delete */
+                      }}
                     >
                       Delete
                     </Button>
@@ -490,10 +470,6 @@ const EnrollmentsView = () => {
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
-        {/* Debug info */}
-        <div style={{ padding: '10px', fontSize: '12px', color: '#666' }}>
-          Debug: Page {page}, Rows per page {rowsPerPage}, Total count {totalCount}, Data length {data.length}
-        </div>
       </MainCard>
     </>
   );

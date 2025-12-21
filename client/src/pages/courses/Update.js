@@ -1,5 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Box, TextField, Button, Grid, Divider, Typography, CircularProgress, LinearProgress } from '@mui/material';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Box,
+  TextField,
+  Button,
+  Grid,
+  Divider,
+  Typography,
+  CircularProgress,
+  LinearProgress,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Checkbox
+} from '@mui/material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
@@ -7,18 +20,16 @@ import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
-import { useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 const UpdateCourseForm = () => {
   const [loading, setLoading] = useState([]);
   const [batchData, setBatchData] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [initialValues, setInitialValues] = useState(null);
+  const [, setTotalRows] = useState(0);
   const { user } = useAuthContext();
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-
-  const courseId = queryParams.get('id');
+  const { id: courseId } = useParams();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -38,16 +49,24 @@ const UpdateCourseForm = () => {
     Toast.fire({ icon: 'success', title: msg });
   };
 
-  const showErrorSwal = (msg) => {
-    Toast.fire({ icon: 'error', title: msg });
-  };
+  const showErrorSwal = useCallback(
+    (msg) => {
+      Toast.fire({ icon: 'error', title: msg });
+    },
+    [Toast]
+  );
 
   const validationSchema = Yup.object().shape({
     name: Yup.string().required('Name is required'),
     code: Yup.string()
       .required('Course code is required')
       .matches(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers, and underscores'),
-    description: Yup.string().required('Description is required')
+    description: Yup.string().required('Description is required'),
+    prerequisites: Yup.string().required('Prerequisites are required'),
+    courseCredits: Yup.number().min(1, 'Course credits must be at least 1').required('Course credits are required'),
+    courseDuration: Yup.string().required('Course duration is required'),
+    weekdayBatch: Yup.boolean(),
+    weekendBatch: Yup.boolean()
   });
 
   // Fetch existing course data
@@ -62,8 +81,17 @@ const UpdateCourseForm = () => {
         });
         const data = await res.json();
         if (res.ok && data?.data) {
-          const { name, code, description } = data.data;
-          setInitialValues({ name, code, description });
+          const { name, code, description, prerequisites, courseCredits, courseDuration, weekdayBatch, weekendBatch } = data.data;
+          setInitialValues({
+            name,
+            code,
+            description,
+            prerequisites,
+            courseCredits,
+            courseDuration,
+            weekdayBatch,
+            weekendBatch
+          });
         } else {
           showErrorSwal('Failed to load course');
         }
@@ -74,11 +102,37 @@ const UpdateCourseForm = () => {
     };
 
     if (courseId) fetchCourse();
+  }, [courseId, user.token, showErrorSwal]);
+
+  const fetchBatchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      const courseFilter = courseId;
+      if (courseFilter) params.append('courseId', courseFilter);
+
+      const response = await fetch(`${apiRoutes.batchRoute}?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${user.token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch batches');
+
+      const result = await response.json();
+
+      setBatchData(result.data || []);
+      setTotalRows(result.total || 0);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   }, [courseId, user.token]);
 
   useEffect(() => {
     fetchBatchData();
-  }, [courseId]);
+  }, [fetchBatchData]);
 
   const handleSubmit = async (values) => {
     try {
@@ -105,32 +159,6 @@ const UpdateCourseForm = () => {
       showErrorSwal('Unexpected error');
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const fetchBatchData = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      const courseFilter = courseId;
-      if (courseFilter) params.append('courseId', courseFilter);
-
-      const response = await fetch(`${apiRoutes.batchRoute}?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        }
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch batches');
-
-      const result = await response.json();
-
-      setBatchData(result.data || []);
-      setTotalRows(result.total || 0);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -225,6 +253,95 @@ const UpdateCourseForm = () => {
                       }}
                       sx={{ mb: 3 }}
                     />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field
+                      as={TextField}
+                      label="Prerequisites"
+                      variant="outlined"
+                      name="prerequisites"
+                      fullWidth
+                      error={touched.prerequisites && !!errors.prerequisites}
+                      helperText={<ErrorMessage name="prerequisites" />}
+                      InputProps={{
+                        sx: { px: 2, py: 1 }
+                      }}
+                      sx={{ mb: 3 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field
+                      as={TextField}
+                      label="Course Credits"
+                      variant="outlined"
+                      type="number"
+                      name="courseCredits"
+                      fullWidth
+                      error={touched.courseCredits && !!errors.courseCredits}
+                      helperText={<ErrorMessage name="courseCredits" />}
+                      InputProps={{
+                        sx: { px: 2, py: 1 }
+                      }}
+                      sx={{ mb: 3 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="courseDuration">
+                      {({ field, form }) => (
+                        <Select
+                          {...field}
+                          displayEmpty
+                          variant="outlined"
+                          fullWidth
+                          error={form.touched.courseDuration && !!form.errors.courseDuration}
+                          sx={{ mb: 3, minHeight: '3.5rem' }}
+                        >
+                          <MenuItem value="" disabled>
+                            Course Duration
+                          </MenuItem>
+                          <MenuItem value="6 months">6 Months</MenuItem>
+                          <MenuItem value="9 months">9 Months</MenuItem>
+                          <MenuItem value="12 months">12 Months</MenuItem>
+                          <MenuItem value="15 months">15 Months</MenuItem>
+                          <MenuItem value="18 months">18 Months</MenuItem>
+                          <MenuItem value="24 months">24 Months</MenuItem>
+                        </Select>
+                      )}
+                    </Field>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="weekdayBatch">
+                      {({ field, form }) => (
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              {...field}
+                              checked={field.value}
+                              onChange={(e) => form.setFieldValue('weekdayBatch', e.target.checked)}
+                            />
+                          }
+                          label="Weekday Batch Available"
+                          sx={{ mb: 3 }}
+                        />
+                      )}
+                    </Field>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="weekendBatch">
+                      {({ field, form }) => (
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              {...field}
+                              checked={field.value}
+                              onChange={(e) => form.setFieldValue('weekendBatch', e.target.checked)}
+                            />
+                          }
+                          label="Weekend Batch Available"
+                          sx={{ mb: 3 }}
+                        />
+                      )}
+                    </Field>
                   </Grid>
                 </Grid>
 

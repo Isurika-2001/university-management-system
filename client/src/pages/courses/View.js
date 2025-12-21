@@ -155,7 +155,7 @@ const View = () => {
 
   const handleViewRow = (id) => {
     // Navigate to detailed view of the row with provided id
-    navigate('/app/courses/update?id=' + id);
+    navigate(`/app/courses/update/${id}`);
   };
 
   const handleDelete = async (id) => {
@@ -221,28 +221,18 @@ const View = () => {
   // };
 
   return (
-    <MainCard 
+    <MainCard
       title={
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <span>Course List</span>
-          <Button 
-            onClick={handleClickAddNew} 
-            variant="contained" 
-            startIcon={<FileAddOutlined />}
-            size="small"
-          >
+          <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />} size="small">
             Add Course
           </Button>
         </Box>
       }
     >
       <Box sx={{ marginBottom: 2 }}>
-        <TextField 
-          label="Search" 
-          variant="outlined" 
-          onChange={handleSearch}
-          sx={{ minWidth: 300, maxWidth: 400 }}
-        />
+        <TextField label="Search" variant="outlined" onChange={handleSearch} sx={{ minWidth: 300, maxWidth: 400 }} />
       </Box>
       <TableContainer component={Paper}>
         <Table>

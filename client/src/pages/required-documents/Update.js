@@ -13,7 +13,7 @@ import {
   CircularProgress,
   Skeleton
 } from '@mui/material';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
@@ -27,9 +27,7 @@ const UpdateRequiredDocument = () => {
   const [error, setError] = useState('');
   const [documentData, setDocumentData] = useState(null);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
-  const documentId = searchParams.get('id');
+  const { id: documentId } = useParams();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -69,8 +67,7 @@ const UpdateRequiredDocument = () => {
       .required('Description is required')
       .min(10, 'Description must be at least 10 characters')
       .max(500, 'Description must be less than 500 characters'),
-    type: Yup.string()
-      .required('Document type is required'),
+    type: Yup.string().required('Document type is required'),
     isRequired: Yup.boolean()
   });
 
@@ -85,11 +82,11 @@ const UpdateRequiredDocument = () => {
     const fetchDocument = async () => {
       try {
         const result = await requiredDocumentsAPI.getById(documentId);
-        
+
         if (!result) {
           throw new Error('No document data received');
         }
-        
+
         setDocumentData(result);
       } catch (err) {
         console.error('Error fetching document:', err);
@@ -117,19 +114,18 @@ const UpdateRequiredDocument = () => {
       setError('');
 
       try {
-        
         showSuccessSwal('Required document updated successfully!');
         navigate('/app/required-documents');
       } catch (err) {
         console.error('Error updating required document:', err);
-        
+
         let errorMessage = 'Network error. Please try again.';
         if (err.message) {
           errorMessage = err.message;
         } else if (err.response && err.response.data && err.response.data.message) {
           errorMessage = err.response.data.message;
         }
-        
+
         setError(errorMessage);
         showErrorSwal(errorMessage);
       } finally {
@@ -137,8 +133,6 @@ const UpdateRequiredDocument = () => {
       }
     }
   });
-
-
 
   const handleCancel = () => {
     navigate('/app/required-documents');
@@ -177,9 +171,7 @@ const UpdateRequiredDocument = () => {
     return (
       <MainCard title="Update Required Document">
         <Box sx={{ p: 3 }}>
-          <Alert severity="error">
-            Document ID is required. Please go back and select a document to edit.
-          </Alert>
+          <Alert severity="error">Document ID is required. Please go back and select a document to edit.</Alert>
           <Box sx={{ mt: 2 }}>
             <Button variant="outlined" onClick={handleCancel}>
               Back to Documents
@@ -198,8 +190,6 @@ const UpdateRequiredDocument = () => {
             {error}
           </Alert>
         )}
-
-
 
         <form onSubmit={formik.handleSubmit}>
           <Grid container spacing={3}>
@@ -237,9 +227,7 @@ const UpdateRequiredDocument = () => {
                   <MenuItem value="medical">Medical</MenuItem>
                   <MenuItem value="other">Other</MenuItem>
                 </Select>
-                {formik.touched.type && formik.errors.type && (
-                  <FormHelperText>{formik.errors.type}</FormHelperText>
-                )}
+                {formik.touched.type && formik.errors.type && <FormHelperText>{formik.errors.type}</FormHelperText>}
               </FormControl>
             </Grid>
 
@@ -276,21 +264,13 @@ const UpdateRequiredDocument = () => {
                   <MenuItem value={true}>Required</MenuItem>
                   <MenuItem value={false}>Optional</MenuItem>
                 </Select>
-                {formik.touched.isRequired && formik.errors.isRequired && (
-                  <FormHelperText>{formik.errors.isRequired}</FormHelperText>
-                )}
+                {formik.touched.isRequired && formik.errors.isRequired && <FormHelperText>{formik.errors.isRequired}</FormHelperText>}
               </FormControl>
             </Grid>
 
-
-
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                <Button
-                  variant="outlined"
-                  onClick={handleCancel}
-                  disabled={submitting}
-                >
+                <Button variant="outlined" onClick={handleCancel} disabled={submitting}>
                   Cancel
                 </Button>
                 <Button
