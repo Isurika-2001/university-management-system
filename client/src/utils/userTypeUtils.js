@@ -81,12 +81,29 @@ export const getDisplayName = (userTypeName) => {
  * @returns {boolean} - Whether user has permission
  */
 export const hasPermission = (user, resource, action) => {
-  if (!user || !user.permissions || !user.permissions[resource]) {
-    return false;
+  if (!user) return false;
+
+  // Try common locations for permissions
+  let permissions = undefined;
+  if (user.permissions && user.permissions[resource] !== undefined) permissions = user.permissions[resource];
+  else if (user.userType && user.userType[resource] !== undefined) permissions = user.userType[resource];
+  else if (user.user_type && user.user_type[resource] !== undefined) permissions = user.user_type[resource];
+
+  if (permissions === undefined || permissions === null) return false;
+
+  // If it's an array
+  if (Array.isArray(permissions)) return permissions.includes(action);
+
+  // If it's a string like 'CRUD'
+  if (typeof permissions === 'string') return permissions.includes(action);
+
+  // If it's an object, try to extract string-ish values and check
+  if (typeof permissions === 'object') {
+    const joined = Object.values(permissions).filter(Boolean).join('');
+    return joined.includes(action);
   }
-  
-  const permissions = user.permissions[resource];
-  return permissions.includes(action);
+
+  return false;
 };
 
 /**

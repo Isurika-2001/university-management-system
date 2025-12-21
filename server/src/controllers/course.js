@@ -13,9 +13,9 @@ async function getAllCourses(req, res) {
 }
 
 async function createCourse(req, res) {
-  const { 
-    name, 
-    code, 
+  const {
+    name,
+    code,
     description,
     // New fields
     prerequisites,
@@ -23,6 +23,7 @@ async function createCourse(req, res) {
     courseDuration,
     weekdayBatch,
     weekendBatch,
+    pathway
   } = req.body;
 
   try {
@@ -46,10 +47,15 @@ async function createCourse(req, res) {
       });
     }
 
+    if (!pathway) {
+      return res.status(400).json({ success: false, message: 'Pathway is required' });
+    }
+
     const course = new Course({ 
       name, 
       code, 
       description,
+      pathway,
       // New fields
       prerequisites,
       courseCredits,
@@ -137,6 +143,8 @@ async function editCourse(req, res) {
     existingCourse.name = name || existingCourse.name;
     existingCourse.code = code || existingCourse.code;
     existingCourse.description = description || existingCourse.description;
+    // update pathway if provided
+    if (req.body.pathway !== undefined) existingCourse.pathway = req.body.pathway;
     // Update new fields
     existingCourse.prerequisites = prerequisites || existingCourse.prerequisites;
     existingCourse.courseCredits = courseCredits || existingCourse.courseCredits;

@@ -22,12 +22,16 @@ export const apiRoutes = {
   batchRoute: `${config.apiUrl}batch/`,
   enrollmentRoute: `${config.apiUrl}enrollment/`,
   requiredDocumentRoute: `${config.apiUrl}required-document/`,
+  modulesRoute: `${config.apiUrl}module/`,
+  classroomRoute: `${config.apiUrl}classroom/`,
   userTypeRoute: `${config.apiUrl}user-type/`,
   userRoute: `${config.apiUrl}user/`,
   authRoute: `${config.apiUrl}auth/`,
   bulkUploadRoute: `${config.apiUrl}bulk-upload/`,
   statRoute: `${config.apiUrl}stats/`,
   activityLogsRoute: `${config.apiUrl}activity-logs/`
+  ,
+  examRoute: `${config.apiUrl}exam/`
 };
 
 export default config;

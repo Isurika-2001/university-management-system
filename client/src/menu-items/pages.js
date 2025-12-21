@@ -54,6 +54,27 @@ const pages = {
       url: '/app/courses',
       icon: icons.AppstoreOutlined
     },
+      {
+        id: 'modules',
+        title: 'Modules',
+        type: 'item',
+        url: '/app/modules',
+        icon: icons.BranchesOutlined
+      },
+    {
+      id: 'classrooms',
+      title: 'Classrooms',
+      type: 'item',
+      url: '/app/classrooms',
+      icon: icons.BranchesOutlined
+    },
+    {
+      id: 'exams',
+      title: 'Exams',
+      type: 'item',
+      url: '/app/exams',
+      icon: icons.FileAddOutlined
+    },
     {
       id: 'intakes',
       title: 'Intakes',

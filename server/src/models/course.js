@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
-
-// Import the required modules
+const { PATHWAYS } = require('../config/pathways');
 
 // Define the course schema
 const courseSchema = new mongoose.Schema({
@@ -18,6 +17,12 @@ const courseSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  // Pathway (required) -> stored as numeric id from PATHWAYS
+  pathway: {
+    type: Number,
+    required: true,
+    enum: [PATHWAYS.HD, PATHWAYS.DIP, PATHWAYS.FOUNDATION, PATHWAYS.TOPUP]
+  },
   // New fields
   prerequisites: {
     type: String,
@@ -31,7 +36,14 @@ const courseSchema = new mongoose.Schema({
   courseDuration: {
     type: String,
     required: true,
-    enum: ['3 months', '6 months', '1 year', '2 years', '3 years', '4 years', 'Other'],
+    enum: [
+      '6 months',
+      '9 months',
+      '12 months',
+      '15 months',
+      '18 months',
+      '24 months'
+    ],
   },
   weekdayBatch: {
     type: Boolean,

@@ -9,7 +9,8 @@
     "test": "jest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "db:clear": "node scripts/clearDatabase.js"
+    "db:clear": "node scripts/clearDatabase.js",
+    "seed": "node migrations/run_all.js"
   },
   "keywords": [
     "university",

@@ -18,6 +18,20 @@ const user_typeSchema = new mongoose.Schema({
   finance: String,
   reports: String,
   requiredDocument: String,
+
+  // ✅ Newly added permission fields
+  classrooms: {
+    type: String,
+    default: "NONE",
+  },
+  modules: {
+    type: String,
+    default: "NONE",
+  },
+  exams: {
+    type: String,
+    default: "NONE",
+  },
 }, {
   timestamps: true,
 });

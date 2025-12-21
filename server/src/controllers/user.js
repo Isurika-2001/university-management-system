@@ -194,6 +194,9 @@ async function login(req, res) {
       finance: userType.finance,
       reports: userType.reports,
       requiredDocument: userType.requiredDocument,
+      classrooms: userType.classrooms,
+      modules: userType.modules,
+      exams: userType.exams
     };
 
     // Include jwtVersion in payload

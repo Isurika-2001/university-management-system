@@ -270,7 +270,14 @@ const UpdateStudent = () => {
       .required('Contact No is required'),
     homeContact: Yup.string().matches(/^\+?\d{10,12}$/, 'Contact No should be 10 to 12 digits with an optional leading + sign'),
     email: Yup.string().email('Invalid email format').required('Email is required'),
-    enrollments: Yup.array(),
+    enrollments: Yup.array()
+      .of(
+        Yup.object().shape({
+          courseId: Yup.string().required('Course is required'),
+          batchId: Yup.string().required('Intake is required'),
+          classroomId: Yup.string().required('Classroom is required')
+        })
+      ),
     paymentSchema: Yup.object().shape({
       courseFee: Yup.number()
         .transform((v, o) => (o === '' || o === null ? undefined : Number(o)))
