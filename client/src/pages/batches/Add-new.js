@@ -88,12 +88,7 @@ const AddForm = () => {
 
   return (
     <MainCard title="Add New Intake">
-      <Formik
-        initialValues={initialValues}
-        validationSchema={validationSchema}
-        onSubmit={handleSubmit}
-        onChange={undefined}
-      >
+      <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit} onChange={undefined}>
         {({ errors, touched }) => (
           <Form>
             <Grid container direction="column" justifyContent="center">
