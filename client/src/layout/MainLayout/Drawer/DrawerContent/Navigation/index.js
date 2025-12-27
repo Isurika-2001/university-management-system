@@ -3,6 +3,7 @@ import { Box, Typography } from '@mui/material';
 
 // project import
 import NavGroup from './NavGroup';
+import NavCollapse from './NavCollapse';
 import MenuItems from 'menu-items';
 
 // ==============================|| DRAWER CONTENT - NAVIGATION ||============================== //
@@ -13,6 +14,8 @@ const Navigation = () => {
     switch (item.type) {
       case 'group':
         return <NavGroup key={item.id} item={item} />;
+      case 'collapse':
+        return <NavCollapse key={item.id} item={item} level={0} defaultExpanded={item.defaultExpanded || false} />;
       default:
         return (
           <Typography key={item.id} variant="h6" color="error" align="center">
