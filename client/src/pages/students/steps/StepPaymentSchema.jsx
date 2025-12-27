@@ -158,7 +158,7 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled, updateStepComple
         {selectedCourses.length === 0 && (
           <Box sx={{ my: 3 }}>
             <Typography color="error" variant="body1">
-              Please select at least one course in the Course Details step to configure payment schemas.
+              Please add an enrollment first, This student is not enrolled in any courses.
             </Typography>
           </Box>
         )}

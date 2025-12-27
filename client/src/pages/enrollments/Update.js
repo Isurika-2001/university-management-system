@@ -15,7 +15,7 @@ import { enrollmentsAPI } from '../../api/enrollments';
 import { coursesAPI } from '../../api/courses';
 import { batchesAPI } from '../../api/batches';
 import { classroomAPI } from '../../api/classrooms';
-import ClassroomHistory from '../../components/ClassroomHistory';
+import ClassroomHistory from '../classrooms/ClassroomHistory';
 import { PATHWAY_LIST } from '../../constants/pathways';
 
 const UpdateForm = () => {
@@ -23,14 +23,14 @@ const UpdateForm = () => {
   const [enrollments, setEnrollments] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]);
   const [allCourseOptions, setAllCourseOptions] = useState([]);
-  const [batchOptions, setBatchOptions] = useState([]);
+  const [intakeOptions, setIntakeOptions] = useState([]);
   const [classroomOptions, setClassroomOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [selectedPathway, setSelectedPathway] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('');
-  const [selectedBatch, setSelectedBatch] = useState('');
+  const [selectedIntake, setSelectedIntake] = useState('');
   const [openTransferDialog, setOpenTransferDialog] = useState(false);
   const [selectedEnrollment, setSelectedEnrollment] = useState(null);
   const [transferData, setTransferData] = useState({
@@ -89,14 +89,14 @@ const UpdateForm = () => {
   }, [selectedPathway, allCourseOptions]);
 
   useEffect(() => {
-    fetchBatches(selectedCourse);
+    fetchIntakes(selectedCourse);
   }, [selectedCourse]);
 
   useEffect(() => {
-    if (selectedCourse && selectedBatch) {
-      fetchClassrooms(selectedCourse, selectedBatch);
+    if (selectedCourse && selectedIntake) {
+      fetchClassrooms(selectedCourse, selectedIntake);
     }
-  }, [selectedCourse, selectedBatch]);
+  }, [selectedCourse, selectedIntake]);
 
   async function fetchData() {
     setLoading(true);
@@ -155,27 +155,27 @@ const UpdateForm = () => {
     }
   }
 
-  async function fetchBatches(courseId) {
+  async function fetchIntakes(courseId) {
     if (!courseId) {
-      setBatchOptions([]);
+      setIntakeOptions([]);
       return;
     }
     try {
       const response = await batchesAPI.getByCourseId(courseId);
-      setBatchOptions(response.data || response || []);
+      setIntakeOptions(response.data || response || []);
     } catch (error) {
       console.error('Error fetching intakes:', error);
-      setBatchOptions([]);
+      setIntakeOptions([]);
     }
   }
 
-  async function fetchClassrooms(courseId, batchId) {
-    if (!courseId || !batchId) {
+  async function fetchClassrooms(courseId, intakeId) {
+    if (!courseId || !intakeId) {
       setClassroomOptions([]);
       return;
     }
     try {
-      const response = await classroomAPI.getByCourseAndBatch(courseId, batchId);
+      const response = await classroomAPI.getByCourseAndBatch(courseId, intakeId);
       setClassroomOptions(response || []);
     } catch (error) {
       console.error('Error fetching classrooms:', error);
@@ -198,7 +198,7 @@ const UpdateForm = () => {
       setOpen(false);
       setSelectedPathway('');
       setSelectedCourse('');
-      setSelectedBatch('');
+      setSelectedIntake('');
       fetchEnrollments();
     } catch (error) {
       console.error('Enrollment creation error:', error);
@@ -232,7 +232,7 @@ const UpdateForm = () => {
     setOpenTransferDialog(true);
 
     if (enrollment.courseId) {
-      await fetchBatches(enrollment.courseId);
+      await fetchIntakes(enrollment.courseId);
     }
   };
 
@@ -515,18 +515,18 @@ const UpdateForm = () => {
                     <FormControl fullWidth>
                       <InputLabel>Intake</InputLabel>
                       <Select
-                        value={selectedBatch}
+                        value={selectedIntake}
                         onChange={(e) => {
-                          setSelectedBatch(e.target.value);
+                          setSelectedIntake(e.target.value);
                           setFieldValue('batchId', e.target.value);
                           setFieldValue('classroomId', '');
                         }}
                         error={touched.batchId && !!errors.batchId}
                         disabled={!selectedCourse}
                       >
-                        {batchOptions.map((batch) => (
-                          <MenuItem key={batch._id} value={batch._id}>
-                            {batch.name}
+                        {intakeOptions.map((intake) => (
+                          <MenuItem key={intake._id} value={intake._id}>
+                            {intake.name}
                           </MenuItem>
                         ))}
                       </Select>
@@ -543,7 +543,7 @@ const UpdateForm = () => {
                           setFieldValue('classroomId', e.target.value);
                         }}
                         error={touched.classroomId && !!errors.classroomId}
-                        disabled={!selectedBatch}
+                        disabled={!selectedIntake}
                       >
                         {classroomOptions.map((classroom) => (
                           <MenuItem key={classroom._id} value={classroom._id}>
@@ -596,9 +596,9 @@ const UpdateForm = () => {
                 label="New Intake"
                 onChange={(e) => setTransferData({ ...transferData, batchId: e.target.value })}
               >
-                {batchOptions.map((batch) => (
-                  <MenuItem key={batch._id} value={batch._id}>
-                    {batch.name}
+                {intakeOptions.map((intake) => (
+                  <MenuItem key={intake._id} value={intake._id}>
+                    {intake.name}
                   </MenuItem>
                 ))}
               </Select>

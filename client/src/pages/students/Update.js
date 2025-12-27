@@ -140,6 +140,16 @@ const UpdateStudent = () => {
     });
     console.log('Payment schema:', paymentSchema);
 
+    // Prepare course info for the payment schema step
+    const selectedCourses = studentEnrollments.map((enr) => enr.courseId?._id || enr.courseId).filter(Boolean);
+    const courseInfoById = {};
+    studentEnrollments.forEach((enr) => {
+      if (enr.courseId) {
+        const id = enr.courseId._id || enr.courseId;
+        courseInfoById[id] = { name: enr.courseId.name };
+      }
+    });
+
     const initialValues = {
       // Step 1 - Personal Details
       firstName: studentData.firstName || '',
@@ -157,6 +167,8 @@ const UpdateStudent = () => {
 
       // Step 3 - Payment Schema
       paymentSchema: paymentSchema,
+      selectedCourses: selectedCourses,
+      courseInfoById: courseInfoById,
 
       // Step 4 - Academic Details
       highestAcademicQualification: studentData.highestAcademicQualification || '',
@@ -188,7 +200,7 @@ const UpdateStudent = () => {
 
         case 1: {
           // Payment Schema
-          // Check if at least one course has a complete payment schema
+          // Check if all courses have a complete payment schema
           const studentEnrollments = studentData.enrollments || [];
           const selectedCourses = studentEnrollments.map((enr) => enr.courseId._id || enr.courseId);
           console.log('Update - Payment Schema - selectedCourses:', selectedCourses);
@@ -197,8 +209,8 @@ const UpdateStudent = () => {
           const paymentSchemas = values.paymentSchema || {};
           console.log('Update - Payment Schema - paymentSchemas:', paymentSchemas);
 
-          // Check if any course has a complete payment schema
-          const result = selectedCourses.some((courseId) => {
+          // Check if all courses have a complete payment schema
+          const result = selectedCourses.every((courseId) => {
             const schema = paymentSchemas[courseId] || {};
             console.log(`Update - Payment Schema - checking course ${courseId}:`, schema);
             const requiredFields = ['courseFee', 'downPayment', 'numberOfInstallments', 'installmentStartDate', 'paymentFrequency'];
@@ -441,9 +453,7 @@ const UpdateStudent = () => {
         stepErrors.paymentSchema = 'Please select at least one course';
       } else {
         const paymentSchemas = values.paymentSchema || {};
-        let hasValidPaymentSchema = false;
-
-        selectedCourses.forEach((courseId) => {
+        const hasValidPaymentSchema = selectedCourses.every((courseId) => {
           const schema = paymentSchemas[courseId] || {};
           const requiredFields = ['courseFee', 'downPayment', 'numberOfInstallments', 'installmentStartDate', 'paymentFrequency'];
           const allFieldsFilled = requiredFields.every((field) => {
@@ -453,10 +463,7 @@ const UpdateStudent = () => {
           const discountValid =
             !schema.isDiscountApplicable ||
             (schema.discountValue && schema.discountValue !== '' && schema.discountType && schema.discountType !== '');
-
-          if (allFieldsFilled && discountValid) {
-            hasValidPaymentSchema = true;
-          }
+          return allFieldsFilled && discountValid;
         });
 
         if (!hasValidPaymentSchema) {
@@ -548,7 +555,7 @@ const UpdateStudent = () => {
         stepErrors.push({ step: 1, errors: ['paymentSchema'] });
       } else {
         const paymentSchemas = values.paymentSchema || {};
-        const hasValidPaymentSchema = selectedCourses.some((courseId) => {
+        const hasValidPaymentSchema = selectedCourses.every((courseId) => {
           const schema = paymentSchemas[courseId] || {};
           const requiredFields = ['courseFee', 'downPayment', 'numberOfInstallments', 'installmentStartDate', 'paymentFrequency'];
           const allFieldsFilled = requiredFields.every((field) => {
