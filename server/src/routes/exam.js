@@ -17,4 +17,7 @@ router.get('/:id', examController.getExam);
 // Add mark (take) for student
 router.post('/:id/mark', examController.addMark);
 
+// Update mark for a take
+router.put('/mark/:examMarkId/take/:takeId', examController.updateMark);
+
 module.exports = router;

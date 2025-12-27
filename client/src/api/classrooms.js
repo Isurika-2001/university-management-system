@@ -11,14 +11,18 @@ export const classroomAPI = {
     return api.get(`${apiRoutes.classroomRoute}${id}`);
   },
 
+  getByCourseAndBatch: async (courseId, batchId) => {
+    return api.get(`${apiRoutes.classroomRoute}course/${courseId}/batch/${batchId}`);
+  },
+
   // Create classroom
   create: async (data) => {
     return api.post(apiRoutes.classroomRoute, data);
   },
 
   // Get eligible classrooms for a student
-  getEligibleClassrooms: async (enrollmentId, currentClassroomId) => {
-    return api.post(`${apiRoutes.classroomRoute}${enrollmentId}/eligible`, { currentClassroomId });
+  getEligibleClassrooms: async (enrollmentId) => {
+    return api.get(`${apiRoutes.classroomRoute}eligible/${enrollmentId}`);
   },
 
   // Add student to classroom

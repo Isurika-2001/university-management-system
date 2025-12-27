@@ -174,18 +174,16 @@ const AddStudent = () => {
 
       case 2: {
         // Payment Schema
-        // Check if at least one course has a complete payment schema
-        const selectedCourses = values.selectedCourses || [];
-        console.log('Payment Schema - selectedCourses:', selectedCourses);
+        // Support both legacy `selectedCourses` and new single-enrollment pattern using `enrollments[0]`
+        const enrollmentCourseId = values.enrollments?.[0]?.courseId;
+        const selectedCourses = values.selectedCourses || (enrollmentCourseId ? [enrollmentCourseId] : []);
         if (selectedCourses.length === 0) return false;
 
         const paymentSchemas = values.paymentSchema || {};
-        console.log('Payment Schema - paymentSchemas:', paymentSchemas);
 
         // Check if any course has a complete payment schema
         const result = selectedCourses.some((courseId) => {
           const schema = paymentSchemas[courseId] || {};
-          console.log(`Payment Schema - checking course ${courseId}:`, schema);
           const requiredFields = ['courseFee', 'downPayment', 'numberOfInstallments', 'installmentStartDate', 'paymentFrequency'];
 
           // Check all required fields are filled
@@ -199,11 +197,9 @@ const AddStudent = () => {
             !schema.isDiscountApplicable ||
             (schema.discountValue && schema.discountValue !== '' && schema.discountType && schema.discountType !== '');
 
-          const isComplete = allFieldsFilled && discountValid;
-          console.log(`Payment Schema - course ${courseId} complete:`, isComplete, { allFieldsFilled, discountValid });
-          return isComplete;
+          return allFieldsFilled && discountValid;
         });
-        console.log('Payment Schema - overall result:', result);
+
         return result;
       }
 
@@ -250,6 +246,11 @@ const AddStudent = () => {
     }
     console.log('Step completion status:', newStatus);
     setStepCompletionStatus(newStatus);
+  };
+
+  // Allow child steps to mark a single step completed immediately
+  const setStepCompleted = (index, value) => {
+    setStepCompletionStatus((prev) => ({ ...prev, [index]: !!value }));
   };
 
   // Custom StepIcon component to show completion status
@@ -429,6 +430,11 @@ const AddStudent = () => {
 
   const handleBack = () => setActiveStep((s) => s - 1);
 
+  // Reset nextDisabled when active step changes (e.g., when going back)
+  useEffect(() => {
+    setNextDisabled(false);
+  }, [activeStep]);
+
   const handleSubmitForm = async (values) => {
     try {
       setSubmitting(true);
@@ -542,6 +548,7 @@ const AddStudent = () => {
             formBag={formBag}
             setNextDisabled={setNextDisabled}
             updateStepCompletion={updateStepCompletion}
+            setStepCompleted={setStepCompleted}
           />
         );
       case 3:

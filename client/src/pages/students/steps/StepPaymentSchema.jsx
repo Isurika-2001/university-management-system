@@ -23,7 +23,7 @@ import {
 // Import Ant Design icons via @ant-design/icons
 import { CaretDownOutlined, CaretUpOutlined, CheckCircleTwoTone } from '@ant-design/icons';
 
-const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled, updateStepCompletion }) => {
+const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled, updateStepCompletion, setStepCompleted }) => {
   const { values, errors, touched, setFieldValue } = formBag;
 
   // Extract courseId from the single enrollment (new pattern)
@@ -126,6 +126,9 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled, updateStepComple
     }
 
     if (setNextDisabled) setNextDisabled(hasError);
+
+    // Let parent know this payment step is completed or not
+    if (setStepCompleted) setStepCompleted(2, !hasError);
 
     // Update completion status
     if (updateStepCompletion) {

@@ -14,18 +14,62 @@ import {
   TableHead,
   TableRow,
   Box,
-  Select,
-  MenuItem,
-  FormControl,
-  FormLabel,
   CircularProgress,
+  Paper,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Paper
+  FormControl,
+  FormLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons';
+
+const EditableMarkRow = ({ student, take, examId, onMarkSave, getStudentName }) => {
+  const [mark, setMark] = useState(take?.mark ?? '');
+  const isEditable = take?.mark == null;
+
+  const handleSave = async () => {
+    try {
+      if (take?._id) {
+        // Existing take, update it
+        const examMark = student.examMark;
+        await examAPI.updateMark(examMark._id, take._id, { mark: Number(mark) });
+      } else {
+        // New take, add it
+        await examAPI.addMark(examId, {
+          studentId: student.studentId._id,
+          takeType: take.type,
+          mark: Number(mark)
+        });
+      }
+      onMarkSave(); // Refresh data
+    } catch (err) {
+      console.error('Error saving mark', err);
+      alert('Failed to save mark');
+    }
+  };
+
+  return (
+    <TableRow>
+      <TableCell>{getStudentName(student)}</TableCell>
+      <TableCell>{student.enrollmentId?.enrollment_no || '-'}</TableCell>
+      <TableCell>{take.type}</TableCell>
+      <TableCell>
+        <input
+          type="number"
+          value={mark}
+          disabled={!isEditable}
+          onChange={(e) => setMark(e.target.value)}
+          style={{ width: '80px' }}
+        />
+      </TableCell>
+      <TableCell>{isEditable && <Button onClick={handleSave} size="small" variant="contained">Save</Button>}</TableCell>
+    </TableRow>
+  );
+};
 
 export default function ExamDetail() {
   const { classroomId } = useParams();
@@ -34,9 +78,29 @@ export default function ExamDetail() {
   const [marksByStudent, setMarksByStudent] = useState({});
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newMarkOpen, setNewMarkOpen] = useState(false);
-  const [newMarkData, setNewMarkData] = useState({ studentId: '', takeType: 'fresh', mark: '' });
+  const [openAddTake, setOpenAddTake] = useState(false);
+  const [newTakeData, setNewTakeData] = useState({ studentId: '', takeType: 'resit', mark: '' });
 
+  const fetchExamData = async () => {
+    if (!selectedExam) return;
+    try {
+      const resp = await examAPI.get(selectedExam._id);
+      const marks = resp?.data?.marks || [];
+      const grouped = {};
+      marks.forEach((m) => {
+        const studentData = students.find(s => (s.studentId?._id || s._id) === (m.studentId?._id || m.studentId))
+        grouped[m.studentId?._id || m.studentId] = {
+            takes: m.takes || [],
+            examMark: m,
+            student: studentData
+        };
+      });
+      setMarksByStudent(grouped);
+    } catch (err) {
+      console.error('Error fetching marks:', err);
+    }
+  };
+  
   useEffect(() => {
     if (!classroomId) {
       navigate('/app/exams');
@@ -46,7 +110,6 @@ export default function ExamDetail() {
     (async () => {
       try {
         setLoading(true);
-        // Fetch exams for this classroom and students
         const [examsResp, classroomResp] = await Promise.all([
           examAPI.listByClassroom(classroomId),
           classroomAPI.getById(classroomId)
@@ -55,7 +118,6 @@ export default function ExamDetail() {
         const exams = examsResp?.data || [];
         setStudents(classroomResp?.data?.students || []);
         
-        // Automatically select the first (and likely only) exam
         if (exams.length > 0) {
           setSelectedExam(exams[0]);
         }
@@ -68,45 +130,23 @@ export default function ExamDetail() {
   }, [classroomId, navigate]);
 
   useEffect(() => {
-    if (!selectedExam) return;
-    (async () => {
-      try {
-        const resp = await examAPI.get(selectedExam._id);
-        const marks = resp?.data?.marks || [];
-        const grouped = {};
-        marks.forEach((m) => {
-          grouped[m.studentId?._id || m.studentId] = m.takes || [];
-        });
-        setMarksByStudent(grouped);
-      } catch (err) {
-        console.error('Error fetching marks:', err);
-      }
-    })();
-  }, [selectedExam]);
+    fetchExamData();
+  }, [selectedExam, students]);
 
-  const handleAddMark = async () => {
-    const { studentId, takeType, mark } = newMarkData;
-    if (!studentId || mark === '') {
-      alert('Select student and enter mark');
+  const handleAddTake = async () => {
+    const { studentId, takeType, mark } = newTakeData;
+    if (!studentId) {
+      alert('Please select a student');
       return;
     }
     try {
-      await examAPI.addMark(selectedExam._id, { studentId, takeType, mark: Number(mark) });
-
-      // Refresh marks
-      const resp = await examAPI.get(selectedExam._id);
-      const marks = resp?.data?.marks || [];
-      const grouped = {};
-      marks.forEach((m) => {
-        grouped[m.studentId?._id || m.studentId] = m.takes || [];
-      });
-      setMarksByStudent(grouped);
-
-      setNewMarkOpen(false);
-      setNewMarkData({ studentId: '', takeType: 'fresh', mark: '' });
+      await examAPI.addMark(selectedExam._id, { studentId, takeType, mark: mark ? Number(mark) : null });
+      setOpenAddTake(false);
+      setNewTakeData({ studentId: '', takeType: 'resit', mark: '' });
+      fetchExamData();
     } catch (err) {
-      console.error('Error adding mark:', err);
-      alert('Failed to add mark');
+      console.error('Error adding take', err);
+      alert('Failed to add take');
     }
   };
 
@@ -115,13 +155,6 @@ export default function ExamDetail() {
       return `${student.studentId.firstName} ${student.studentId.lastName}`;
     }
     return student?.studentId?.name || student?.studentId?.email || 'Unknown';
-  };
-
-  const getStudentStatus = (studentId) => {
-    const takes = marksByStudent[studentId] || [];
-    if (takes.length === 0) return 'N/A';
-    const lastTake = takes[takes.length - 1];
-    return lastTake.passed ? 'PASS' : 'FAIL';
   };
 
   if (loading)
@@ -143,11 +176,9 @@ export default function ExamDetail() {
         <CardHeader
           title={selectedExam ? `Exam: ${selectedExam.name}` : 'Exam not found'}
           action={
-            selectedExam && (
-              <Button variant="contained" size="small" onClick={() => setNewMarkOpen(true)}>
-                Add Mark
-              </Button>
-            )
+            <Button variant="contained" size="small" startIcon={<PlusOutlined />} onClick={() => setOpenAddTake(true)}>
+              Add New Take
+            </Button>
           }
         />
         <CardContent>
@@ -158,57 +189,42 @@ export default function ExamDetail() {
                   <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                     <TableCell sx={{ fontWeight: 'bold' }}>Student Name</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Enrollment ID</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Takes</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Current Status</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Take</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Mark</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Action</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {students.map((student) => {
                     const sid = student.studentId?._id || student._id;
-                    const takes = marksByStudent[sid] || [];
-                    const status = getStudentStatus(sid);
+                    const studentMarks = marksByStudent[sid];
+                    const takes = studentMarks?.takes || [];
 
-                    return (
-                      <TableRow key={sid}>
-                        <TableCell>{getStudentName(student)}</TableCell>
-                        <TableCell>{student.enrollmentId?.enrollmentNumber || '-'}</TableCell>
-                        <TableCell>
-                          {takes.length > 0 ? (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                              {takes.map((t, idx) => (
-                                <Box
-                                  key={idx}
-                                  sx={{
-                                    fontSize: '0.85rem',
-                                    p: 0.5,
-                                    backgroundColor: '#f9f9f9',
-                                    borderRadius: 1
-                                  }}
-                                >
-                                  <strong>{t.type}</strong>: {t.mark}/100 ({t.passed ? '✓ Pass' : '✗ Fail'})
-                                </Box>
-                              ))}
-                            </Box>
-                          ) : (
-                            <Box sx={{ color: '#999' }}>No marks yet</Box>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Box
-                            sx={{
-                              fontWeight: 'bold',
-                              color: status === 'PASS' ? '#4caf50' : status === 'FAIL' ? '#f44336' : '#999',
-                              padding: '4px 8px',
-                              backgroundColor: status === 'PASS' ? '#e8f5e9' : status === 'FAIL' ? '#ffebee' : '#f5f5f5',
-                              borderRadius: 1,
-                              display: 'inline-block'
-                            }}
-                          >
-                            {status}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    );
+                    if (takes.length === 0) {
+                      return (
+                        <EditableMarkRow
+                          key={`${sid}-fresh`}
+                          student={student}
+                          take={{ type: 'fresh', mark: null }}
+                          examId={selectedExam._id}
+                          onMarkSave={fetchExamData}
+                          getStudentName={getStudentName}
+                        />
+                      );
+                    }
+                    
+                    const studentWithMarkInfo = { ...student, examMark: studentMarks.examMark };
+                    
+                    return takes.map((take, index) => (
+                      <EditableMarkRow
+                        key={`${sid}-${index}`}
+                        student={studentWithMarkInfo}
+                        take={take}
+                        examId={selectedExam._id}
+                        onMarkSave={fetchExamData}
+                        getStudentName={getStudentName}
+                      />
+                    ));
                   })}
                 </TableBody>
               </Table>
@@ -218,17 +234,15 @@ export default function ExamDetail() {
           )}
         </CardContent>
       </Card>
-
-      {/* Dialog: Add Mark */}
-      <Dialog open={newMarkOpen} onClose={() => setNewMarkOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Mark</DialogTitle>
+      <Dialog open={openAddTake} onClose={() => setOpenAddTake(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New Take</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <FormControl fullWidth sx={{ mb: 2 }}>
             <FormLabel>Student</FormLabel>
             <Select
               size="small"
-              value={newMarkData.studentId}
-              onChange={(e) => setNewMarkData({ ...newMarkData, studentId: e.target.value })}
+              value={newTakeData.studentId}
+              onChange={(e) => setNewTakeData({ ...newTakeData, studentId: e.target.value })}
             >
               <MenuItem value="">-- Select Student --</MenuItem>
               {students.map((s) => (
@@ -242,29 +256,30 @@ export default function ExamDetail() {
             <FormLabel>Take Type</FormLabel>
             <Select
               size="small"
-              value={newMarkData.takeType}
-              onChange={(e) => setNewMarkData({ ...newMarkData, takeType: e.target.value })}
+              value={newTakeData.takeType}
+              onChange={(e) => setNewTakeData({ ...newTakeData, takeType: e.target.value })}
             >
               <MenuItem value="fresh">Fresh</MenuItem>
-              <MenuItem value="retake">Retake</MenuItem>
+              <MenuItem value="resit">Resit</MenuItem>
+              <MenuItem value="resit-retake">Resit-Retake</MenuItem>
             </Select>
           </FormControl>
           <FormControl fullWidth>
-            <FormLabel>Mark (0-100)</FormLabel>
+            <FormLabel>Mark (0-100) (Optional)</FormLabel>
             <input
               type="number"
               min="0"
               max="100"
-              value={newMarkData.mark}
-              onChange={(e) => setNewMarkData({ ...newMarkData, mark: e.target.value })}
+              value={newTakeData.mark}
+              onChange={(e) => setNewTakeData({ ...newTakeData, mark: e.target.value })}
               style={{ width: '100%', padding: '8px', marginTop: '4px' }}
             />
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setNewMarkOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddMark} variant="contained">
-            Save Mark
+          <Button onClick={() => setOpenAddTake(false)}>Cancel</Button>
+          <Button onClick={handleAddTake} variant="contained">
+            Save Take
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  TextField, 
-  Button, 
-  Grid, 
-  Divider, 
-  Select, 
-  MenuItem, 
+import {
+  TextField,
+  Button,
+  Grid,
+  Divider,
+  Select,
+  MenuItem,
   CircularProgress,
   FormControl,
   InputLabel,
@@ -15,12 +15,7 @@ import {
   Autocomplete,
   ListItemText
 } from '@mui/material';
-import { 
-  UserOutlined, 
-  BookOutlined, 
-  BranchesOutlined,
-  SaveOutlined
-} from '@ant-design/icons';
+import { UserOutlined, BookOutlined, BranchesOutlined, SaveOutlined } from '@ant-design/icons';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
@@ -28,13 +23,17 @@ import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
+import { PATHWAY_LIST } from '../../constants/pathways';
 
 const AddEnrollment = () => {
   const [studentOptions, setStudentOptions] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]);
   const [batchOptions, setBatchOptions] = useState([]);
+  const [classroomOptions, setClassroomOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedPathway, setSelectedPathway] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [searchingStudents, setSearchingStudents] = useState(false);
@@ -94,18 +93,32 @@ const AddEnrollment = () => {
   }, []);
 
   useEffect(() => {
-    fetchBatches(selectedCourse);
+    if (selectedPathway) {
+      fetchCourses(selectedPathway);
+    }
+  }, [selectedPathway]);
+
+  useEffect(() => {
+    if (selectedCourse) {
+      fetchBatches(selectedCourse);
+    }
   }, [selectedCourse]);
+
+  useEffect(() => {
+    if (selectedCourse && selectedBatch) {
+      fetchClassrooms(selectedCourse, selectedBatch);
+    }
+  }, [selectedCourse, selectedBatch]);
 
   // Fetch student options
   async function fetchStudents() {
     try {
       const response = await fetch(apiRoutes.studentRoute, {
-        method: 'GET',   
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
-        },
+        }
       });
 
       const data = await response.json();
@@ -129,11 +142,11 @@ const AddEnrollment = () => {
     try {
       setSearchingStudents(true);
       const response = await fetch(`${apiRoutes.studentRoute}?search=${encodeURIComponent(searchTerm)}`, {
-        method: 'GET',   
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
-        },
+        }
       });
 
       const data = await response.json();
@@ -155,14 +168,18 @@ const AddEnrollment = () => {
   }
 
   // Fetch course options
-  async function fetchCourses() {
+  async function fetchCourses(pathwayId) {
+    let url = apiRoutes.courseRoute;
+    if (pathwayId) {
+      url = `${apiRoutes.courseRoute}?pathway=${pathwayId}`;
+    }
     try {
-      const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',   
+      const response = await fetch(url, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
-        },
+        }
       });
 
       const data = await response.json();
@@ -190,11 +207,11 @@ const AddEnrollment = () => {
 
     try {
       const response = await fetch(apiRoutes.batchRoute + `course/${courseId}`, {
-        method: 'GET',   
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
-        },
+        }
       });
 
       const data = await response.json();
@@ -214,17 +231,54 @@ const AddEnrollment = () => {
     }
   }
 
+  // Fetch classroom options
+  async function fetchClassrooms(courseId, batchId) {
+    if (!courseId || !batchId) {
+      setClassroomOptions([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiRoutes.classroomRoute}course/${courseId}/batch/${batchId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 500) {
+          console.error('Internal Server Error.');
+          return;
+        }
+        return;
+      }
+
+      setClassroomOptions(data);
+    } catch (error) {
+      console.error('Error fetching classrooms:', error);
+      return [];
+    }
+  }
+
   const initialValues = {
     studentId: '',
+    pathway: '',
     courseId: '',
     batchId: '',
+    classroomId: '',
     enrollmentDate: new Date().toISOString().split('T')[0] // Default to today
   };
 
   const validationSchema = Yup.object().shape({
     studentId: Yup.string().required('Student is required'),
+    pathway: Yup.string().required('Pathway is required'),
     courseId: Yup.string().required('Course is required'),
     batchId: Yup.string().required('Batch is required'),
+    classroomId: Yup.string().required('Classroom is required'),
     enrollmentDate: Yup.string().required('Enrollment date is required')
   });
 
@@ -234,7 +288,7 @@ const AddEnrollment = () => {
       setSubmitting(true);
 
       const response = await fetch(apiRoutes.enrollmentRoute, {
-        method: 'POST',   
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`
@@ -259,12 +313,12 @@ const AddEnrollment = () => {
         // Show success message with completion status information
         const successMessage = responseData.message || 'Enrollment created successfully';
         showSuccessSwal(successMessage);
-        
+
         // If the response includes completion status, log it for debugging
         if (responseData.data && responseData.data.completionStatus) {
           console.log('Student completion status:', responseData.data.completionStatus);
         }
-        
+
         // Reset form
         window.location.reload();
       }
@@ -284,7 +338,6 @@ const AddEnrollment = () => {
         {({ errors, handleSubmit, touched }) => (
           <Form onSubmit={handleSubmit}>
             <Grid container direction="column" spacing={3}>
-              
               {/* Student Selection */}
               <Grid item>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -300,9 +353,11 @@ const AddEnrollment = () => {
                             options={studentOptions}
                             getOptionLabel={(option) => {
                               if (typeof option === 'string') return option;
-                              return `${option.firstName} ${option.lastName} - ${option.registration_no || option.registrationNo} (${option.nic})`;
+                              return `${option.firstName} ${option.lastName} - ${option.registration_no || option.registrationNo} (${
+                                option.nic
+                              })`;
                             }}
-                            value={studentOptions.find(student => student._id === field.value) || null}
+                            value={studentOptions.find((student) => student._id === field.value) || null}
                             onChange={(event, newValue) => {
                               form.setFieldValue('studentId', newValue ? newValue._id : '');
                             }}
@@ -328,7 +383,7 @@ const AddEnrollment = () => {
                                       {searchingStudents ? <CircularProgress color="inherit" size={20} /> : null}
                                       {params.InputProps.endAdornment}
                                     </>
-                                  ),
+                                  )
                                 }}
                               />
                             )}
@@ -342,7 +397,9 @@ const AddEnrollment = () => {
                             )}
                             loading={searchingStudents}
                             filterOptions={(x) => x} // Disable built-in filtering since we're using server-side search
-                            noOptionsText={searchingStudents ? "Searching..." : searchTerm ? "No students found" : "Start typing to search students"}
+                            noOptionsText={
+                              searchingStudents ? 'Searching...' : searchTerm ? 'No students found' : 'Start typing to search students'
+                            }
                             clearOnBlur={false}
                             clearOnEscape={false}
                           />
@@ -363,48 +420,105 @@ const AddEnrollment = () => {
                 </Box>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <Field name="courseId">
+                    <Field name="pathway">
                       {({ field, form }) => (
-                        <FormControl fullWidth error={form.touched.courseId && !!form.errors.courseId}>
-                          <InputLabel>Course</InputLabel>
+                        <FormControl fullWidth error={form.touched.pathway && !!form.errors.pathway}>
+                          <InputLabel>Pathway</InputLabel>
                           <Select
                             {...field}
-                            label="Course"
+                            label="Pathway"
                             onChange={(e) => {
                               const selected = e.target.value;
-                              form.setFieldValue('courseId', selected);
-                              setSelectedCourse(selected);
+                              form.setFieldValue('pathway', selected);
+                              setSelectedPathway(selected);
+                              form.setFieldValue('courseId', '');
                               form.setFieldValue('batchId', '');
+                              form.setFieldValue('classroomId', '');
                             }}
                           >
-                            {courseOptions.map((course) => (
-                              <MenuItem key={course._id} value={course._id}>
-                                {course.name}
+                            {PATHWAY_LIST.map((pathway) => (
+                              <MenuItem key={pathway.id} value={pathway.id}>
+                                {pathway.label}
                               </MenuItem>
                             ))}
                           </Select>
-                          {form.touched.courseId && form.errors.courseId && (
-                            <FormHelperText>{form.errors.courseId}</FormHelperText>
-                          )}
+                          {form.touched.pathway && form.errors.pathway && <FormHelperText>{form.errors.pathway}</FormHelperText>}
                         </FormControl>
                       )}
                     </Field>
                   </Grid>
+                  {selectedPathway && (
+                    <Grid item xs={12} sm={6}>
+                      <Field name="courseId">
+                        {({ field, form }) => (
+                          <FormControl fullWidth error={form.touched.courseId && !!form.errors.courseId}>
+                            <InputLabel>Course</InputLabel>
+                            <Select
+                              {...field}
+                              label="Course"
+                              onChange={(e) => {
+                                const selected = e.target.value;
+                                form.setFieldValue('courseId', selected);
+                                setSelectedCourse(selected);
+                                form.setFieldValue('batchId', '');
+                                form.setFieldValue('classroomId', '');
+                              }}
+                            >
+                              {courseOptions.map((course) => (
+                                <MenuItem key={course._id} value={course._id}>
+                                  {course.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                            {form.touched.courseId && form.errors.courseId && <FormHelperText>{form.errors.courseId}</FormHelperText>}
+                          </FormControl>
+                        )}
+                      </Field>
+                    </Grid>
+                  )}
                   {selectedCourse && (
                     <Grid item xs={12} sm={6}>
                       <Field name="batchId">
                         {({ field, form }) => (
                           <FormControl fullWidth error={form.touched.batchId && !!form.errors.batchId}>
                             <InputLabel>Batch</InputLabel>
-                            <Select {...field} label="Batch">
+                            <Select
+                              {...field}
+                              label="Batch"
+                              onChange={(e) => {
+                                const selected = e.target.value;
+                                form.setFieldValue('batchId', selected);
+                                setSelectedBatch(selected);
+                                form.setFieldValue('classroomId', '');
+                              }}
+                            >
                               {batchOptions.map((batch) => (
                                 <MenuItem key={batch._id} value={batch._id}>
                                   {batch.name}
                                 </MenuItem>
                               ))}
                             </Select>
-                            {form.touched.batchId && form.errors.batchId && (
-                              <FormHelperText>{form.errors.batchId}</FormHelperText>
+                            {form.touched.batchId && form.errors.batchId && <FormHelperText>{form.errors.batchId}</FormHelperText>}
+                          </FormControl>
+                        )}
+                      </Field>
+                    </Grid>
+                  )}
+                  {selectedBatch && (
+                    <Grid item xs={12} sm={6}>
+                      <Field name="classroomId">
+                        {({ field, form }) => (
+                          <FormControl fullWidth error={form.touched.classroomId && !!form.errors.classroomId}>
+                            <InputLabel>Classroom</InputLabel>
+                            <Select {...field} label="Classroom">
+                              {classroomOptions.map((classroom) => (
+                                <MenuItem key={classroom._id} value={classroom._id}>
+                                  {classroom.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                            {form.touched.classroomId && form.errors.classroomId && (
+                              <FormHelperText>{form.errors.classroomId}</FormHelperText>
                             )}
                           </FormControl>
                         )}

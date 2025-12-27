@@ -28,6 +28,7 @@ router.get('/', getAllStudents);
 router.post('/', createStudent);
 router.get('/export', exportStudents);
 router.post('/import', upload.single('file'), importStudentsFromExcel);
+router.get('/enrollment/:id/history', require('../controllers/student').getEnrollmentClassroomHistory);
 router.get('/:id', getStudentById);
 router.put('/:id', updateStudent);
 router.post('/enrollment/:id', AddCourseRegistration);

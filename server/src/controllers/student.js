@@ -3,6 +3,7 @@
 const Student = require('../models/student');
 const Counter = require('../models/counter');
 const Enrollment = require('../models/enrollment');
+const ClassroomStudent = require('../models/classroom_student');
 const RequiredDocument = require('../models/required_document');
 const ActivityLogger = require('../utils/activityLogger');
 const { getRequestInfo } = require('../middleware/requestInfo');
@@ -320,7 +321,8 @@ async function createStudent(req, res) {
           enrollment.batchId,
           student.registration_no,
           courseSequenceValue,
-          enrollmentPaymentSchema
+          enrollmentPaymentSchema,
+          enrollment.classroomId
         );
       }
 
@@ -421,7 +423,8 @@ async function createStudent(req, res) {
         enrollment.batchId,
         sequenceValue,
         courseSequenceValue,
-        enrollmentPaymentSchema
+        enrollmentPaymentSchema,
+        enrollment.classroomId
       );
     }
 
@@ -550,7 +553,8 @@ async function updateStudent(req, res) {
               enrollment.batchId,
               student.registration_no, // Use existing student registration number
               courseSequenceValue,
-              enrollmentPaymentSchema
+              enrollmentPaymentSchema,
+              enrollment.classroomId
             );
           }
         }
@@ -645,7 +649,8 @@ async function AddCourseRegistration(req, res) {
       });
     }
 
-    await courseRegistration(studentId, courseId, batchId, student.registration_no, courseSequenceValue);
+    const { classroomId } = req.body;
+    await courseRegistration(studentId, courseId, batchId, student.registration_no, courseSequenceValue, undefined, classroomId);
 
     // Check completion status after adding the new enrollment
     const completionStatus = await getStudentCompletionStatus(student);
@@ -887,7 +892,8 @@ async function courseRegistration(
   batchId,
   sequenceValue,
   courseSequenceValue,
-  paymentSchema
+  paymentSchema,
+  classroomId // optional: if provided, will create ClassroomStudent linking enrollment to classroom
 ) {
   console.log('courseRegistration called with:', { studentId, courseId, batchId, sequenceValue, courseSequenceValue });
   
@@ -904,6 +910,20 @@ async function courseRegistration(
   console.log('Creating enrollment with data:', enrollment);
   await enrollment.save();
   console.log('Enrollment saved successfully');
+  // If a classroomId was provided, create a ClassroomStudent entry linking the student/enrollment to the classroom
+  if (classroomId) {
+    try {
+      const ClassroomStudent = require('../models/classroom_student');
+      const existing = await ClassroomStudent.findOne({ classroomId, enrollmentId: enrollment._id });
+      if (!existing) {
+        await ClassroomStudent.create({ classroomId, enrollmentId: enrollment._id, studentId });
+        console.log('ClassroomStudent created for enrollment', enrollment._id.toString());
+      }
+    } catch (err) {
+      console.error('Error creating ClassroomStudent for enrollment', enrollment._id.toString(), err);
+      // Do not throw — classroom assignment failure should not block enrollment creation
+    }
+  }
 }
 
 // Excel Import Function
@@ -1121,6 +1141,34 @@ async function importStudentsFromExcel(req, res) {
   }
 }
 
+// Get classroom assignment history for an enrollment
+async function getEnrollmentClassroomHistory(req, res) {
+  try {
+    const enrollmentId = req.params.id;
+    if (!enrollmentId) {
+      return res.status(400).json({ success: false, message: 'Missing enrollment id' });
+    }
+
+    const history = await ClassroomStudent.find({ enrollmentId })
+      .populate({
+        path: 'classroomId',
+        populate: [
+          { path: 'courseId', select: 'name code' },
+          { path: 'batchId', select: 'name' },
+          { path: 'moduleId', select: 'name' }
+        ]
+      })
+      .populate({ path: 'studentId', select: 'firstName lastName' })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.status(200).json({ success: true, data: history });
+  } catch (error) {
+    console.error('Error fetching enrollment classroom history:', error);
+    res.status(500).json({ success: false, message: 'Error fetching classroom history', error: error.message });
+  }
+}
+
 module.exports = {
   getAllStudents,
   getStudentById,
@@ -1131,4 +1179,5 @@ module.exports = {
   exportStudents,
   importStudentsFromExcel,
   getStudentCompletionStatus,
+  getEnrollmentClassroomHistory,
 };

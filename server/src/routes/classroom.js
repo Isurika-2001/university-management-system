@@ -8,13 +8,15 @@ const {
   addStudentToClassroom,
   removeStudentFromClassroom,
   updateStudentStatus,
-  deleteClassroom
+  deleteClassroom,
+  getClassroomsByCourseAndBatch
 } = require('../controllers/classroom');
 
 router.get('/', getAllClassrooms);
 router.post('/', createClassroom);
+router.get('/course/:courseId/batch/:batchId', getClassroomsByCourseAndBatch);
 router.get('/:id', getClassroomById);
-router.post('/:id/eligible', getEligibleClassrooms);
+router.get('/eligible/:enrollmentId', getEligibleClassrooms);
 router.post('/student/add', addStudentToClassroom);
 router.put('/student/:id/status', updateStudentStatus);
 router.delete('/student/:id', removeStudentFromClassroom);

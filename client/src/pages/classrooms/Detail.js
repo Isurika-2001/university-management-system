@@ -205,7 +205,7 @@ const Detail = () => {
               {students.length > 0 ? (
                 students.map((student) => (
                   <TableRow key={student._id}>
-                    <TableCell>{student.enrollmentId?.enrollmentNumber || 'N/A'}</TableCell>
+                    <TableCell>{student.enrollmentId?.enrollment_no || 'N/A'}</TableCell>
                     <TableCell>{`${student.studentId?.firstName || ''} ${student.studentId?.lastName || ''}`.trim() || 'N/A'}</TableCell>
                     <TableCell>
                       <Chip label={getStatusLabel(student.status)} color={getStatusColor(student.status)} size="small" />
@@ -250,7 +250,7 @@ const Detail = () => {
                 {`${selectedStudent.studentId?.firstName || ''} ${selectedStudent.studentId?.lastName || ''}`.trim()}
               </Typography>
               <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                <strong>Enrollment No:</strong> {selectedStudent.enrollmentId?.enrollmentNumber || 'N/A'}
+                <strong>Enrollment No:</strong> {selectedStudent.enrollmentId?.enrollment_no || 'N/A'}
               </Typography>
 
               {eligibleClassrooms.length > 0 ? (

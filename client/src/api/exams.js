@@ -5,7 +5,8 @@ export const examAPI = {
   create: (payload) => api.post(apiRoutes.examRoute, payload),
   listByClassroom: (classroomId) => api.get(`${apiRoutes.examRoute}classroom/${classroomId}`),
   get: (id) => api.get(`${apiRoutes.examRoute}${id}`),
-  addMark: (examId, payload) => api.post(`${apiRoutes.examRoute}${examId}/mark`, payload)
+  addMark: (examId, payload) => api.post(`${apiRoutes.examRoute}${examId}/mark`, payload),
+  updateMark: (examMarkId, takeId, payload) => api.put(`${apiRoutes.examRoute}mark/${examMarkId}/take/${takeId}`, payload)
 };
 
 export default examAPI;

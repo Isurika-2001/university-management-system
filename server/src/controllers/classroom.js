@@ -135,7 +135,7 @@ async function getClassroomById(req, res) {
     const classroomStudents = await ClassroomStudent.find({ classroomId: id })
       .populate({
         path: 'enrollmentId',
-        select: 'enrollmentNumber'
+        select: 'enrollment_no'
       })
       .populate({
         path: 'studentId',
@@ -162,22 +162,25 @@ async function getEligibleClassrooms(req, res) {
     const { enrollmentId } = req.params;
 
     // Get enrollment with course info
-    const enrollment = await Enrollment.findById(enrollmentId).populate('courseId').lean();
+    const enrollment = await Enrollment.findById(enrollmentId).populate('courseId').populate('batchId').lean();
     if (!enrollment) {
       return res.status(404).json({ success: false, message: 'Enrollment not found' });
     }
 
-    // Find classrooms with the same course but different modules/batches
-    const classrooms = await Classroom.find({
+    // Find all classrooms for the same course and batch
+    const allClasses = await Classroom.find({
       courseId: enrollment.courseId._id,
-      _id: { $nin: [req.body.currentClassroomId] }
-    })
-      .populate('courseId', 'name code')
-      .populate('batchId', 'name')
-      .populate('moduleId', 'name')
-      .lean();
+      batchId: enrollment.batchId._id
+    }).lean();
 
-    res.status(200).json({ success: true, data: classrooms });
+    // Find all classrooms the student is already in for this enrollment
+    const studentClassrooms = await ClassroomStudent.find({ enrollmentId }).lean();
+    const studentClassroomIds = studentClassrooms.map((c) => c.classroomId.toString());
+
+    // Filter out the classrooms the student is already in
+    const eligibleClassrooms = allClasses.filter((c) => !studentClassroomIds.includes(c._id.toString()));
+
+    res.status(200).json({ success: true, data: eligibleClassrooms });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Error fetching eligible classrooms' });
@@ -277,6 +280,21 @@ async function deleteClassroom(req, res) {
   }
 }
 
+async function getClassroomsByCourseAndBatch(req, res) {
+  try {
+    const { courseId, batchId } = req.params;
+    const classrooms = await Classroom.find({ courseId, batchId })
+      .populate('courseId', 'name code')
+      .populate('batchId', 'name')
+      .populate('moduleId', 'name')
+      .lean();
+    res.status(200).json(classrooms);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching classrooms' });
+  }
+}
+
 module.exports = {
   getAllClassrooms,
   createClassroom,
@@ -285,5 +303,6 @@ module.exports = {
   addStudentToClassroom,
   removeStudentFromClassroom,
   updateStudentStatus,
-  deleteClassroom
+  deleteClassroom,
+  getClassroomsByCourseAndBatch
 };

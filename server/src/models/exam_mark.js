@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const takeSchema = new mongoose.Schema(
   {
     type: { type: String, default: 'fresh' },
-    mark: { type: Number, required: true },
-    passed: { type: Boolean, required: true }
+    mark: { type: Number },
+    passed: { type: Boolean }
   },
   { timestamps: true }
 );
