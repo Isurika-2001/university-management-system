@@ -1,65 +1,17 @@
 // studentController.js
 
 const Student = require('../models/student');
-const Counter = require('../models/counter');
 const Enrollment = require('../models/enrollment');
 const ClassroomStudent = require('../models/classroom_student');
 const RequiredDocument = require('../models/required_document');
 const ActivityLogger = require('../utils/activityLogger');
 const { getRequestInfo } = require('../middleware/requestInfo');
-const multer = require('multer');
 const xlsx = require('xlsx');
 const logger = require('../utils/logger');
 
 // utility calling
 const { getNextSequenceValue, getAndFormatCourseEnrollmentNumber } = require('../utilities/counter'); 
 const { generateCSV, generateExcel, studentExportHeaders } = require('../utils/exportUtils');
-
-// Function to check if student has all required fields completed
-function checkStudentCompletion(student) {
-  // Check basic required fields (Step 1 - Required)
-  const basicFields = [
-    student.firstName,
-    student.lastName,
-    student.dob,
-    student.nic,
-    student.address,
-    student.mobile,
-    student.email
-  ];
-
-  // Check if any basic field is missing
-  if (basicFields.some(field => !field)) {
-    return false;
-  }
-
-  // Check if student has at least one enrollment (Step 2 - Required)
-  // This is handled by the enrollment creation, so we assume it exists if student is created
-
-  // Step 3: Academic Details (Required for completion)
-  if (!student.highestAcademicQualification) {
-    return false;
-  }
-
-  // Step 4: Required Documents (Required for completion)
-  // Check if all required documents are provided
-  if (!student.requiredDocuments || student.requiredDocuments.length === 0) {
-    return false;
-  }
-
-  // We need to check against the actual required documents that have isRequired=true
-  // This will be handled in the detailed status check function
-
-  // Step 5: Emergency Contact (Required for completion)
-  if (!student.emergencyContact || 
-      !student.emergencyContact.name || 
-      !student.emergencyContact.relationship || 
-      !student.emergencyContact.phone) {
-    return false;
-  }
-
-  return true;
-}
 
 // Function to get detailed completion status
 async function getStudentCompletionStatus(student) {

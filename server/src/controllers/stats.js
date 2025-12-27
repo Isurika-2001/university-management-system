@@ -2,7 +2,6 @@ const Student = require('../models/student');
 const Enrollment = require('../models/enrollment');
 const Batch = require('../models/batch');
 const Course = require('../models/course');
-const User = require('../models/user');
 const logger = require('../utils/logger');
 
 // get no of enrollments, courses, batches, today's enrollments

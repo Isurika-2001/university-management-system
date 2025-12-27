@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { STATUSES } = require('../config/statuses');
 
 const classroomSchema = new mongoose.Schema(
   {
