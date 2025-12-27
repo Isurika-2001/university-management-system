@@ -11,7 +11,7 @@ import {
   List,
   ListItem,
   ListItemText,
-  Chip,
+  Chip
 } from '@mui/material';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
@@ -20,7 +20,7 @@ const ImportSummaryModal = ({ open, onClose, importSummary }) => {
 
   // Handle both old and new import summary formats
   let total, successCount, failedCount, errors;
-  
+
   if (importSummary.total !== undefined) {
     // New Excel import format
     total = importSummary.total || 0;
@@ -83,32 +83,32 @@ const ImportSummaryModal = ({ open, onClose, importSummary }) => {
             <Typography variant="h6" color="error" gutterBottom>
               Failed Records ({failedCount})
             </Typography>
-            
+
             {/* Helpful instructions */}
             <Box sx={{ backgroundColor: '#fff3cd', p: 2, borderRadius: 1, mb: 2 }}>
               <Typography variant="body2" color="warning.main">
                 <strong>💡 Tips to fix import errors:</strong>
               </Typography>
-                                            <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
-                 • Course Code and Batch Name are optional (leave empty if not enrolling immediately)
-               </Typography>
-               <Typography variant="body2" color="warning.main">
-                 • If provided, ensure Course Code exactly matches existing course codes
-               </Typography>
-               <Typography variant="body2" color="warning.main">
-                 • If provided, ensure Batch names exactly match existing batch names
-               </Typography>
-               <Typography variant="body2" color="warning.main">
-                 • Check that NIC numbers are unique and valid
-               </Typography>
-               <Typography variant="body2" color="warning.main">
-                 • Verify all required fields are filled
-               </Typography>
-               <Typography variant="body2" color="warning.main">
-                 • Use YYYY-MM-DD format for dates
-               </Typography>
+              <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
+                • Course Code and Batch Name are optional (leave empty if not enrolling immediately)
+              </Typography>
+              <Typography variant="body2" color="warning.main">
+                • If provided, ensure Course Code exactly matches existing course codes
+              </Typography>
+              <Typography variant="body2" color="warning.main">
+                • If provided, ensure Batch names exactly match existing batch names
+              </Typography>
+              <Typography variant="body2" color="warning.main">
+                • Check that NIC numbers are unique and valid
+              </Typography>
+              <Typography variant="body2" color="warning.main">
+                • Verify all required fields are filled
+              </Typography>
+              <Typography variant="body2" color="warning.main">
+                • Use YYYY-MM-DD format for dates
+              </Typography>
             </Box>
-            
+
             <List dense>
               {errors.map((error, index) => (
                 <ListItem key={index} sx={{ backgroundColor: '#fff0f0', mb: 1, borderRadius: 1 }}>

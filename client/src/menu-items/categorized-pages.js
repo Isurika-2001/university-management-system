@@ -135,7 +135,7 @@ const categorizedPages = {
         },
         {
           id: 'intakes',
-          title: 'Attendance',
+          title: 'Intakes',
           type: 'item',
           url: '/app/intakes',
           icon: icons.CalendarOutlined
@@ -164,13 +164,6 @@ const categorizedPages = {
           type: 'item',
           url: '/app/exams',
           icon: icons.ScheduleOutlined
-        },
-        {
-          id: 'exam-results',
-          title: 'Results & Transcripts',
-          type: 'item',
-          url: '/app/exam-results',
-          icon: icons.SafetyCertificateOutlined
         }
       ]
     },
@@ -207,13 +200,6 @@ const categorizedPages = {
           type: 'item',
           url: '/app/users',
           icon: icons.UsergroupAddOutlined
-        },
-        {
-          id: 'system-config',
-          title: 'Master Data',
-          type: 'item',
-          url: '/app/system-config',
-          icon: icons.DatabaseOutlined
         }
       ]
     }

@@ -26,13 +26,7 @@ import StepAcademicDetails from './steps/StepAcademicDetails';
 import StepRequiredDocuments from './steps/StepRequiredDocuments';
 import StepEmergencyContact from './steps/StepEmergencyContact';
 
-const steps = [
-  'Personal Details',
-  'Payment Schema',
-  'Academic Details (Optional)',
-  'Required Documents',
-  'Emergency Contact (Optional)'
-];
+const steps = ['Personal Details', 'Payment Schema', 'Academic Details (Optional)', 'Required Documents', 'Emergency Contact (Optional)'];
 
 const academicQualificationOptions = ['O-Level', 'A-Level', 'Diploma', "Bachelor's Degree", "Master's Degree", 'PhD', 'Other'];
 

@@ -14,18 +14,18 @@ const { checkPermission } = require('../middleware/permissions');
 router.use(authenticate);
 
 // GET all required documents
-router.get("/", checkPermission('finance', 'read'), getAllRequiredDocuments);
+router.get('/', checkPermission('finance', 'read'), getAllRequiredDocuments);
 
 // GET a single required document by ID
-router.get("/:id", checkPermission('finance', 'read'), getRequiredDocumentById);
+router.get('/:id', checkPermission('finance', 'read'), getRequiredDocumentById);
 
 // POST create a new required document
-router.post("/", checkPermission('finance', 'create'), createRequiredDocument);
+router.post('/', checkPermission('finance', 'create'), createRequiredDocument);
 
 // PUT update a required document
-router.put("/:id", checkPermission('finance', 'update'), updateRequiredDocument);
+router.put('/:id', checkPermission('finance', 'update'), updateRequiredDocument);
 
 // DELETE a required document
-router.delete("/:id", checkPermission('finance', 'delete'), deleteRequiredDocument);
+router.delete('/:id', checkPermission('finance', 'delete'), deleteRequiredDocument);
 
 module.exports = router;

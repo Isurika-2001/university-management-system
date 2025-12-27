@@ -40,4 +40,4 @@ export const batchesAPI = {
   getByCourseId: async (courseId) => {
     return api.get(`${apiRoutes.batchRoute}course/${courseId}`);
   }
-}; 
+};

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState } from 'react';
 import { useAuthContext } from '../context/useAuthContext';
 import { authAPI } from '../api/auth';
 
@@ -23,7 +23,6 @@ export const useLogin = () => {
       setIsLoading(false);
 
       return { success: true, message: json.message || 'Login successful' }; // return success
-
     } catch (err) {
       setIsLoading(false);
       setError(err.message || 'Login failed');

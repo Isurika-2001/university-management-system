@@ -646,11 +646,7 @@ const UpdateForm = () => {
 
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>New Classroom</InputLabel>
-              <Select
-                value={selectedClassroomForAdd}
-                label="New Classroom"
-                onChange={(e) => setSelectedClassroomForAdd(e.target.value)}
-              >
+              <Select value={selectedClassroomForAdd} label="New Classroom" onChange={(e) => setSelectedClassroomForAdd(e.target.value)}>
                 {eligibleClassrooms.map((classroom) => (
                   <MenuItem key={classroom._id} value={classroom._id}>
                     {classroom.name}

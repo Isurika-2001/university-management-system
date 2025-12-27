@@ -45,10 +45,7 @@ export default function ExamsView() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [examsResp, classroomsResp] = await Promise.all([
-        examAPI.listAll(),
-        classroomAPI.getAll()
-      ]);
+      const [examsResp, classroomsResp] = await Promise.all([examAPI.listAll(), classroomAPI.getAll()]);
       setExams(examsResp?.data || []);
       setClassrooms(classroomsResp?.data || []);
       setError(null);
@@ -73,7 +70,7 @@ export default function ExamsView() {
     }
 
     // Check if exam already exists for selected classroom
-    const existingExam = exams.find(e => e.classroomId === selectedClassroom || e.classroomId?._id === selectedClassroom);
+    const existingExam = exams.find((e) => e.classroomId === selectedClassroom || e.classroomId?._id === selectedClassroom);
     if (existingExam) {
       setDialogError('An exam already exists for the selected classroom');
       return;
@@ -81,8 +78,8 @@ export default function ExamsView() {
 
     try {
       setDialogLoading(true);
-      const classroomData = classrooms.find(c => c._id === selectedClassroom);
-      
+      const classroomData = classrooms.find((c) => c._id === selectedClassroom);
+
       await examAPI.create({
         classroomId: selectedClassroom,
         name: `${classroomData?.name || 'Exam'} - Exam`,
@@ -92,7 +89,7 @@ export default function ExamsView() {
 
       // Refresh exams list
       await fetchData();
-      
+
       setOpenDialog(false);
       setSelectedClassroom('');
       setDialogError(null);
@@ -104,7 +101,12 @@ export default function ExamsView() {
     }
   };
 
-  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}><CircularProgress /></Box>;
+  if (loading)
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+        <CircularProgress />
+      </Box>
+    );
 
   return (
     <>
@@ -112,18 +114,18 @@ export default function ExamsView() {
         <CardHeader
           title="Exams"
           action={
-            <Button
-              variant="contained"
-              icon={<PlusOutlined />}
-              onClick={handleAddExamClick}
-            >
+            <Button variant="contained" icon={<PlusOutlined />} onClick={handleAddExamClick}>
               Add Exam
             </Button>
           }
         />
         <CardContent>
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
           <TableContainer>
             <Table>
               <TableHead>
@@ -132,12 +134,14 @@ export default function ExamsView() {
                   <TableCell sx={{ fontWeight: 'bold' }}>Classroom</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Course</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Batch</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }} align="right">Action</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }} align="right">
+                    Action
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {exams.map((exam) => {
-                  const classroom = classrooms.find(c => c._id === exam.classroomId || c._id === exam.classroomId?._id);
+                  const classroom = classrooms.find((c) => c._id === exam.classroomId || c._id === exam.classroomId?._id);
                   return (
                     <TableRow key={exam._id}>
                       <TableCell>{exam.name}</TableCell>
@@ -161,9 +165,7 @@ export default function ExamsView() {
             </Table>
           </TableContainer>
           {exams.length === 0 && (
-            <Box sx={{ p: 2, textAlign: 'center', color: '#999' }}>
-              No exams found. Click &quot;Add Exam&quot; to create one.
-            </Box>
+            <Box sx={{ p: 2, textAlign: 'center', color: '#999' }}>No exams found. Click &quot;Add Exam&quot; to create one.</Box>
           )}
         </CardContent>
       </Card>
@@ -172,8 +174,12 @@ export default function ExamsView() {
       <Dialog open={openDialog} onClose={() => !dialogLoading && setOpenDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Create New Exam</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
-          {dialogError && <Alert severity="error" sx={{ mb: 2 }}>{dialogError}</Alert>}
-          
+          {dialogError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {dialogError}
+            </Alert>
+          )}
+
           <FormControl fullWidth>
             <FormLabel sx={{ mb: 1 }}>Select Classroom</FormLabel>
             <Select
@@ -186,7 +192,7 @@ export default function ExamsView() {
             >
               <MenuItem value="">-- Choose Classroom --</MenuItem>
               {classrooms.map((classroom) => {
-                const hasExam = exams.some(e => e.classroomId === classroom._id || e.classroomId?._id === classroom._id);
+                const hasExam = exams.some((e) => e.classroomId === classroom._id || e.classroomId?._id === classroom._id);
                 return (
                   <MenuItem key={classroom._id} value={classroom._id} disabled={hasExam}>
                     {classroom.name} {hasExam ? '(exam exists)' : ''}

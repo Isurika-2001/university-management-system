@@ -5,6 +5,6 @@ const { checkPermission } = require('../middleware/permissions');
 
 const router = express.Router();
 
-router.get("/", authenticate, checkPermission('user', 'read'), user_typeController.getUser_types);
+router.get('/', authenticate, checkPermission('user', 'read'), user_typeController.getUser_types);
 
 module.exports = router;

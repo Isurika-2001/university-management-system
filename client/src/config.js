@@ -12,7 +12,7 @@ const config = {
   basename: '/',
 
   // Base API URL
-  apiUrl: 'http://localhost:5000/api/',
+  apiUrl: 'http://localhost:5000/api/'
 };
 
 // Route endpoints based on your Express routes
@@ -29,8 +29,7 @@ export const apiRoutes = {
   authRoute: `${config.apiUrl}auth/`,
   bulkUploadRoute: `${config.apiUrl}bulk-upload/`,
   statRoute: `${config.apiUrl}stats/`,
-  activityLogsRoute: `${config.apiUrl}activity-logs/`
-  ,
+  activityLogsRoute: `${config.apiUrl}activity-logs/`,
   examRoute: `${config.apiUrl}exam/`
 };
 

@@ -58,7 +58,7 @@ function UpdateUser() {
     password: Yup.string().required('Password is required').min(6, 'Password must be at least 6 characters'),
     confirmPassword: Yup.string()
       .oneOf([Yup.ref('password'), null], 'Passwords must match')
-      .required('Confirm Password is required'),
+      .required('Confirm Password is required')
   });
 
   const [userTypes, setUserTypes] = useState([]);
@@ -73,7 +73,7 @@ function UpdateUser() {
     try {
       const response = await usersAPI.getUserTypes();
       console.log('User types response:', response);
-      
+
       // Handle both old and new response formats
       const userTypes = response.data || response;
       setUserTypes(formatUserTypes(userTypes));
@@ -86,7 +86,7 @@ function UpdateUser() {
     try {
       const response = await usersAPI.getById(id);
       console.log('User response:', response);
-      
+
       // Handle both old and new response formats
       const userData = response.data || response;
       setInitialValues({
@@ -143,11 +143,7 @@ function UpdateUser() {
       <Box textAlign="center" mt={5}>
         <MainCard title="Error">
           <p>User ID is required. Please go back to the users list and try again.</p>
-          <Button 
-            variant="contained" 
-            onClick={() => navigate('/app/users')}
-            sx={{ mt: 2 }}
-          >
+          <Button variant="contained" onClick={() => navigate('/app/users')} sx={{ mt: 2 }}>
             Back to Users
           </Button>
         </MainCard>
@@ -218,13 +214,7 @@ function UpdateUser() {
                 </Grid>
                 <Divider sx={{ mt: 3, mb: 2 }} />
                 <Grid item xs={12} style={{ textAlign: 'right' }}>
-                  <Button
-                    variant="outlined"
-                    color="secondary"
-                    size="small"
-                    onClick={() => navigate('/app/users')}
-                    sx={{ mr: 2 }}
-                  >
+                  <Button variant="outlined" color="secondary" size="small" onClick={() => navigate('/app/users')} sx={{ mr: 2 }}>
                     Cancel
                   </Button>
                   <Button

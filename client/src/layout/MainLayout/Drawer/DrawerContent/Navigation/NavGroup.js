@@ -17,14 +17,7 @@ const NavGroup = ({ item }) => {
   const navCollapse = item.children?.map((menuItem) => {
     switch (menuItem.type) {
       case 'collapse':
-        return (
-          <NavCollapse
-            key={menuItem.id}
-            item={menuItem}
-            level={1}
-            defaultExpanded={menuItem.defaultExpanded || false}
-          />
-        );
+        return <NavCollapse key={menuItem.id} item={menuItem} level={1} defaultExpanded={menuItem.defaultExpanded || false} />;
       case 'item':
         return <NavItem key={menuItem.id} item={menuItem} level={1} />;
       default:

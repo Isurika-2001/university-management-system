@@ -120,7 +120,7 @@ const RecentLogins = () => {
             boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
             background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, rgba(255,255,255,0.9) 100%)',
             // Fix the minHeight to show always 3 skeleton items, if less than 3
-            minHeight: `${LOGIN_ITEM_HEIGHT * MAX_VISIBLE + 96}px`,
+            minHeight: `${LOGIN_ITEM_HEIGHT * MAX_VISIBLE + 96}px`
           }}
         >
           <CardContent sx={{ p: 3 }}>

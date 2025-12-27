@@ -23,7 +23,7 @@ const DrawerContent = () => (
     <Box
       sx={{
         pl: 4,
-        pb: 1,
+        pb: 1
       }}
     >
       <Typography variant="caption" color="textSecondary">

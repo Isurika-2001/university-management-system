@@ -33,42 +33,44 @@ const MenuItems = () => {
     hasPermission(user, 'enrollments', 'R')
   ) {
     // Filter to show: Main, Students, Academics, Exams
-    items = baseItems.filter((item) =>
-      ['group-main', 'group-students', 'group-academics', 'group-exams'].includes(item.id)
-    );
+    items = baseItems.filter((item) => ['group-main', 'group-students', 'group-academics', 'group-exams'].includes(item.id));
   }
   // Finance Administrator - Access to finance and reports
   else if (hasPermission(user, 'enrollments', 'R') && hasPermission(user, 'finance', 'R') && hasPermission(user, 'reports', 'R')) {
     // Filter to show: Main, Students, Finance, Settings
-    items = baseItems.map((item) => {
-      if (item.id === 'group-students') {
-        // Only show Student Directory and Enrollments
-        return {
-          ...item,
-          children: item.children.filter((child) => ['students', 'enrollments'].includes(child.id))
-        };
-      }
-      if (['group-main', 'group-finance', 'group-settings'].includes(item.id)) {
-        return item;
-      }
-      return null;
-    }).filter(Boolean);
+    items = baseItems
+      .map((item) => {
+        if (item.id === 'group-students') {
+          // Only show Student Directory and Enrollments
+          return {
+            ...item,
+            children: item.children.filter((child) => ['students', 'enrollments'].includes(child.id))
+          };
+        }
+        if (['group-main', 'group-finance', 'group-settings'].includes(item.id)) {
+          return item;
+        }
+        return null;
+      })
+      .filter(Boolean);
   }
   // Accountant - Limited access to finance functions
   else if (hasPermission(user, 'enrollments', 'R') && hasPermission(user, 'finance', 'R')) {
     // Filter to show: Main, Students (enrollments only), Finance
-    items = baseItems.map((item) => {
-      if (item.id === 'group-students') {
-        return {
-          ...item,
-          children: item.children.filter((child) => ['enrollments'].includes(child.id))
-        };
-      }
-      if (['group-main', 'group-finance'].includes(item.id)) {
-        return item;
-      }
-      return null;
-    }).filter(Boolean);
+    items = baseItems
+      .map((item) => {
+        if (item.id === 'group-students') {
+          return {
+            ...item,
+            children: item.children.filter((child) => ['enrollments'].includes(child.id))
+          };
+        }
+        if (['group-main', 'group-finance'].includes(item.id)) {
+          return item;
+        }
+        return null;
+      })
+      .filter(Boolean);
   }
 
   return { items };

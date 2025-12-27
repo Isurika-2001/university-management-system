@@ -54,13 +54,13 @@ const pages = {
       url: '/app/courses',
       icon: icons.AppstoreOutlined
     },
-      {
-        id: 'modules',
-        title: 'Modules',
-        type: 'item',
-        url: '/app/modules',
-        icon: icons.BranchesOutlined
-      },
+    {
+      id: 'modules',
+      title: 'Modules',
+      type: 'item',
+      url: '/app/modules',
+      icon: icons.BranchesOutlined
+    },
     {
       id: 'classrooms',
       title: 'Classrooms',

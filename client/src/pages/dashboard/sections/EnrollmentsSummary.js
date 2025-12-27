@@ -1,20 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Grid, 
-  Typography, 
-  Skeleton, 
-  Box, 
-  Card, 
-  CardContent, 
-  useTheme,
-  Grow
-} from '@mui/material';
-import {
-  UserOutlined,
-  BookOutlined,
-  TeamOutlined,
-  CalendarOutlined
-} from '@ant-design/icons';
+import { Grid, Typography, Skeleton, Box, Card, CardContent, useTheme, Grow } from '@mui/material';
+import { UserOutlined, BookOutlined, TeamOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useAuthContext } from 'context/useAuthContext';
 import { apiRoutes } from 'config';
 import { useLogout } from 'hooks/useLogout';
@@ -102,28 +88,28 @@ const EnrollmentSummary = () => {
 
   const metricCards = [
     {
-      title: "Total Students",
+      title: 'Total Students',
       count: (animatedCounts.totalRegistrations || 0).toLocaleString(),
       icon: <UserOutlined />,
       color: theme.palette.primary.main,
       bgColor: 'rgba(25, 118, 210, 0.1)',
-      description: "Registered students"
+      description: 'Registered students'
     },
     {
-      title: "Active Courses",
+      title: 'Active Courses',
       count: `${(animatedCounts.totalRunningCourses || 0).toLocaleString()} / ${(animatedCounts.totalCourses || 0).toLocaleString()}`,
       icon: <BookOutlined />,
       color: theme.palette.success.main,
       bgColor: 'rgba(76, 175, 80, 0.1)',
-      description: "Running / Total courses"
+      description: 'Running / Total courses'
     },
     {
-      title: "Active Batches",
+      title: 'Active Batches',
       count: `${(animatedCounts.totalRunningBatches || 0).toLocaleString()} / ${(animatedCounts.totalBatches || 0).toLocaleString()}`,
       icon: <TeamOutlined />,
       color: theme.palette.warning.main,
       bgColor: 'rgba(255, 152, 0, 0.1)',
-      description: "Running / Total batches"
+      description: 'Running / Total batches'
     },
     {
       title: "Today's Enrollments",
@@ -131,22 +117,24 @@ const EnrollmentSummary = () => {
       icon: <CalendarOutlined />,
       color: theme.palette.info.main,
       bgColor: 'rgba(3, 169, 244, 0.1)',
-      description: "New enrollments today"
+      description: 'New enrollments today'
     }
   ];
 
   const renderSkeletonCard = () => (
     <Grid item xs={12} sm={6} md={3}>
-      <Card sx={{
-        height: 160,
-        borderRadius: 3,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        transition: 'transform 0.2s ease-in-out',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: '0 8px 25px rgba(0,0,0,0.12)'
-        }
-      }}>
+      <Card
+        sx={{
+          height: 160,
+          borderRadius: 3,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          transition: 'transform 0.2s ease-in-out',
+          '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.12)'
+          }
+        }}
+      >
         <CardContent sx={{ p: 3 }}>
           <Skeleton variant="circular" width={40} height={40} sx={{ mb: 2 }} />
           <Skeleton variant="text" width="60%" height={24} sx={{ mb: 1 }} />
@@ -170,37 +158,43 @@ const EnrollmentSummary = () => {
         metricCards.map((metric, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             <Grow in={!loading} timeout={index * 200}>
-              <Card sx={{
-                height: 'auto',
-                borderRadius: 3,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                transition: 'all 0.3s ease-in-out',
-                background: `linear-gradient(135deg, ${metric.bgColor} 0%, rgba(255,255,255,0.9) 100%)`,
-                border: `1px solid ${metric.bgColor}`,
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: '0 8px 25px rgba(0,0,0,0.12)',
-                  borderColor: metric.color
-                }
-              }}>
+              <Card
+                sx={{
+                  height: 'auto',
+                  borderRadius: 3,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  transition: 'all 0.3s ease-in-out',
+                  background: `linear-gradient(135deg, ${metric.bgColor} 0%, rgba(255,255,255,0.9) 100%)`,
+                  border: `1px solid ${metric.bgColor}`,
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.12)',
+                    borderColor: metric.color
+                  }
+                }}
+              >
                 <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    mb: 2
-                  }}>
-                    <Box sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 2,
-                      backgroundColor: metric.bgColor,
+                  <Box
+                    sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      color: metric.color,
-                      fontSize: '24px'
-                    }}>
+                      justifyContent: 'space-between',
+                      mb: 2
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 2,
+                        backgroundColor: metric.bgColor,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: metric.color,
+                        fontSize: '24px'
+                      }}
+                    >
                       {metric.icon}
                     </Box>
                   </Box>

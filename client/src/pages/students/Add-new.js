@@ -170,7 +170,11 @@ const AddStudent = () => {
         return !!(values.firstName && values.lastName && values.dob && values.nic && values.address && values.mobile && values.email);
 
       case 1: // Course Details
-        return !!(values.enrollments && values.enrollments.length > 0 && values.enrollments.every((enr) => enr.pathway && enr.courseId && enr.batchId && enr.classroomId));
+        return !!(
+          values.enrollments &&
+          values.enrollments.length > 0 &&
+          values.enrollments.every((enr) => enr.pathway && enr.courseId && enr.batchId && enr.classroomId)
+        );
 
       case 2: {
         // Payment Schema

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import PropTypes from "prop-types";
-import { useAuthContext } from "src/contexts/auth-context";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import PropTypes from 'prop-types';
+import { useAuthContext } from 'src/contexts/auth-context';
 
 export const AuthGuard = (props) => {
   const { children, requiredPermissions, allowedUserTypes } = props;
@@ -11,16 +11,16 @@ export const AuthGuard = (props) => {
 
   useEffect(() => {
     let isMounted = true;
-  
+
     const checkAccess = async () => {
       if (!isAuthenticated) {
-        console.log("Not authenticated, redirecting");
+        console.log('Not authenticated, redirecting');
         redirectToLogin();
       } else if (
-        (!user) ||  // Check if user or user permissions are not available
+        !user || // Check if user or user permissions are not available
         (allowedUserTypes && !isUserTypeAllowed(user, allowedUserTypes))
       ) {
-        console.log("Unauthorized, redirecting");
+        console.log('Unauthorized, redirecting');
         redirectToUnauthorized();
       } else {
         if (isMounted) {
@@ -28,27 +28,27 @@ export const AuthGuard = (props) => {
         }
       }
     };
-  
+
     if (isAuthenticated) {
       checkAccess();
     }
-  
+
     return () => {
       isMounted = false;
     };
-  }, [isAuthenticated, user, requiredPermissions, allowedUserTypes]);  
+  }, [isAuthenticated, user, requiredPermissions, allowedUserTypes]);
 
   const redirectToLogin = () => {
     router
       .replace({
-        pathname: "/auth/login",
-        query: router.asPath !== "/" ? { continueUrl: router.asPath } : undefined,
+        pathname: '/auth/login',
+        query: router.asPath !== '/' ? { continueUrl: router.asPath } : undefined
       })
       .catch(console.error);
   };
 
   const redirectToUnauthorized = () => {
-    router.replace("/404").catch(console.error);
+    router.replace('/404').catch(console.error);
   };
 
   const isUserTypeAllowed = (user, allowedUserTypes) => {

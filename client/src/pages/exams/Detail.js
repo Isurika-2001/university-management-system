@@ -58,15 +58,15 @@ const EditableMarkRow = ({ student, take, examId, onMarkSave, getStudentName }) 
       <TableCell>{student.enrollmentId?.enrollment_no || '-'}</TableCell>
       <TableCell>{take.type}</TableCell>
       <TableCell>
-        <input
-          type="number"
-          value={mark}
-          disabled={!isEditable}
-          onChange={(e) => setMark(e.target.value)}
-          style={{ width: '80px' }}
-        />
+        <input type="number" value={mark} disabled={!isEditable} onChange={(e) => setMark(e.target.value)} style={{ width: '80px' }} />
       </TableCell>
-      <TableCell>{isEditable && <Button onClick={handleSave} size="small" variant="contained">Save</Button>}</TableCell>
+      <TableCell>
+        {isEditable && (
+          <Button onClick={handleSave} size="small" variant="contained">
+            Save
+          </Button>
+        )}
+      </TableCell>
     </TableRow>
   );
 };
@@ -88,11 +88,11 @@ export default function ExamDetail() {
       const marks = resp?.data?.marks || [];
       const grouped = {};
       marks.forEach((m) => {
-        const studentData = students.find(s => (s.studentId?._id || s._id) === (m.studentId?._id || m.studentId))
+        const studentData = students.find((s) => (s.studentId?._id || s._id) === (m.studentId?._id || m.studentId));
         grouped[m.studentId?._id || m.studentId] = {
-            takes: m.takes || [],
-            examMark: m,
-            student: studentData
+          takes: m.takes || [],
+          examMark: m,
+          student: studentData
         };
       });
       setMarksByStudent(grouped);
@@ -100,7 +100,7 @@ export default function ExamDetail() {
       console.error('Error fetching marks:', err);
     }
   };
-  
+
   useEffect(() => {
     if (!classroomId) {
       navigate('/app/exams');
@@ -110,14 +110,11 @@ export default function ExamDetail() {
     (async () => {
       try {
         setLoading(true);
-        const [examsResp, classroomResp] = await Promise.all([
-          examAPI.listByClassroom(classroomId),
-          classroomAPI.getById(classroomId)
-        ]);
-        
+        const [examsResp, classroomResp] = await Promise.all([examAPI.listByClassroom(classroomId), classroomAPI.getById(classroomId)]);
+
         const exams = examsResp?.data || [];
         setStudents(classroomResp?.data?.students || []);
-        
+
         if (exams.length > 0) {
           setSelectedExam(exams[0]);
         }
@@ -212,9 +209,9 @@ export default function ExamDetail() {
                         />
                       );
                     }
-                    
+
                     const studentWithMarkInfo = { ...student, examMark: studentMarks.examMark };
-                    
+
                     return takes.map((take, index) => (
                       <EditableMarkRow
                         key={`${sid}-${index}`}

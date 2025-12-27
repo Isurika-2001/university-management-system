@@ -66,7 +66,7 @@ const AddForm = () => {
     try {
       const response = await usersAPI.getUserTypes();
       console.log('User types response:', response);
-      
+
       // Handle both old and new response formats
       const userTypes = response.data || response;
       setUserTypes(formatUserTypes(userTypes));
@@ -176,13 +176,7 @@ const AddForm = () => {
               </Grid>
               <Divider sx={{ mt: 3, mb: 2 }} />
               <Grid item xs={12} style={{ textAlign: 'right' }}>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  size="small"
-                  onClick={() => navigate('/app/users')}
-                  sx={{ mr: 2 }}
-                >
+                <Button variant="outlined" color="secondary" size="small" onClick={() => navigate('/app/users')} sx={{ mr: 2 }}>
                   Cancel
                 </Button>
                 <Button

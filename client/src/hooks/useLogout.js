@@ -7,7 +7,7 @@ export const useLogout = () => {
   const logout = () => {
     // Clear auth context
     dispatch({ type: 'LOGOUT' });
-    
+
     // Use centralized logout function
     handleLogout();
   };

@@ -5,14 +5,14 @@
 
 // Mapping of database names to display names
 const USER_TYPE_DISPLAY_NAMES = {
-  'system_administrator': 'System Administrator',
-  'academic_administrator': 'Academic Administrator',
-  'finance_admin': 'Finance Administrator',
-  'accountant': 'Accountant',
-  'sup_admin': 'Super Admin',
-  'admin': 'Admin',
-  'counselor': 'Counselor',
-  'student': 'Student',
+  system_administrator: 'System Administrator',
+  academic_administrator: 'Academic Administrator',
+  finance_admin: 'Finance Administrator',
+  accountant: 'Accountant',
+  sup_admin: 'Super Admin',
+  admin: 'Admin',
+  counselor: 'Counselor',
+  student: 'Student'
   // Add more mappings as needed
 };
 
@@ -23,7 +23,7 @@ const USER_TYPE_DISPLAY_NAMES = {
  */
 export const formatUserTypeName = (userTypeName) => {
   if (!userTypeName) return '';
-  
+
   const normalizedName = userTypeName.toLowerCase().trim();
   return USER_TYPE_DISPLAY_NAMES[normalizedName] || userTypeName;
 };
@@ -35,8 +35,8 @@ export const formatUserTypeName = (userTypeName) => {
  */
 export const formatUserTypes = (userTypes) => {
   if (!Array.isArray(userTypes)) return [];
-  
-  return userTypes.map(userType => ({
+
+  return userTypes.map((userType) => ({
     ...userType,
     displayName: formatUserTypeName(userType.name)
   }));
@@ -49,7 +49,7 @@ export const formatUserTypes = (userTypes) => {
  */
 export const formatUserType = (userType) => {
   if (!userType) return null;
-  
+
   return {
     ...userType,
     displayName: formatUserTypeName(userType.name)
@@ -124,4 +124,4 @@ export default {
   getDisplayName,
   hasPermission,
   getUserRoleDisplayName
-}; 
+};

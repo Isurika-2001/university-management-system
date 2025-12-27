@@ -875,12 +875,12 @@ async function exportStudents(req, res) {
         
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', 'attachment; filename=students_export.csv');
-                res.send(csvContent);
-                logger.info('CSV file sent successfully');
-              } catch (csvError) {
-                logger.error('Error generating CSV:', csvError);
-                res.status(500).json({ error: `Failed to generate CSV file: ${  csvError.message}` });
-              }    }
+        res.send(csvContent);
+        logger.info('CSV file sent successfully');
+      } catch (csvError) {
+        logger.error('Error generating CSV:', csvError);
+        res.status(500).json({ error: `Failed to generate CSV file: ${  csvError.message}` });
+      }    }
   } catch (error) {
     logger.error('Error in exportStudents:', error);
     res.status(500).json({ error: 'Internal Server Error' });

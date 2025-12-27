@@ -35,4 +35,4 @@ export const studentsAPI = {
   search: async (searchTerm, params = {}) => {
     return api.get(apiRoutes.studentRoute, { search: searchTerm, ...params });
   }
-}; 
+};

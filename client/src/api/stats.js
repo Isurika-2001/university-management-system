@@ -45,4 +45,4 @@ export const statsAPI = {
   getCourseDistribution: async (params = {}) => {
     return api.get(apiRoutes.statRoute + 'courseDistribution', params);
   }
-}; 
+};
