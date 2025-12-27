@@ -74,7 +74,7 @@ async function bulkUploadStudents(req, res) {
         }
       }
     } catch (error) {
-      console.error('Bulk upload error:', error.message);
+      // console.error('Bulk upload error:', error.message);
       results.failed.push({
         type: 'error',
         entry,

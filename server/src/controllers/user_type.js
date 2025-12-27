@@ -9,7 +9,7 @@ async function getUser_types(req, res) {
       message: 'User types retrieved successfully'
     });
   } catch (error) {
-    console.error('Error fetching user types:', error);
+    // console.error('Error fetching user types:', error);
     res.status(500).json({ 
       success: false,
       error: 'Internal Server Error',

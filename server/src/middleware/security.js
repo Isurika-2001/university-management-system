@@ -41,12 +41,12 @@ const securityMiddleware = (app) => {
   } else {
     // In development, just log rate limiting info
     app.use('/api/auth', (req, res, next) => {
-      console.log(`[DEV] Auth request: ${req.method} ${req.path}`);
+      // console.log(`[DEV] Auth request: ${req.method} ${req.path}`);
       next();
     });
     
     app.use('/api', (req, res, next) => {
-      console.log(`[DEV] API request: ${req.method} ${req.path}`);
+      // console.log(`[DEV] API request: ${req.method} ${req.path}`);
       next();
     });
   }

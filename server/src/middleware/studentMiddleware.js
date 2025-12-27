@@ -17,7 +17,7 @@ async function checkStudentsAssignedToCourse(req, res, next) {
 
     next();
   } catch (error) {
-    console.error('Error checking course assignments:', error);
+    // console.error('Error checking course assignments:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while checking course assignments.',
@@ -60,7 +60,7 @@ async function checkStudentsAssignedToBatch(req, res, next) {
 
     next();
   } catch (error) {
-    console.error('Error checking batch assignments:', error);
+    // console.error('Error checking batch assignments:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while checking batch assignments.',

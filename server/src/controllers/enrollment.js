@@ -5,7 +5,7 @@ const Student = require('../models/student');
 const mongoose = require('mongoose');
 const ActivityLogger = require('../utils/activityLogger');
 const { getRequestInfo } = require('../middleware/requestInfo');
-const { getNextSequenceValue, getAndFormatCourseEnrollmentNumber } = require('../utilities/counter');
+const { getAndFormatCourseEnrollmentNumber } = require('../utilities/counter');
 const { generateCSV, generateExcel, enrollmentExportHeaders } = require('../utils/exportUtils');
 const logger = require('../utils/logger');
 

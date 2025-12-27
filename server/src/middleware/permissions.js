@@ -41,7 +41,7 @@ const checkPermission = (resource, action) => {
       // Permission granted, continue to next middleware
       next();
     } catch (error) {
-      console.error('Permission check error:', error);
+      // console.error('Permission check error:', error);
       return res.status(500).json({
         success: false,
         message: 'Internal server error during permission check'

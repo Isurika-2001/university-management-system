@@ -20,7 +20,7 @@ async function getAllModules(req, res) {
       // Fallback: check CourseModule document for this course and return module names as objects
       const cm = await CourseModule.findOne({ courseId }).lean();
       if (cm && Array.isArray(cm.modules)) {
-        const fallback = cm.modules.map((name, idx) => ({ _id: null, name, courseId }));
+        const fallback = cm.modules.map((name, _idx) => ({ _id: null, name, courseId }));
         return res.status(200).json({ success: true, data: fallback });
       }
 
