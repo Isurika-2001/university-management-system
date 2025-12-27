@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 const { PATHWAYS } = require('../config/pathways');
 
 // Define the course schema
@@ -26,7 +26,7 @@ const courseSchema = new mongoose.Schema({
   // New fields
   prerequisites: {
     type: String,
-    default: "None",
+    default: 'None',
   },
   courseCredits: {
     type: Number,
@@ -56,7 +56,7 @@ const courseSchema = new mongoose.Schema({
 });
 
 // Create the course model
-const Course = mongoose.model("Course", courseSchema);
+const Course = mongoose.model('Course', courseSchema);
 
 // Export the course model
 module.exports = Course;

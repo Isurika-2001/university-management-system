@@ -1,6 +1,6 @@
 // Import any necessary dependencies
-const Course = require("../models/course");
-const Counter = require("../models/counter");
+const Course = require('../models/course');
+const Counter = require('../models/counter');
 
 // Function to get all courses
 async function getAllCourses(req, res) {
@@ -8,7 +8,7 @@ async function getAllCourses(req, res) {
     const courses = await Course.find();
     res.status(200).json(courses);
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -36,14 +36,14 @@ async function createCourse(req, res) {
     if (isDuplicate) {
       return res.status(403).json({
         success: false,
-        message: "Course name is already taken",
+        message: 'Course name is already taken',
       });
     }
 
     if (isDuplicateCode) {
       return res.status(403).json({
         success: false,
-        message: "Course code is already taken",
+        message: 'Course code is already taken',
       });
     }
 
@@ -75,12 +75,12 @@ async function createCourse(req, res) {
       );
     } catch (counterErr) {
       // Log and proceed; course creation succeeded even if counter upsert failed
-      console.error("Error ensuring course counter:", counterErr);
+      console.error('Error ensuring course counter:', counterErr);
     }
 
     res.status(201).json({
       success: true,
-      message: "Course created successfully",
+      message: 'Course created successfully',
       data: newCourse,
     });
   } catch (error) {
@@ -88,7 +88,7 @@ async function createCourse(req, res) {
 
     res.status(500).json({
       success: false,
-      message: "Error creating course",
+      message: 'Error creating course',
       error: error.message, // optional detailed error
     });
   }
@@ -114,7 +114,7 @@ async function editCourse(req, res) {
     if (!existingCourse) {
       return res.status(404).json({
         success: false,
-        message: "Course not found",
+        message: 'Course not found',
       });
     }
 
@@ -124,7 +124,7 @@ async function editCourse(req, res) {
       if (nameTaken) {
         return res.status(403).json({
           success: false,
-          message: "Course name is already taken",
+          message: 'Course name is already taken',
         });
       }
     }
@@ -135,7 +135,7 @@ async function editCourse(req, res) {
       if (codeTaken) {
         return res.status(403).json({
           success: false,
-          message: "Course code is already taken",
+          message: 'Course code is already taken',
         });
       }
     }
@@ -156,14 +156,14 @@ async function editCourse(req, res) {
 
     res.status(200).json({
       success: true,
-      message: "Course updated successfully",
+      message: 'Course updated successfully',
       data: updatedCourse,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Error updating course",
+      message: 'Error updating course',
       error: error.message,
     });
   }
@@ -178,7 +178,7 @@ async function deleteCourse(req, res) {
     if (!course) {
       return res.status(404).json({
         success: false,
-        message: "Course not found",
+        message: 'Course not found',
       });
     }
 
@@ -186,13 +186,13 @@ async function deleteCourse(req, res) {
 
     res.status(200).json({
       success: true,
-      message: "Course deleted successfully",
+      message: 'Course deleted successfully',
     });
   } catch (error) {
-    console.error("Error deleting course:", error);
+    console.error('Error deleting course:', error);
     res.status(500).json({
       success: false,
-      message: "Error deleting course",
+      message: 'Error deleting course',
       error: error.message,
     });
   }
@@ -207,20 +207,20 @@ async function getCourseById(req, res) {
     if (!course) {
       return res.status(404).json({
         success: false,
-        message: "Course not found",
+        message: 'Course not found',
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Course retrieved successfully",
+      message: 'Course retrieved successfully',
       data: course,
     });
   } catch (error) {
-    console.error("Error retrieving course:", error);
+    console.error('Error retrieving course:', error);
     res.status(500).json({
       success: false,
-      message: "Error retrieving course",
+      message: 'Error retrieving course',
       error: error.message,
     });
   }

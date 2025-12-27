@@ -10,7 +10,7 @@ const {
   addBatchTransfer,
   getBatchTransferHistory
 } = require('../controllers/enrollment');
-const authenticate = require("../middleware/authMiddleware");
+const authenticate = require('../middleware/authMiddleware');
 const { checkPermission } = require('../middleware/permissions');
 
 const router = express.Router();

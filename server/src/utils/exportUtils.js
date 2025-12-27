@@ -22,7 +22,7 @@ const generateCSV = (data, headers) => {
   const csvData = data.map(row => 
     headers.map(header => escapeCSV(row[header.key])).join(',')
   );
-  return csvHeader + '\n' + csvData.join('\n');
+  return `${csvHeader  }\n${  csvData.join('\n')}`;
 };
 
 // Generate Excel file

@@ -1,20 +1,20 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const enrollmentSchema = new mongoose.Schema(
   {
     studentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Student",
+      ref: 'Student',
       required: true,
     },
     courseId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Course",
+      ref: 'Course',
       required: true,
     },
     batchId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Batch",
+      ref: 'Batch',
       required: true,
     },
     registration_no: {
@@ -64,7 +64,7 @@ const enrollmentSchema = new mongoose.Schema(
     batchTransfers: [{
       batch: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Batch",
+        ref: 'Batch',
         required: true,
       },
       date: {
@@ -82,6 +82,6 @@ const enrollmentSchema = new mongoose.Schema(
   }
 );
 
-const Enrollment = mongoose.model("Enrollment", enrollmentSchema);
+const Enrollment = mongoose.model('Enrollment', enrollmentSchema);
 
 module.exports = Enrollment;

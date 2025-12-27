@@ -1,12 +1,12 @@
-require("dotenv").config();
-const mongoose = require("mongoose");
+require('dotenv').config();
+const mongoose = require('mongoose');
 
 // Import models
-const Student = require("./src/models/student");
-const Course = require("./src/models/course");
-const Enrollment = require("./src/models/enrollment");
-const User_type = require("./src/models/user_type");
-const RequiredDocument = require("./src/models/required_document");
+const Student = require('./src/models/student');
+const Course = require('./src/models/course');
+const Enrollment = require('./src/models/enrollment');
+const User_type = require('./src/models/user_type');
+const RequiredDocument = require('./src/models/required_document');
 
 async function migrateData() {
   try {
@@ -14,10 +14,10 @@ async function migrateData() {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log("Connected to MongoDB for migration");
+    console.log('Connected to MongoDB for migration');
 
     // 1. Update existing students with new fields
-    console.log("Updating existing students...");
+    console.log('Updating existing students...');
     const students = await Student.find({});
     
     for (const student of students) {
@@ -55,7 +55,7 @@ async function migrateData() {
     }
 
     // 2. Update existing courses with new fields
-    console.log("Updating existing courses...");
+    console.log('Updating existing courses...');
     const courses = await Course.find({});
     
     for (const course of courses) {
@@ -89,7 +89,7 @@ async function migrateData() {
     }
 
     // 3. Update existing enrollments (course registrations)
-    console.log("Updating existing enrollments...");
+    console.log('Updating existing enrollments...');
     const enrollments = await Enrollment.find({});
     
     for (const enrollment of enrollments) {
@@ -112,7 +112,7 @@ async function migrateData() {
     }
 
     // 4. Create default required documents
-    console.log("Creating default required documents...");
+    console.log('Creating default required documents...');
     const defaultDocuments = [
       {
         name: 'Birth Certificate',
@@ -145,55 +145,55 @@ async function migrateData() {
     }
 
     // 5. Update user types (roles)
-    console.log("Updating user types...");
+    console.log('Updating user types...');
     
     // Remove old roles and create new ones
     await User_type.deleteMany({});
     
     const newUserTypes = [
       {
-        name: "system_administrator",
-        displayName: "System Administrator",
-        user: "CRUD",
-        student: "CRUD",
-        course: "CRUD",
-        batch: "CRUD",
-        enrollments: "CRUD",
-        finance: "CRUD",
-        reports: "CRUD",
+        name: 'system_administrator',
+        displayName: 'System Administrator',
+        user: 'CRUD',
+        student: 'CRUD',
+        course: 'CRUD',
+        batch: 'CRUD',
+        enrollments: 'CRUD',
+        finance: 'CRUD',
+        reports: 'CRUD',
       },
       {
-        name: "academic_administrator",
-        displayName: "Academic Administrator",
-        user: "R",
-        student: "CRUD",
-        course: "CRUD",
-        batch: "CRUD",
-        enrollments: "CRUD",
-        finance: "R",
-        reports: "R",
+        name: 'academic_administrator',
+        displayName: 'Academic Administrator',
+        user: 'R',
+        student: 'CRUD',
+        course: 'CRUD',
+        batch: 'CRUD',
+        enrollments: 'CRUD',
+        finance: 'R',
+        reports: 'R',
       },
       {
-        name: "finance_admin",
-        displayName: "Finance Administrator",
-        user: "R",
-        student: "R",
-        course: "R",
-        batch: "R",
-        enrollments: "R",
-        finance: "CRUD",
-        reports: "R",
+        name: 'finance_admin',
+        displayName: 'Finance Administrator',
+        user: 'R',
+        student: 'R',
+        course: 'R',
+        batch: 'R',
+        enrollments: 'R',
+        finance: 'CRUD',
+        reports: 'R',
       },
       {
-        name: "accountant",
-        displayName: "Accountant",
-        user: "R",
-        student: "R",
-        course: "R",
-        batch: "R",
-        enrollments: "R",
-        finance: "CRUD",
-        reports: "R",
+        name: 'accountant',
+        displayName: 'Accountant',
+        user: 'R',
+        student: 'R',
+        course: 'R',
+        batch: 'R',
+        enrollments: 'R',
+        finance: 'CRUD',
+        reports: 'R',
       },
     ];
 
@@ -202,13 +202,13 @@ async function migrateData() {
       console.log(`Created user type: ${userType.displayName}`);
     }
 
-    console.log("Migration completed successfully!");
+    console.log('Migration completed successfully!');
     
   } catch (error) {
-    console.error("Migration error:", error);
+    console.error('Migration error:', error);
   } finally {
     await mongoose.connection.close();
-    console.log("Database connection closed");
+    console.log('Database connection closed');
   }
 }
 

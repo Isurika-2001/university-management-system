@@ -18,8 +18,20 @@ const checkPermission = (resource, action) => {
         });
       }
 
+      // Map actions to permission characters
+      const permissionMap = {
+        create: 'C',
+        read: 'R',
+        update: 'U',
+        delete: 'D',
+        import: 'C',
+        export: 'R'
+      };
+
+      const requiredPermission = permissionMap[action];
+
       // Check if user has the required action permission
-      if (!resourcePermissions.includes(action)) {
+      if (!requiredPermission || !resourcePermissions.includes(requiredPermission)) {
         return res.status(403).json({
           success: false,
           message: `Access denied: Insufficient permissions for ${action} on ${resource}`

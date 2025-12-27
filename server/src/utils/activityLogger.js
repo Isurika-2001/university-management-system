@@ -91,7 +91,7 @@ class ActivityLogger {
       resourceId: student._id,
       details: {
         studentId: student.studentId,
-        changes: changes
+        changes
       },
       ipAddress,
       userAgent
@@ -103,7 +103,7 @@ class ActivityLogger {
     return this.logActivity({
       user,
       action: 'ENROLLMENT_CREATE',
-      description: description,
+      description,
       resourceType: 'ENROLLMENT',
       resourceId: enrollmentId
     });
@@ -113,7 +113,7 @@ class ActivityLogger {
     return this.logActivity({
       user,
       action: 'ENROLLMENT_UPDATE',
-      description: description,
+      description,
       resourceType: 'ENROLLMENT',
       resourceId: enrollmentId
     });
@@ -123,7 +123,7 @@ class ActivityLogger {
     return this.logActivity({
       user,
       action: 'ENROLLMENT_DELETE',
-      description: description,
+      description,
       resourceType: 'ENROLLMENT',
       resourceId: enrollmentId
     });
@@ -178,7 +178,7 @@ class ActivityLogger {
       resourceType: 'STUDENT',
       details: {
         importCount: count,
-        filename: filename
+        filename
       },
       ipAddress,
       userAgent,
@@ -195,7 +195,7 @@ class ActivityLogger {
       resourceType: 'BULK_UPLOAD',
       details: {
         uploadCount: count,
-        filename: filename
+        filename
       },
       ipAddress,
       userAgent,
@@ -230,7 +230,7 @@ class ActivityLogger {
       resourceId: registration._id,
       details: {
         studentId: registration.studentId,
-        changes: changes
+        changes
       },
       ipAddress,
       userAgent
@@ -277,7 +277,7 @@ class ActivityLogger {
       resourceId: updatedUser._id,
       details: {
         email: updatedUser.email,
-        changes: changes
+        changes
       },
       ipAddress,
       userAgent

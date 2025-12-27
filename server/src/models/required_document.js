@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const requiredDocumentSchema = new mongoose.Schema({
   name: {
@@ -24,6 +24,6 @@ const requiredDocumentSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-const RequiredDocument = mongoose.model("RequiredDocument", requiredDocumentSchema);
+const RequiredDocument = mongoose.model('RequiredDocument', requiredDocumentSchema);
 
 module.exports = RequiredDocument;

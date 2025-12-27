@@ -1,15 +1,15 @@
 // enrollmentController.js
 
-const Enrollment = require("../models/enrollment");
-const Student = require("../models/student");
+const Enrollment = require('../models/enrollment');
+const Student = require('../models/student');
 const mongoose = require('mongoose');
-const ActivityLogger = require("../utils/activityLogger");
-const { getRequestInfo } = require("../middleware/requestInfo");
-const { getNextSequenceValue, getAndFormatCourseEnrollmentNumber } = require("../utilities/counter");
-const { generateCSV, generateExcel, enrollmentExportHeaders } = require("../utils/exportUtils");
+const ActivityLogger = require('../utils/activityLogger');
+const { getRequestInfo } = require('../middleware/requestInfo');
+const { getNextSequenceValue, getAndFormatCourseEnrollmentNumber } = require('../utilities/counter');
+const { generateCSV, generateExcel, enrollmentExportHeaders } = require('../utils/exportUtils');
 
 // Import getStudentCompletionStatus from student controller
-const { getStudentCompletionStatus } = require("./student");
+const { getStudentCompletionStatus } = require('./student');
 
 async function getAllEnrollments(req, res) {
   try {
@@ -401,10 +401,10 @@ async function createEnrollment(req, res) {
 
     res.status(201).json({
       success: true,
-      message: message,
+      message,
       data: {
         ...enrollment.toObject(),
-        completionStatus: completionStatus
+        completionStatus
       }
     });
   } catch (error) {

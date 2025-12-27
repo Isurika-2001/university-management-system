@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const user_typeSchema = new mongoose.Schema({
   name: {
@@ -22,20 +22,20 @@ const user_typeSchema = new mongoose.Schema({
   // ✅ Newly added permission fields
   classrooms: {
     type: String,
-    default: "NONE",
+    default: 'NONE',
   },
   modules: {
     type: String,
-    default: "NONE",
+    default: 'NONE',
   },
   exams: {
     type: String,
-    default: "NONE",
+    default: 'NONE',
   },
 }, {
   timestamps: true,
 });
 
-const User_type = mongoose.model("User_type", user_typeSchema);
+const User_type = mongoose.model('User_type', user_typeSchema);
 
 module.exports = User_type;

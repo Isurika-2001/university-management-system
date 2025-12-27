@@ -1,4 +1,4 @@
-const Batch = require("../models/batch");
+const Batch = require('../models/batch');
 
 // Get all intakes (batches) with search, filter, pagination
 async function getAllBatches(req, res) {
@@ -102,7 +102,7 @@ async function getAllBatches(req, res) {
         registrationDeadline: batch.registrationDeadline
       }));
 
-            res.status(200).json({
+      res.status(200).json({
         total,
         page: pageNum,
         limit: limitNum,
@@ -112,7 +112,7 @@ async function getAllBatches(req, res) {
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -136,7 +136,7 @@ async function getBatchesByCourseId(req, res) {
     res.status(200).json(formattedBatches);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -150,7 +150,7 @@ async function createBatch(req, res) {
     if (await checkDuplicateBatch(courseId, name)) {
       return res.status(403).json({
         success: false,
-        message: "Batch name already exists for this course",
+        message: 'Batch name already exists for this course',
       });
     }
 
@@ -166,7 +166,7 @@ async function createBatch(req, res) {
 
     res.status(201).json({
       success: true,
-      message: "Intake created successfully",
+      message: 'Intake created successfully',
       data: newBatch,
     });
   } catch (error) {
@@ -175,12 +175,12 @@ async function createBatch(req, res) {
     if (error.code === 11000) {
       res.status(400).json({
         success: false,
-        message: "Intake name already exists (duplicate key error)",
+        message: 'Intake name already exists (duplicate key error)',
       });
     } else {
       res.status(500).json({
         success: false,
-        message: "Error creating intake",
+        message: 'Error creating intake',
         error: error.message,
       });
     }
@@ -197,20 +197,20 @@ async function getBatchById(req, res) {
     if (!batch) {
       return res.status(404).json({
         success: false,
-        message: "Intake not found",
+        message: 'Intake not found',
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Intake retrieved successfully",
+      message: 'Intake retrieved successfully',
       data: batch,
     });
   } catch (error) {
-    console.error("Error retrieving batch:", error);
+    console.error('Error retrieving batch:', error);
     res.status(500).json({
       success: false,
-      message: "Error retrieving batch",
+      message: 'Error retrieving batch',
       error: error.message,
     });
   }
@@ -232,20 +232,20 @@ async function deleteBatch(req, res) {
     if (!deletedBatch) {
       return res.status(404).json({
         success: false,
-        message: "Intake not found",
+        message: 'Intake not found',
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Intake deleted successfully",
+      message: 'Intake deleted successfully',
       data: deletedBatch,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Error deleting batch",
+      message: 'Error deleting batch',
       error: error.message,
     });
   }
@@ -264,7 +264,7 @@ async function updateBatch(req, res) {
     if (!existingBatch) {
       return res.status(404).json({
         success: false,
-      message: "Intake not found",
+        message: 'Intake not found',
       });
     }
 
@@ -277,7 +277,7 @@ async function updateBatch(req, res) {
     if (duplicate) {
       return res.status(403).json({
         success: false,
-        message: "Intake name already exists for this course",
+        message: 'Intake name already exists for this course',
       });
     }
 
@@ -291,14 +291,14 @@ async function updateBatch(req, res) {
 
     res.status(200).json({
       success: true,
-      message: "Intake updated successfully",
+      message: 'Intake updated successfully',
       data: updatedBatch,
     });
   } catch (error) {
-    console.error("Error updating batch:", error);
+    console.error('Error updating batch:', error);
     res.status(500).json({
       success: false,
-      message: "Error updating batch",
+      message: 'Error updating batch',
       error: error.message,
     });
   }

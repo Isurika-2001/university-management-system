@@ -1,5 +1,5 @@
-const CourseRegistration = require("../models/enrollment");
-const Batch = require("../models/batch");
+const CourseRegistration = require('../models/enrollment');
+const Batch = require('../models/batch');
 
 // Middleware to check if any student is assigned to the course
 async function checkStudentsAssignedToCourse(req, res, next) {
@@ -11,16 +11,16 @@ async function checkStudentsAssignedToCourse(req, res, next) {
     if (registrations.length > 0) {
       return res.status(400).json({
         success: false,
-        message: "Cannot modify course: students are assigned to this course.",
+        message: 'Cannot modify course: students are assigned to this course.',
       });
     }
 
     next();
   } catch (error) {
-    console.error("Error checking course assignments:", error);
+    console.error('Error checking course assignments:', error);
     res.status(500).json({
       success: false,
-      message: "Server error while checking course assignments.",
+      message: 'Server error while checking course assignments.',
     });
   }
 }
@@ -36,7 +36,7 @@ async function checkStudentsAssignedToBatch(req, res, next) {
     if (!existingBatch) {
       return res.status(404).json({
         success: false,
-        message: "Batch not found",
+        message: 'Batch not found',
       });
     }
 
@@ -54,16 +54,16 @@ async function checkStudentsAssignedToBatch(req, res, next) {
     if (studentsExist && isRestrictedFieldChanged) {
       return res.status(400).json({
         success: false,
-        message: "Cannot modify batch details (course/year/number) while students are assigned. You may still update the date fields.",
+        message: 'Cannot modify batch details (course/year/number) while students are assigned. You may still update the date fields.',
       });
     }
 
     next();
   } catch (error) {
-    console.error("Error checking batch assignments:", error);
+    console.error('Error checking batch assignments:', error);
     res.status(500).json({
       success: false,
-      message: "Server error while checking batch assignments.",
+      message: 'Server error while checking batch assignments.',
     });
   }
 }

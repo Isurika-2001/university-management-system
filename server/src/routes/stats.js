@@ -1,4 +1,4 @@
-const express = require("express");
+const express = require('express');
 const { 
   getEnrollmentSummaryStats, 
   getUpcomingBatchDates, 
@@ -6,18 +6,18 @@ const {
   getEnrollmentNumbers, 
   getRecentStudents, 
   getCourseDistribution 
-} = require("../controllers/stats");
+} = require('../controllers/stats');
 const authenticate = require('../middleware/authMiddleware');
 const { checkPermission } = require('../middleware/permissions');
 
 const router = express.Router();
 
-router.get("/enrollment", authenticate, checkPermission('stats', 'read'), getEnrollmentSummaryStats);
-router.get("/batchDates", authenticate, checkPermission('stats', 'read'), getUpcomingBatchDates);
-router.get("/enrollments", authenticate, checkPermission('stats', 'read'), getCourseEnrollments);
-router.get("/enrollmentTrends", authenticate, checkPermission('stats', 'read'), getEnrollmentNumbers);
-router.get("/recentStudents", authenticate, checkPermission('stats', 'read'), getRecentStudents);
-router.get("/courseDistribution", authenticate, checkPermission('stats', 'read'), getCourseDistribution);
+router.get("/enrollment", authenticate, checkPermission('reports', 'read'), getEnrollmentSummaryStats);
+router.get("/batchDates", authenticate, checkPermission('reports', 'read'), getUpcomingBatchDates);
+router.get("/enrollments", authenticate, checkPermission('reports', 'read'), getCourseEnrollments);
+router.get("/enrollmentTrends", authenticate, checkPermission('reports', 'read'), getEnrollmentNumbers);
+router.get("/recentStudents", authenticate, checkPermission('reports', 'read'), getRecentStudents);
+router.get("/courseDistribution", authenticate, checkPermission('reports', 'read'), getCourseDistribution);
 
 // Define other routes
 

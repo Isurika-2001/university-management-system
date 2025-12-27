@@ -36,15 +36,15 @@ const upload = multer({
 
 const router = express.Router();
 
-router.get('/', authenticate, checkPermission('students', 'read'), getAllStudents);
-router.post('/', authenticate, checkPermission('students', 'create'), createStudent);
-router.get('/export', authenticate, checkPermission('students', 'export'), exportStudents);
-router.post('/import', authenticate, checkPermission('students', 'import'), upload.single('file'), importStudentsFromExcel);
-router.get('/enrollment/:id/history', authenticate, checkPermission('students', 'read'), getEnrollmentClassroomHistory);
-router.get('/:id', authenticate, checkPermission('students', 'read'), getStudentById);
-router.put('/:id', authenticate, checkPermission('students', 'update'), updateStudent);
-router.post('/enrollment/:id', authenticate, checkPermission('students', 'update'), AddCourseRegistration);
-router.delete('/enrollment/:id', authenticate, checkPermission('students', 'update'), deleteCourseRegistration);
+router.get('/', authenticate, checkPermission('student', 'read'), getAllStudents);
+router.post('/', authenticate, checkPermission('student', 'create'), createStudent);
+router.get('/export', authenticate, checkPermission('student', 'export'), exportStudents);
+router.post('/import', authenticate, checkPermission('student', 'import'), upload.single('file'), importStudentsFromExcel);
+router.get('/enrollment/:id/history', authenticate, checkPermission('student', 'read'), getEnrollmentClassroomHistory);
+router.get('/:id', authenticate, checkPermission('student', 'read'), getStudentById);
+router.put('/:id', authenticate, checkPermission('student', 'update'), updateStudent);
+router.post('/enrollment/:id', authenticate, checkPermission('student', 'update'), AddCourseRegistration);
+router.delete('/enrollment/:id', authenticate, checkPermission('student', 'update'), deleteCourseRegistration);
 
 // Define other routes
 
