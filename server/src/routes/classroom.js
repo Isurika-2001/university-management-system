@@ -11,15 +11,17 @@ const {
   deleteClassroom,
   getClassroomsByCourseAndBatch
 } = require('../controllers/classroom');
+const authenticate = require('../middleware/authMiddleware');
+const { checkPermission } = require('../middleware/permissions');
 
-router.get('/', getAllClassrooms);
-router.post('/', createClassroom);
-router.get('/course/:courseId/batch/:batchId', getClassroomsByCourseAndBatch);
-router.get('/:id', getClassroomById);
-router.get('/eligible/:enrollmentId', getEligibleClassrooms);
-router.post('/student/add', addStudentToClassroom);
-router.put('/student/:id/status', updateStudentStatus);
-router.delete('/student/:id', removeStudentFromClassroom);
-router.delete('/:id', deleteClassroom);
+router.get('/', authenticate, checkPermission('classrooms', 'read'), getAllClassrooms);
+router.post('/', authenticate, checkPermission('classrooms', 'create'), createClassroom);
+router.get('/course/:courseId/batch/:batchId', authenticate, checkPermission('classrooms', 'read'), getClassroomsByCourseAndBatch);
+router.get('/:id', authenticate, checkPermission('classrooms', 'read'), getClassroomById);
+router.get('/eligible/:enrollmentId', authenticate, checkPermission('classrooms', 'read'), getEligibleClassrooms);
+router.post('/student/add', authenticate, checkPermission('classrooms', 'update'), addStudentToClassroom);
+router.put('/student/:id/status', authenticate, checkPermission('classrooms', 'update'), updateStudentStatus);
+router.delete('/student/:id', authenticate, checkPermission('classrooms', 'update'), removeStudentFromClassroom);
+router.delete('/:id', authenticate, checkPermission('classrooms', 'delete'), deleteClassroom);
 
 module.exports = router;
