@@ -7,6 +7,7 @@ const Exam = require('../models/exam');
 const ExamMark = require('../models/exam_mark');
 const ModuleEntry = require('../models/module_entry');
 const { STATUSES } = require('../config/statuses');
+const logger = require('../utils/logger');
 
 // Get all classrooms with student count
 async function getAllClassrooms(req, res) {
@@ -41,7 +42,7 @@ async function getAllClassrooms(req, res) {
 
     res.status(200).json({ success: true, data: result });
   } catch (error) {
-    console.error('Error in getAllClassrooms:', error);
+    logger.error('Error in getAllClassrooms:', error);
     res.status(500).json({ success: false, message: 'Error fetching classrooms', error: error.message });
   }
 }
@@ -103,15 +104,15 @@ async function createClassroom(req, res) {
         date: null,
         description: `Exam for classroom ${savedClassroom.name}`
       });
-      console.log('Auto-created exam:', exam._id);
+      logger.info('Auto-created exam:', exam._id);
     } catch (examErr) {
-      console.error('Error auto-creating exam:', examErr);
+      logger.error('Error auto-creating exam:', examErr);
       // Don't fail the classroom creation if exam creation fails
     }
 
     res.status(201).json({ success: true, message: 'Classroom created successfully', data: savedClassroom });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ success: false, message: 'Error creating classroom', error: error.message });
   }
 }
@@ -151,7 +152,7 @@ async function getClassroomById(req, res) {
       }
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ success: false, message: 'Error fetching classroom' });
   }
 }
@@ -182,7 +183,7 @@ async function getEligibleClassrooms(req, res) {
 
     res.status(200).json({ success: true, data: eligibleClassrooms });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ success: false, message: 'Error fetching eligible classrooms' });
   }
 }
@@ -214,7 +215,7 @@ async function addStudentToClassroom(req, res) {
 
     res.status(201).json({ success: true, message: 'Student added to classroom', data: saved });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ success: false, message: 'Error adding student to classroom' });
   }
 }
@@ -228,7 +229,7 @@ async function removeStudentFromClassroom(req, res) {
 
     res.status(200).json({ success: true, message: 'Student removed from classroom' });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ success: false, message: 'Error removing student' });
   }
 }
@@ -248,7 +249,7 @@ async function updateStudentStatus(req, res) {
 
     res.status(200).json({ success: true, message: 'Status updated', data: updated });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ success: false, message: 'Error updating status' });
   }
 }
@@ -275,7 +276,7 @@ async function deleteClassroom(req, res) {
 
     res.status(200).json({ success: true, message: 'Classroom deleted successfully' });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ success: false, message: 'Error deleting classroom' });
   }
 }
@@ -290,7 +291,7 @@ async function getClassroomsByCourseAndBatch(req, res) {
       .lean();
     res.status(200).json(classrooms);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Error fetching classrooms' });
   }
 }

@@ -1,7 +1,7 @@
-/* eslint-disable no-console */
 require('dotenv').config();
 const mongoose = require('mongoose');
 const config = require('../src/config');
+const logger = require('../src/utils/logger');
 
 // Collections to keep (do NOT drop)
 const PROTECTED_COLLECTIONS = new Set([
@@ -12,7 +12,7 @@ const PROTECTED_COLLECTIONS = new Set([
 
 async function clearDatabase() {
   if (!config.mongoUri) {
-    console.error('MONGO_URI is not defined. Aborting.');
+    logger.error('MONGO_URI is not defined. Aborting.');
     process.exit(1);
   }
 
@@ -31,26 +31,26 @@ async function clearDatabase() {
       .filter(name => !PROTECTED_COLLECTIONS.has(name));
 
     if (toDrop.length === 0) {
-      console.log('No collections to drop. Protected collections remain intact.');
+      logger.info('No collections to drop. Protected collections remain intact.');
       return;
     }
 
-    console.log('Dropping collections:', toDrop.join(', '));
+    logger.info('Dropping collections:', toDrop.join(', '));
     for (const name of toDrop) {
       try {
         await db.dropCollection(name);
-        console.log(`Dropped collection: ${name}`);
+        logger.info(`Dropped collection: ${name}`);
       } catch (err) {
         // Ignore NamespaceNotFound and proceed
         if (err && err.codeName !== 'NamespaceNotFound') {
-          console.warn(`Failed to drop ${name}:`, err.message);
+          logger.warn(`Failed to drop ${name}:`, err.message);
         }
       }
     }
 
-    console.log('Database cleared successfully (protected collections preserved).');
+    logger.info('Database cleared successfully (protected collections preserved).');
   } catch (error) {
-    console.error('Error clearing database:', error);
+    logger.error('Error clearing database:', error);
     process.exitCode = 1;
   } finally {
     await mongoose.connection.close();

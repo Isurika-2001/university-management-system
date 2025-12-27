@@ -82,6 +82,10 @@ const enrollmentSchema = new mongoose.Schema(
   }
 );
 
+enrollmentSchema.index({ studentId: 1 });
+enrollmentSchema.index({ courseId: 1 });
+enrollmentSchema.index({ batchId: 1 });
+
 const Enrollment = mongoose.model('Enrollment', enrollmentSchema);
 
 module.exports = Enrollment;

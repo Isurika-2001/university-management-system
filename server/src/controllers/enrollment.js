@@ -7,6 +7,7 @@ const ActivityLogger = require('../utils/activityLogger');
 const { getRequestInfo } = require('../middleware/requestInfo');
 const { getNextSequenceValue, getAndFormatCourseEnrollmentNumber } = require('../utilities/counter');
 const { generateCSV, generateExcel, enrollmentExportHeaders } = require('../utils/exportUtils');
+const logger = require('../utils/logger');
 
 // Import getStudentCompletionStatus from student controller
 const { getStudentCompletionStatus } = require('./student');
@@ -205,7 +206,7 @@ async function getAllEnrollments(req, res) {
       }
     });
   } catch (error) {
-    console.error('Error in getAllEnrollments:', error);
+    logger.error('Error in getAllEnrollments:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -264,7 +265,7 @@ async function getEnrollmentById(req, res) {
       data: enrollment[0]
     });
   } catch (error) {
-    console.error('Error in getEnrollmentById:', error);
+    logger.error('Error in getEnrollmentById:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -317,7 +318,7 @@ async function getAllEnrollmentsByStudentId(req, res) {
       data: enrollments
     });
   } catch (error) {
-    console.error('Error in getAllEnrollmentsByStudentId:', error);
+    logger.error('Error in getAllEnrollmentsByStudentId:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -408,7 +409,7 @@ async function createEnrollment(req, res) {
       }
     });
   } catch (error) {
-    console.error('Error in createEnrollment:', error);
+    logger.error('Error in createEnrollment:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -444,7 +445,7 @@ async function updateEnrollment(req, res) {
       data: enrollment
     });
   } catch (error) {
-    console.error('Error in updateEnrollment:', error);
+    logger.error('Error in updateEnrollment:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -474,7 +475,7 @@ async function deleteEnrollment(req, res) {
       message: 'Enrollment deleted successfully'
     });
   } catch (error) {
-    console.error('Error in deleteEnrollment:', error);
+    logger.error('Error in deleteEnrollment:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -489,7 +490,7 @@ async function addBatchTransfer(req, res) {
     const transferData = req.body;
     const requestInfo = getRequestInfo(req);
 
-    console.log('addBatchTransfer called with:', { id, transferData });
+    logger.info('addBatchTransfer called with:', { id, transferData });
 
     const enrollment = await Enrollment.findById(id);
 
@@ -535,7 +536,7 @@ async function addBatchTransfer(req, res) {
       data: updatedEnrollment
     });
   } catch (error) {
-    console.error('Error in addBatchTransfer:', error);
+    logger.error('Error in addBatchTransfer:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -565,7 +566,7 @@ async function getBatchTransferHistory(req, res) {
       data: enrollment.batchTransfers || []
     });
   } catch (error) {
-    console.error('Error in getBatchTransferHistory:', error);
+    logger.error('Error in getBatchTransferHistory:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -692,7 +693,7 @@ async function exportEnrollments(req, res) {
       res.send(csvContent);
     }
   } catch (error) {
-    console.error('Error in exportEnrollments:', error);
+    logger.error('Error in exportEnrollments:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

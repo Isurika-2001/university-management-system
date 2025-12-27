@@ -1,5 +1,6 @@
 const CourseModule = require('../models/module');
 const Course = require('../models/course');
+const logger = require('../utils/logger');
 
 async function getAllModules(req, res) {
   try {
@@ -39,7 +40,7 @@ async function getAllModules(req, res) {
 
     res.status(200).json({ success: true, data });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ success: false, message: 'Error fetching modules' });
   }
 }
@@ -66,7 +67,7 @@ async function upsertModules(req, res) {
           { upsert: true }
         );
       } catch (innerErr) {
-        console.error('Error ensuring ModuleEntry', mName, innerErr.message);
+        logger.error('Error ensuring ModuleEntry', mName, innerErr.message);
       }
     }
 
@@ -74,12 +75,12 @@ async function upsertModules(req, res) {
     try {
       await ModuleEntry.deleteMany({ courseId, name: { $nin: modulesArray } });
     } catch (delErr) {
-      console.error('Error removing old ModuleEntry docs for course', courseId, delErr.message);
+      logger.error('Error removing old ModuleEntry docs for course', courseId, delErr.message);
     }
 
     res.status(200).json({ success: true, message: 'Modules saved', data: result });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ success: false, message: 'Error saving modules' });
   }
 }

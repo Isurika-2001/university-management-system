@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const ActivityLogger = require('../utils/activityLogger');
 const { getRequestInfo } = require('../middleware/requestInfo');
+const logger = require('../utils/logger');
 
 /**
  * Helper: Returns the current JWT version. This should be set in your environment
@@ -39,7 +40,7 @@ async function getUsers(req, res) {
       message: 'Users retrieved successfully'
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    logger.error('Error fetching users:', error);
     res.status(500).json({ 
       success: false,
       error: 'Internal Server Error',
@@ -104,7 +105,7 @@ async function createUser(req, res) {
       data: populatedUser,
     });
   } catch (error) {
-    console.error(error); // log for debugging
+    logger.error(error); // log for debugging
 
     res.status(500).json({
       success: false,
@@ -231,7 +232,7 @@ async function login(req, res) {
       jwtVersion
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
       message: 'Internal Server Error',
@@ -272,7 +273,7 @@ async function getUserById(req, res) {
       message: 'User retrieved successfully'
     });
   } catch (error) {
-    console.error('Error fetching user by ID:', error);
+    logger.error('Error fetching user by ID:', error);
     res.status(500).json({ 
       success: false,
       error: 'Internal Server Error',
@@ -337,7 +338,7 @@ async function editUser(req, res) {
       data: populatedUser,
     });
   } catch (error) {
-    console.error('Error updating user:', error);
+    logger.error('Error updating user:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating user',
@@ -371,7 +372,7 @@ async function disableUser(req, res) {
       }
     });
   } catch (error) {
-    console.error('Error disabling user:', error);
+    logger.error('Error disabling user:', error);
     res.status(500).json({
       success: false,
       message: 'Error disabling user',
@@ -429,7 +430,7 @@ async function updatePassword(req, res) {
       }
     });
   } catch (error) {
-    console.error('Error updating password:', error);
+    logger.error('Error updating password:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -463,7 +464,7 @@ async function enableUser(req, res) {
       }
     });
   } catch (error) {
-    console.error('Error enabling user:', error);
+    logger.error('Error enabling user:', error);
     res.status(500).json({
       success: false,
       message: 'Error enabling user',

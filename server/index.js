@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const morgan = require('morgan');
+const compression = require('compression');
 
 // Configuration and utilities
 const config = require('./src/config');
@@ -16,6 +17,8 @@ const securityMiddleware = require('./src/middleware/security');
 const routes = require('./src/routes/index');
 
 const app = express();
+
+app.use(compression());
 
 // CORS configuration (must come before rate limiting)
 app.use(cors({

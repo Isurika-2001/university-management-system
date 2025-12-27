@@ -1,5 +1,6 @@
 const RequiredDocument = require('../models/required_document');
 const ActivityLogger = require('../utils/activityLogger');
+const logger = require('../utils/logger');
 
 // Get all required documents
 const getAllRequiredDocuments = async (req, res) => {
@@ -7,7 +8,7 @@ const getAllRequiredDocuments = async (req, res) => {
     const documents = await RequiredDocument.find().sort({ createdAt: -1 });
     res.json(documents);
   } catch (error) {
-    console.error('Error fetching required documents:', error);
+    logger.error('Error fetching required documents:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -21,7 +22,7 @@ const getRequiredDocumentById = async (req, res) => {
     }
     res.json(document);
   } catch (error) {
-    console.error('Error fetching required document:', error);
+    logger.error('Error fetching required document:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -60,7 +61,7 @@ const createRequiredDocument = async (req, res) => {
 
     res.status(201).json(savedDocument);
   } catch (error) {
-    console.error('Error creating required document:', error);
+    logger.error('Error creating required document:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -108,7 +109,7 @@ const updateRequiredDocument = async (req, res) => {
 
     res.json(updatedDocument);
   } catch (error) {
-    console.error('Error updating required document:', error);
+    logger.error('Error updating required document:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -133,7 +134,7 @@ const deleteRequiredDocument = async (req, res) => {
 
     res.json({ message: 'Required document deleted successfully' });
   } catch (error) {
-    console.error('Error deleting required document:', error);
+    logger.error('Error deleting required document:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };

@@ -1,6 +1,7 @@
 // Import any necessary dependencies
 const Course = require('../models/course');
 const Counter = require('../models/counter');
+const logger = require('../utils/logger');
 
 // Function to get all courses
 async function getAllCourses(req, res) {
@@ -8,7 +9,8 @@ async function getAllCourses(req, res) {
     const courses = await Course.find();
     res.status(200).json(courses);
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+    logger.error('Error in getAllCourses:', error);
+    res.status(500).json({ success: false, message: 'Error fetching courses', error: error.message });
   }
 }
 
@@ -75,7 +77,7 @@ async function createCourse(req, res) {
       );
     } catch (counterErr) {
       // Log and proceed; course creation succeeded even if counter upsert failed
-      console.error('Error ensuring course counter:', counterErr);
+      logger.error('Error ensuring course counter:', counterErr);
     }
 
     res.status(201).json({
@@ -84,7 +86,7 @@ async function createCourse(req, res) {
       data: newCourse,
     });
   } catch (error) {
-    console.error(error); // log for debugging
+    logger.error(error); // log for debugging
 
     res.status(500).json({
       success: false,
@@ -160,7 +162,7 @@ async function editCourse(req, res) {
       data: updatedCourse,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
       message: 'Error updating course',
@@ -189,7 +191,7 @@ async function deleteCourse(req, res) {
       message: 'Course deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting course:', error);
+    logger.error('Error deleting course:', error);
     res.status(500).json({
       success: false,
       message: 'Error deleting course',
@@ -217,7 +219,7 @@ async function getCourseById(req, res) {
       data: course,
     });
   } catch (error) {
-    console.error('Error retrieving course:', error);
+    logger.error('Error retrieving course:', error);
     res.status(500).json({
       success: false,
       message: 'Error retrieving course',
@@ -228,15 +230,13 @@ async function getCourseById(req, res) {
 
 // seperate function to check if the name is already taken
 async function checkDuplicateCourse(name) {
-  const course = await Course.findOne
-  ({ name });
+  const course = await Course.findOne({ name });
   return course ? true : false;
 }
 
 // seperate function to check if the name is already taken
 async function checkDuplicateCourseCode(code) {
-  const course = await Course.findOne
-  ({ code });
+  const course = await Course.findOne({ code });
   return course ? true : false;
 }
 

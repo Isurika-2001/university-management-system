@@ -3,6 +3,7 @@ const Enrollment = require('../models/enrollment');
 const Batch = require('../models/batch');
 const Course = require('../models/course');
 const User = require('../models/user');
+const logger = require('../utils/logger');
 
 // get no of enrollments, courses, batches, today's enrollments
 async function getEnrollmentSummaryStats(req, res) {
@@ -43,7 +44,7 @@ async function getEnrollmentSummaryStats(req, res) {
       }
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
       message: 'Error fetching enrollment summary stats',
@@ -78,7 +79,7 @@ async function getUpcomingBatchDates(req, res) {
       data: upcomingBatches
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
       message: 'Error fetching upcoming batch dates',
@@ -119,7 +120,7 @@ async function getCourseEnrollments(req, res) {
     // Calculate total number of enrollments
     const totalEnrollments = enrollments.reduce((sum, item) => sum + item.registrations, 0);
 
-    console.log('Enrollment stats:', {
+    logger.info('Enrollment stats:', {
       totalEnrollments,
       totalRunningCourses: enrollments.length,
       courseEnrollments: enrollments
@@ -134,7 +135,7 @@ async function getCourseEnrollments(req, res) {
       }
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
       message: 'Error fetching course registrations',
@@ -207,7 +208,7 @@ async function getEnrollmentNumbers(req, res) {
       }
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
       message: 'Error fetching enrollment numbers',
@@ -231,7 +232,7 @@ async function getRecentStudents(req, res) {
       data: recentStudents
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
       message: 'Error fetching recent students',
@@ -302,7 +303,7 @@ async function getCourseDistribution(req, res) {
       }
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
       message: 'Error fetching course distribution',

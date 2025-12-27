@@ -1,4 +1,5 @@
 const ActivityLog = require('../models/activity_log');
+const logger = require('./logger');
 
 class ActivityLogger {
   static async logActivity({
@@ -30,11 +31,11 @@ class ActivityLogger {
       await logEntry.save();
       
       // Also log to console for debugging
-      console.log(`[ACTIVITY LOG] ${action}: ${description} - User: ${user.email || user._id} - Status: ${status}`);
+      logger.info(`[ACTIVITY LOG] ${action}: ${description} - User: ${user.email || user._id} - Status: ${status}`);
       
       return logEntry;
     } catch (error) {
-      console.error('Error logging activity:', error);
+      logger.error('Error logging activity:', error);
       // Don't throw error to avoid breaking the main functionality
     }
   }

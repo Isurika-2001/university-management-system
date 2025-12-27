@@ -2,6 +2,7 @@ const Exam = require('../models/exam');
 const ExamMark = require('../models/exam_mark');
 const ClassroomStudent = require('../models/classroom_student');
 const { STATUSES } = require('../config/statuses');
+const logger = require('../utils/logger');
 
 const PASS_THRESHOLD = 40;
 
@@ -10,7 +11,7 @@ async function getAllExams(req, res) {
     const exams = await Exam.find().populate('classroomId').sort({ createdAt: -1 });
     res.json({ success: true, data: exams });
   } catch (err) {
-    console.error('getAllExams error', err);
+    logger.error('getAllExams error', err);
     res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -22,7 +23,7 @@ async function createExam(req, res) {
     const exam = await Exam.create({ classroomId, name, date, description });
     res.status(201).json({ success: true, data: exam });
   } catch (err) {
-    console.error('createExam error', err);
+    logger.error('createExam error', err);
     res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -33,7 +34,7 @@ async function getExamsByClassroom(req, res) {
     const exams = await Exam.find({ classroomId }).sort({ createdAt: -1 });
     res.json({ success: true, data: exams });
   } catch (err) {
-    console.error('getExamsByClassroom', err);
+    logger.error('getExamsByClassroom', err);
     res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -46,7 +47,7 @@ async function getExam(req, res) {
     const marks = await ExamMark.find({ examId: id }).populate('studentId');
     res.json({ success: true, data: { exam, marks } });
   } catch (err) {
-    console.error('getExam', err);
+    logger.error('getExam', err);
     res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -85,7 +86,7 @@ async function addMark(req, res) {
 
     res.json({ success: true, data: examMark });
   } catch (err) {
-    console.error('addMark', err);
+    logger.error('addMark', err);
     res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -129,7 +130,7 @@ async function updateMark(req, res) {
 
     res.json({ success: true, data: examMark });
   } catch (err) {
-    console.error('updateMark error', err);
+    logger.error('updateMark error', err);
     res.status(500).json({ success: false, error: err.message });
   }
 }

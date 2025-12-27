@@ -1,4 +1,5 @@
 const Batch = require('../models/batch');
+const logger = require('../utils/logger');
 
 // Get all intakes (batches) with search, filter, pagination
 async function getAllBatches(req, res) {
@@ -38,7 +39,7 @@ async function getAllBatches(req, res) {
     sortObj[sortField] = sortOrderNum;
     
     // Debug logging
-    console.log('Batch sorting debug:', {
+    logger.info('Batch sorting debug:', {
       sortBy,
       sortOrder,
       sortField,
@@ -111,7 +112,7 @@ async function getAllBatches(req, res) {
       });
     }
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
@@ -135,7 +136,7 @@ async function getBatchesByCourseId(req, res) {
 
     res.status(200).json(formattedBatches);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
@@ -170,7 +171,7 @@ async function createBatch(req, res) {
       data: newBatch,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
 
     if (error.code === 11000) {
       res.status(400).json({
@@ -207,7 +208,7 @@ async function getBatchById(req, res) {
       data: batch,
     });
   } catch (error) {
-    console.error('Error retrieving batch:', error);
+    logger.error('Error retrieving batch:', error);
     res.status(500).json({
       success: false,
       message: 'Error retrieving batch',
@@ -242,7 +243,7 @@ async function deleteBatch(req, res) {
       data: deletedBatch,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
       message: 'Error deleting batch',
@@ -295,7 +296,7 @@ async function updateBatch(req, res) {
       data: updatedBatch,
     });
   } catch (error) {
-    console.error('Error updating batch:', error);
+    logger.error('Error updating batch:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating batch',
