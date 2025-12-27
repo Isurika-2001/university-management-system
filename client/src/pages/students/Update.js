@@ -59,8 +59,10 @@ const validationSchema = Yup.object().shape({
   enrollments: Yup.array()
     .of(
       Yup.object().shape({
+        pathway: Yup.string().required('Pathway is required'),
         courseId: Yup.string().required('Course is required'),
-        batchId: Yup.string().required('Batch is required')
+        batchId: Yup.string().required('Batch is required'),
+        classroomId: Yup.string().required('Classroom is required')
       })
     )
     .min(1, 'At least one course enrollment is required'),
@@ -159,10 +161,13 @@ const UpdateStudent = () => {
 
     // Prepare enrollments array with correct IDs and names
     const enrollmentArray = studentEnrollments.map((enrollment) => ({
+      pathway: enrollment.courseId?.pathway || enrollment.pathway || '',
       courseId: enrollment.courseId._id || enrollment.courseId,
       batchId: enrollment.batchId._id || enrollment.batchId,
+      classroomId: enrollment.classroomId?._id || enrollment.classroomId || '',
       courseName: enrollment.courseId?.name || enrollment.course?.name || '',
-      batchName: enrollment.batchId?.name || enrollment.batch?.name || ''
+      batchName: enrollment.batchId?.name || enrollment.batch?.name || '',
+      classroomName: enrollment.classroomId?.name || enrollment.classroom?.name || ''
     }));
     console.log('Enrollment array:', enrollmentArray);
 
@@ -217,7 +222,7 @@ const UpdateStudent = () => {
           return !!(values.firstName && values.lastName && values.dob && values.nic && values.address && values.mobile && values.email);
 
         case 1: // Course Details
-          return !!(values.enrollments && values.enrollments.length > 0 && values.enrollments.every((enr) => enr.courseId && enr.batchId));
+          return !!(values.enrollments && values.enrollments.length > 0 && values.enrollments.every((enr) => enr.pathway && enr.courseId && enr.batchId && enr.classroomId));
 
         case 2: {
           // Payment Schema
@@ -793,12 +798,9 @@ const UpdateStudent = () => {
             courseOptions={courseOptions}
             batchOptions={batchOptions}
             batchOptionsMap={batchOptionsMap}
-            selectedCourse={selectedCourse}
-            setSelectedCourse={setSelectedCourse}
             fetchBatches={fetchBatches}
             setNextDisabled={setNextDisabled}
             updateStepCompletion={updateStepCompletion}
-            isUpdateMode={true}
           />
         );
       case 2:

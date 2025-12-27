@@ -18,9 +18,12 @@ const classroomSchema = new mongoose.Schema(
       ref: 'Batch',
       required: true
     },
+    moduleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ModuleEntry'
+    },
     moduleName: {
-      type: String,
-      required: true
+      type: String
     },
     month: {
       type: String,

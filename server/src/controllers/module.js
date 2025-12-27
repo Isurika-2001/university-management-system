@@ -1,19 +1,41 @@
-const PathwayModule = require('../models/module');
-const { PATHWAY_LIST } = require('../config/pathways');
+const CourseModule = require('../models/module');
+const Course = require('../models/course');
 
 async function getAllModules(req, res) {
   try {
-    // fetch all module documents
-    const docs = await PathwayModule.find();
+    const { courseId } = req.query;
 
-    // map by pathway id for easy lookup
-    const map = {};
-    docs.forEach((d) => {
-      map[d.pathway] = d.modules;
+    // If a specific courseId is requested, return modules array for that course
+    if (courseId) {
+      // Return individual ModuleEntry documents for the course (with ids, names and courseId)
+      const ModuleEntry = require('../models/module_entry');
+      const entries = await ModuleEntry.find({ courseId }).select('_id name courseId').lean();
+
+      // If ModuleEntry docs exist, return them. Otherwise fall back to CourseModule (legacy list of names)
+      if (entries && entries.length > 0) {
+        return res.status(200).json({ success: true, data: entries });
+      }
+
+      // Fallback: check CourseModule document for this course and return module names as objects
+      const cm = await CourseModule.findOne({ courseId }).lean();
+      if (cm && Array.isArray(cm.modules)) {
+        const fallback = cm.modules.map((name, idx) => ({ _id: null, name, courseId }));
+        return res.status(200).json({ success: true, data: fallback });
+      }
+
+      return res.status(200).json({ success: true, data: [] });
+    }
+
+    // For listing all courses with modules, join Course names
+    const docs = await CourseModule.find();
+    const courseIds = docs.map((d) => d.courseId);
+    const courses = await Course.find({ _id: { $in: courseIds } }).select('name pathway');
+    const courseMap = {};
+    courses.forEach((c) => {
+      courseMap[c._id.toString()] = { name: c.name, pathway: c.pathway };
     });
 
-    // Ensure all pathways present in response
-    const data = PATHWAY_LIST.map((p) => ({ pathway: p.id, label: p.label, modules: map[p.id] || [] }));
+    const data = docs.map((d) => ({ courseId: d.courseId, courseName: (courseMap[d.courseId.toString()] || {}).name || '', pathway: (courseMap[d.courseId.toString()] || {}).pathway, modules: d.modules }));
 
     res.status(200).json({ success: true, data });
   } catch (error) {
@@ -24,15 +46,36 @@ async function getAllModules(req, res) {
 
 async function upsertModules(req, res) {
   try {
-    const { pathway, modules } = req.body;
-    if (!pathway) return res.status(400).json({ success: false, message: 'Pathway is required' });
+    const { courseId, modules } = req.body;
+    if (!courseId) return res.status(400).json({ success: false, message: 'courseId is required' });
     const modulesArray = Array.isArray(modules) ? modules : [];
 
-    const result = await PathwayModule.findOneAndUpdate(
-      { pathway },
+    const result = await CourseModule.findOneAndUpdate(
+      { courseId },
       { $set: { modules: modulesArray } },
       { upsert: true, new: true }
     );
+
+    // Ensure ModuleEntry documents exist for each module name for the course
+    const ModuleEntry = require('../models/module_entry');
+    for (const mName of modulesArray) {
+      try {
+        await ModuleEntry.updateOne(
+          { courseId, name: mName },
+          { $set: { courseId, name: mName } },
+          { upsert: true }
+        );
+      } catch (innerErr) {
+        console.error('Error ensuring ModuleEntry', mName, innerErr.message);
+      }
+    }
+
+    // Remove ModuleEntry documents that are no longer present in the provided modules list
+    try {
+      await ModuleEntry.deleteMany({ courseId, name: { $nin: modulesArray } });
+    } catch (delErr) {
+      console.error('Error removing old ModuleEntry docs for course', courseId, delErr.message);
+    }
 
     res.status(200).json({ success: true, message: 'Modules saved', data: result });
   } catch (error) {

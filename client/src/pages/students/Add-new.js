@@ -49,7 +49,17 @@ const initialValues = {
   homeContact: '',
   email: '',
   // Step 2
-  enrollments: [],
+  enrollments: [
+    {
+      pathway: '',
+      courseId: '',
+      batchId: '',
+      classroomId: '',
+      courseName: '',
+      batchName: '',
+      classroomName: ''
+    }
+  ],
   // Step 3
   paymentSchema: {},
   // Step 4
@@ -87,8 +97,10 @@ const validationSchema = Yup.object().shape({
   enrollments: Yup.array()
     .of(
       Yup.object().shape({
+        pathway: Yup.string().required('Pathway is required'),
         courseId: Yup.string().required('Course is required'),
-        batchId: Yup.string().required('Batch is required')
+        batchId: Yup.string().required('Batch is required'),
+        classroomId: Yup.string().required('Classroom is required')
       })
     )
     .min(1, 'At least one course enrollment is required'),
@@ -117,7 +129,6 @@ const AddStudent = () => {
   const [batchOptions, setBatchOptions] = useState([]);
   const [requiredDocuments, setRequiredDocuments] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState('');
   const [batchOptionsMap, setBatchOptionsMap] = useState({});
   const { user } = useAuthContext();
 
@@ -159,7 +170,7 @@ const AddStudent = () => {
         return !!(values.firstName && values.lastName && values.dob && values.nic && values.address && values.mobile && values.email);
 
       case 1: // Course Details
-        return !!(values.enrollments && values.enrollments.length > 0 && values.enrollments.every((enr) => enr.courseId && enr.batchId));
+        return !!(values.enrollments && values.enrollments.length > 0 && values.enrollments.every((enr) => enr.pathway && enr.courseId && enr.batchId && enr.classroomId));
 
       case 2: {
         // Payment Schema
@@ -356,11 +367,6 @@ const AddStudent = () => {
     fetchRequiredDocs();
   }, [fetchCourses, fetchRequiredDocs]);
 
-  useEffect(() => {
-    if (selectedCourse) fetchBatches(selectedCourse);
-    else setBatchOptions([]);
-  }, [selectedCourse, fetchBatches]);
-
   // Update step completion status when required documents change
   useEffect(() => {
     // This will be called when requiredDocuments change
@@ -524,8 +530,6 @@ const AddStudent = () => {
             courseOptions={courseOptions}
             batchOptions={batchOptions}
             batchOptionsMap={batchOptionsMap}
-            selectedCourse={selectedCourse}
-            setSelectedCourse={setSelectedCourse}
             fetchBatches={fetchBatches}
             setNextDisabled={setNextDisabled}
             updateStepCompletion={updateStepCompletion}

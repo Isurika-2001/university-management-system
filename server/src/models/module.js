@@ -1,18 +1,22 @@
 const mongoose = require('mongoose');
-const { PATHWAYS } = require('../config/pathways');
 
-const moduleSchema = new mongoose.Schema({
-  pathway: {
-    type: Number,
-    required: true,
-    enum: [PATHWAYS.HD, PATHWAYS.DIP, PATHWAYS.FOUNDATION, PATHWAYS.TOPUP],
-    unique: true // one document per pathway
+// Modules are now stored per-course. Each document references a Course
+// and contains the list of module names for that course.
+const moduleSchema = new mongoose.Schema(
+  {
+    courseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+      required: true,
+      unique: true // one document per course
+    },
+    modules: {
+      type: [String],
+      default: []
+    }
   },
-  modules: {
-    type: [String],
-    default: []
-  }
-}, { timestamps: true });
+  { timestamps: true }
+);
 
-const PathwayModule = mongoose.model('PathwayModule', moduleSchema);
-module.exports = PathwayModule;
+const CourseModule = mongoose.model('CourseModule', moduleSchema);
+module.exports = CourseModule;

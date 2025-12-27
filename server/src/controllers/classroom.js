@@ -5,14 +5,27 @@ const Course = require('../models/course');
 const Batch = require('../models/batch');
 const Exam = require('../models/exam');
 const ExamMark = require('../models/exam_mark');
+const ModuleEntry = require('../models/module_entry');
 const { STATUSES } = require('../config/statuses');
 
 // Get all classrooms with student count
 async function getAllClassrooms(req, res) {
   try {
-    const classrooms = await Classroom.find()
+    // Support filtering by batchId query parameter
+    const { batchId, courseId } = req.query;
+    const filter = {};
+    
+    if (batchId) {
+      filter.batchId = batchId;
+    }
+    if (courseId) {
+      filter.courseId = courseId;
+    }
+
+    const classrooms = await Classroom.find(filter)
       .populate('courseId', 'name code')
       .populate('batchId', 'name')
+      .populate('moduleId', 'name')
       .lean();
 
     // Get student count for each classroom
@@ -28,8 +41,8 @@ async function getAllClassrooms(req, res) {
 
     res.status(200).json({ success: true, data: result });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: 'Error fetching classrooms' });
+    console.error('Error in getAllClassrooms:', error);
+    res.status(500).json({ success: false, message: 'Error fetching classrooms', error: error.message });
   }
 }
 
@@ -50,6 +63,12 @@ async function createClassroom(req, res) {
       return res.status(404).json({ success: false, message: 'Course or Batch not found' });
     }
 
+    // Validate module entry
+    const moduleEntry = await ModuleEntry.findById(moduleId).lean();
+    if (!moduleEntry) {
+      return res.status(404).json({ success: false, message: 'Module not found' });
+    }
+
     // Generate name: COURSECODE-INTAKENAME-MONTH (replace spaces with hyphens)
     const code = (course.code || '').toString().trim();
     const intakeLabel = (batch.name || '').toString().trim().replace(/\s+/g, '-');
@@ -66,14 +85,15 @@ async function createClassroom(req, res) {
       name,
       courseId,
       batchId,
-      moduleName: moduleId,
+      moduleId: moduleEntry._id,
+      moduleName: moduleEntry.name,
       month: monthLabel,
       capacity: capacity || 50,
       description: description || ''
     });
 
     const savedClassroom = await classroom.save();
-    await savedClassroom.populate('courseId batchId');
+    await savedClassroom.populate('courseId batchId moduleId');
 
     // Auto-create exam for this classroom
     try {
@@ -104,6 +124,7 @@ async function getClassroomById(req, res) {
     const classroom = await Classroom.findById(id)
       .populate('courseId', 'name code')
       .populate('batchId', 'name')
+      .populate('moduleId', 'name')
       .lean();
 
     if (!classroom) {
@@ -153,6 +174,7 @@ async function getEligibleClassrooms(req, res) {
     })
       .populate('courseId', 'name code')
       .populate('batchId', 'name')
+      .populate('moduleId', 'name')
       .lean();
 
     res.status(200).json({ success: true, data: classrooms });

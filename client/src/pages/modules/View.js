@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import MainCard from 'components/MainCard';
 import { PATHWAY_LIST } from 'constants/pathways';
 import { modulesAPI } from '../../api/modules';
+import { coursesAPI } from '../../api/courses';
 import {
   Table,
   TableBody,
@@ -27,9 +28,9 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
 const View = () => {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState([]); // modules per course rows
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedPathway, setSelectedPathway] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState(null);
   const [moduleInput, setModuleInput] = useState('');
   const [tempModules, setTempModules] = useState([]);
 
@@ -59,18 +60,30 @@ const View = () => {
 
   const fetchData = async () => {
     try {
-      const res = await modulesAPI.getAll();
-      if (res && res.data) setData(res.data);
+      const [coursesRes, modulesRes] = await Promise.all([coursesAPI.getAll(), modulesAPI.getAll()]);
+
+      const coursesList = Array.isArray(coursesRes) ? coursesRes : (coursesRes && coursesRes.data) || [];
+
+      const modulesList = (modulesRes && modulesRes.data) || [];
+
+      // map modules by courseId for quick lookup
+      const map = {};
+      modulesList.forEach((m) => {
+        map[m.courseId] = m.modules || [];
+      });
+
+      // Build rows combining courses and modules
+      const rows = coursesList.map((c) => ({ courseId: c._id, courseName: c.name, pathway: c.pathway, modules: map[c._id] || [] }));
+      setData(rows);
     } catch (error) {
       console.error(error);
       showErrorSwal('Error loading modules');
     }
   };
 
-  const handleOpenDialog = (pathway) => {
-    const row = data.find((d) => d.pathway === pathway.id) || { modules: [] };
-    setSelectedPathway(pathway);
-    setTempModules([...(row.modules || [])]);
+  const handleOpenDialog = (course) => {
+    setSelectedCourse(course);
+    setTempModules([...(course.modules || [])]);
     setModuleInput('');
     setOpenDialog(true);
   };
@@ -88,10 +101,10 @@ const View = () => {
   };
 
   const handleSave = async () => {
-    if (!selectedPathway) return;
+    if (!selectedCourse) return;
 
     try {
-      await modulesAPI.upsert({ pathway: selectedPathway.id, modules: tempModules });
+      await modulesAPI.upsert({ courseId: selectedCourse.courseId || selectedCourse.courseId || selectedCourse._id, modules: tempModules });
       await fetchData();
       setOpenDialog(false);
       showSuccessSwal('Modules saved successfully');
@@ -103,48 +116,47 @@ const View = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setSelectedPathway(null);
+    setSelectedCourse(null);
     setTempModules([]);
     setModuleInput('');
   };
 
   return (
-    <MainCard title="Pathway Modules">
+    <MainCard title="Course Modules">
       <Box>
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell>Course</TableCell>
                 <TableCell>Pathway</TableCell>
                 <TableCell>Modules</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {PATHWAY_LIST.map((p) => {
-                const row = data.find((d) => d.pathway === p.id) || { modules: [] };
-                return (
-                  <TableRow key={p.id}>
-                    <TableCell>{p.label}</TableCell>
-                    <TableCell>
-                      {(row.modules || []).length > 0 ? (
-                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                          {(row.modules || []).map((mod, idx) => (
-                            <Chip key={idx} label={mod} size="small" variant="outlined" />
-                          ))}
-                        </Box>
-                      ) : (
-                        <Typography color="textSecondary">Empty</Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outlined" size="small" onClick={() => handleOpenDialog(p)}>
-                        Manage
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {data.map((row) => (
+                <TableRow key={row.courseId}>
+                  <TableCell>{row.courseName}</TableCell>
+                  <TableCell>{(PATHWAY_LIST.find((p) => p.id === row.pathway) || {}).label}</TableCell>
+                  <TableCell>
+                    {(row.modules || []).length > 0 ? (
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                        {(row.modules || []).map((mod, idx) => (
+                          <Chip key={idx} label={mod} size="small" variant="outlined" />
+                        ))}
+                      </Box>
+                    ) : (
+                      <Typography color="textSecondary">Empty</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="outlined" size="small" onClick={() => handleOpenDialog(row)}>
+                      Manage
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </TableContainer>
@@ -152,7 +164,7 @@ const View = () => {
 
       {/* Manage Modules Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Manage Modules - {selectedPathway?.label}</DialogTitle>
+        <DialogTitle>Manage Modules - {selectedCourse?.courseName}</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           {/* Input Section */}
           <Grid container spacing={1} sx={{ mb: 3 }}>

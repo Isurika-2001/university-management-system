@@ -26,7 +26,12 @@ import { CaretDownOutlined, CaretUpOutlined, CheckCircleTwoTone } from '@ant-des
 const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled, updateStepCompletion }) => {
   const { values, errors, touched, setFieldValue } = formBag;
 
-  const selectedCourses = values.selectedCourses || [];
+  // Extract courseId from the single enrollment (new pattern)
+  const currentEnrollment = values.enrollments?.[0] || {};
+  const courseId = currentEnrollment.courseId || '';
+  
+  // For backward compatibility, also check selectedCourses (old pattern)
+  const selectedCourses = values.selectedCourses || (courseId ? [courseId] : []);
   const paymentSchemas = values.paymentSchema || {};
 
   // Track expansion state for each course

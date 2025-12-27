@@ -3,7 +3,6 @@ import { TextField, Button, Grid, Divider, CircularProgress, Select, MenuItem, B
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
-import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
@@ -11,99 +10,83 @@ import { useNavigate } from 'react-router-dom';
 import { classroomAPI } from 'api/classrooms';
 import { coursesAPI } from 'api/courses';
 import { batchesAPI } from 'api/batches';
+import { modulesAPI } from 'api/modules';
 
 const AddForm = () => {
-  const [submitting, setSubmitting] = useState(false);
   const { user } = useAuthContext();
   const navigate = useNavigate();
+
   const [courses, setCourses] = useState([]);
   const [batches, setBatches] = useState([]);
   const [modules, setModules] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [classroomName, setClassroomName] = useState('');
-  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const Toast = withReactContent(
     Swal.mixin({
       toast: true,
       position: 'bottom',
-      customClass: { popup: 'colored-toast' },
-      background: 'primary',
       showConfirmButton: false,
-      timer: 3500,
-      timerProgressBar: true
+      timer: 3000
     })
   );
 
-  const showSuccessSwal = (msg) => {
-    Toast.fire({ icon: 'success', title: msg });
-  };
-
-  const showErrorSwal = (msg) => {
-    Toast.fire({ icon: 'error', title: msg });
-  };
-
   useEffect(() => {
-    fetchCourses();
-    fetchModules();
+    const loadCourses = async () => {
+      try {
+        const res = await coursesAPI.getAll();
+        setCourses(res || []);
+      } catch {
+        console.error('Failed to load courses');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCourses();
   }, []);
 
-  const fetchCourses = async () => {
-    try {
-      const data = await coursesAPI.getAll();
-      setCourses(data || []);
-      setCoursesLoading(false);
-    } catch (error) {
-      console.error(error);
-      showErrorSwal('Error loading courses');
-      setCoursesLoading(false);
-    }
-  };
+  /* ---------- Helpers ---------- */
 
-  const fetchModules = async () => {
-    try {
-      const response = await fetch(`${apiRoutes.modulesRoute}`, {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
-      const data = await response.json();
-      if (data?.data) setModules(data.data);
-    } catch (error) {
-      console.error(error);
-    }
+  const generateClassroomName = (course, batch, month) => {
+    if (!course || !batch || !month) return '';
+    return `${course.code}-${batch.code}-${month}`;
   };
 
   const handleCourseChange = async (courseId, setFieldValue) => {
     setFieldValue('courseId', courseId);
     setFieldValue('batchId', '');
-    setFieldValue('moduleId', '');
+    setFieldValue('month', '');
     setClassroomName('');
 
     const course = courses.find((c) => c._id === courseId);
     setSelectedCourse(course);
 
-    if (courseId) {
-      try {
-        const response = await batchesAPI.getAll({ courseId });
-        const batchData = Array.isArray(response) ? response : response?.data || [];
-        setBatches(batchData);
-      } catch (error) {
-        console.error(error);
-        showErrorSwal('Error loading intakes');
-      }
-    } else {
-      setBatches([]);
-    }
+    const batchRes = await batchesAPI.getAll({ courseId });
+    const batchList = Array.isArray(batchRes) ? batchRes : batchRes?.data || [];
+    setBatches(batchList);
+
+    const moduleRes = await modulesAPI.getAll({ courseId });
+    const moduleList = Array.isArray(moduleRes) ? moduleRes : moduleRes?.data || [];
+    setModules(moduleList);
   };
 
-  const handleMonthChange = (month, courseCode, setFieldValue) => {
-    setFieldValue('month', month);
-    if (courseCode && month) {
-      const generated = `${courseCode}-${month}`;
-      setClassroomName(generated);
-    } else {
-      setClassroomName('');
-    }
+  const handleBatchChange = (batchId, values, setFieldValue) => {
+    setFieldValue('batchId', batchId);
+
+    const batch = batches.find((b) => b._id === batchId);
+    setClassroomName(generateClassroomName(selectedCourse, batch, values.month));
   };
+
+  const handleMonthChange = (month, values, setFieldValue) => {
+    setFieldValue('month', month);
+
+    const batch = batches.find((b) => b._id === values.batchId);
+    setClassroomName(generateClassroomName(selectedCourse, batch, month));
+  };
+
+  /* ---------- Form ---------- */
 
   const initialValues = {
     courseId: '',
@@ -114,13 +97,12 @@ const AddForm = () => {
     description: ''
   };
 
-  const validationSchema = Yup.object().shape({
-    courseId: Yup.string().required('Course is required'),
-    batchId: Yup.string().required('Intake is required'),
-    moduleId: Yup.string().required('Module is required'),
-    month: Yup.string().required('Month is required'),
-    capacity: Yup.number().min(1, 'Capacity must be at least 1'),
-    description: Yup.string()
+  const validationSchema = Yup.object({
+    courseId: Yup.string().required('Course required'),
+    batchId: Yup.string().required('Intake required'),
+    moduleId: Yup.string().required('Module required'),
+    month: Yup.string().required('Month required'),
+    capacity: Yup.number().min(1).required()
   });
 
   const handleSubmit = async (values) => {
@@ -128,242 +110,183 @@ const AddForm = () => {
       setSubmitting(true);
 
       const payload = {
+        ...values,
         name: classroomName,
-        courseId: values.courseId,
-        batchId: values.batchId,
-        moduleId: values.moduleId,
-        month: values.month,
-        capacity: values.capacity,
-        description: values.description
+        createdBy: user?.id // ✅ using user
       };
 
-      const response = await classroomAPI.create(payload);
+      await classroomAPI.create(payload);
 
-      if (response?.success) {
-        showSuccessSwal('Classroom created successfully');
-        navigate('/app/classrooms');
-      } else {
-        showErrorSwal(response?.message || 'Failed to create classroom');
-      }
-    } catch (error) {
-      console.error(error);
-      showErrorSwal(error.message || 'Error creating classroom');
+      Toast.fire({ icon: 'success', title: 'Classroom created successfully' });
+      navigate('/app/classrooms');
+    } catch {
+      Toast.fire({ icon: 'error', title: 'Failed to create classroom' });
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (coursesLoading) return <LinearProgress />;
+  if (loading) return <LinearProgress />;
 
   return (
-    <MainCard title="Add New Classroom">
+    <MainCard title="Add Classroom">
       <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
-        {({ errors, handleSubmit, touched, setFieldValue, values }) => (
-          <Form onSubmit={handleSubmit}>
-            <Grid container direction="column" justifyContent="center">
-              <Grid container sx={{ p: 3 }} spacing={2}>
-                {/* Course Selection */}
-                <Grid item xs={12} sm={6}>
-                  <Field name="courseId">
-                    {({ field, form }) => (
-                      <Select
-                        {...field}
-                        displayEmpty
-                        variant="outlined"
-                        fullWidth
-                        error={form.touched.courseId && !!form.errors.courseId}
-                        onChange={(e) => handleCourseChange(e.target.value, setFieldValue)}
-                        sx={{ mb: 3, minHeight: '3.5rem' }}
-                      >
-                        <MenuItem value="" disabled>
-                          Select Course
+        {({ values, setFieldValue }) => (
+          <Form>
+            <Grid container spacing={2}>
+              {/* COURSE */}
+              <Grid item xs={12} sm={6}>
+                <Field name="courseId">
+                  {({ field }) => (
+                    <Select
+                      {...field}
+                      fullWidth
+                      displayEmpty
+                      onChange={(e) => handleCourseChange(e.target.value, setFieldValue)}
+                      sx={{ mb: 3, minHeight: '3.5rem' }}
+                    >
+                      <MenuItem value="" disabled>
+                        Select Course
+                      </MenuItem>
+                      {courses.map((c) => (
+                        <MenuItem key={c._id} value={c._id}>
+                          {c.name} ({c.code})
                         </MenuItem>
-                        {courses.map((course) => (
-                          <MenuItem key={course._id} value={course._id}>
-                            {course.name} ({course.code})
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    )}
-                  </Field>
-                  {touched.courseId && errors.courseId && (
-                    <Typography color="error" variant="caption">
-                      {errors.courseId}
-                    </Typography>
+                      ))}
+                    </Select>
                   )}
-                </Grid>
-
-                {/* Intake/Batch Selection */}
-                <Grid item xs={12} sm={6}>
-                  <Field name="batchId">
-                    {({ field, form }) => (
-                      <Select
-                        {...field}
-                        displayEmpty
-                        variant="outlined"
-                        fullWidth
-                        disabled={!values.courseId}
-                        error={form.touched.batchId && !!form.errors.batchId}
-                        onChange={(e) => form.setFieldValue('batchId', e.target.value)}
-                        sx={{ mb: 3, minHeight: '3.5rem' }}
-                      >
-                        <MenuItem value="" disabled>
-                          {values.courseId ? 'Select Intake' : 'Select Course First'}
-                        </MenuItem>
-                        {batches.map((batch) => (
-                          <MenuItem key={batch._id} value={batch._id}>
-                            {batch.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    )}
-                  </Field>
-                  {touched.batchId && errors.batchId && (
-                    <Typography color="error" variant="caption">
-                      {errors.batchId}
-                    </Typography>
-                  )}
-                </Grid>
-
-                {/* Module Selection */}
-                <Grid item xs={12} sm={6}>
-                  <Field name="moduleId">
-                    {({ field, form }) => {
-                      // Filter to get the pathway object matching the selected course
-                      const selectedPathwayObj = selectedCourse ? modules.find((mod) => mod.pathway === selectedCourse.pathway) : null;
-
-                      // Get individual module names from the selected pathway
-                      const moduleOptions = selectedPathwayObj?.modules || [];
-
-                      return (
-                        <>
-                          <Select
-                            {...field}
-                            displayEmpty
-                            variant="outlined"
-                            fullWidth
-                            disabled={!values.courseId}
-                            error={form.touched.moduleId && !!form.errors.moduleId}
-                            onChange={(e) => form.setFieldValue('moduleId', e.target.value)}
-                            sx={{ mb: 3, minHeight: '3.5rem' }}
-                          >
-                            <MenuItem value="">{values.courseId ? 'Select Module *' : 'Select Course First'}</MenuItem>
-                            {moduleOptions.length > 0 ? (
-                              moduleOptions.map((moduleName, idx) => (
-                                <MenuItem key={idx} value={moduleName}>
-                                  {moduleName}
-                                </MenuItem>
-                              ))
-                            ) : (
-                              <MenuItem disabled>No modules available for this pathway</MenuItem>
-                            )}
-                          </Select>
-                          {form.touched.moduleId && form.errors.moduleId && (
-                            <Typography color="error" variant="caption">
-                              {form.errors.moduleId}
-                            </Typography>
-                          )}
-                        </>
-                      );
-                    }}
-                  </Field>
-                </Grid>
-
-                {/* Month Selection */}
-                <Grid item xs={12} sm={6}>
-                  <Field name="month">
-                    {({ field, form }) => (
-                      <Select
-                        {...field}
-                        displayEmpty
-                        variant="outlined"
-                        fullWidth
-                        disabled={!values.courseId}
-                        error={form.touched.month && !!form.errors.month}
-                        onChange={(e) => handleMonthChange(e.target.value, selectedCourse?.code, setFieldValue)}
-                        sx={{ mb: 3, minHeight: '3.5rem' }}
-                      >
-                        <MenuItem value="" disabled>
-                          {values.courseId ? 'Select Month' : 'Select Course First'}
-                        </MenuItem>
-                        <MenuItem value="January">January</MenuItem>
-                        <MenuItem value="February">February</MenuItem>
-                        <MenuItem value="March">March</MenuItem>
-                        <MenuItem value="April">April</MenuItem>
-                        <MenuItem value="May">May</MenuItem>
-                        <MenuItem value="June">June</MenuItem>
-                        <MenuItem value="July">July</MenuItem>
-                        <MenuItem value="August">August</MenuItem>
-                        <MenuItem value="September">September</MenuItem>
-                        <MenuItem value="October">October</MenuItem>
-                        <MenuItem value="November">November</MenuItem>
-                        <MenuItem value="December">December</MenuItem>
-                      </Select>
-                    )}
-                  </Field>
-                  {touched.month && errors.month && (
-                    <Typography color="error" variant="caption">
-                      {errors.month}
-                    </Typography>
-                  )}
-                </Grid>
-
-                {/* Capacity */}
-                <Grid item xs={12} sm={6}>
-                  <Field
-                    as={TextField}
-                    label="Capacity"
-                    variant="outlined"
-                    type="number"
-                    name="capacity"
-                    fullWidth
-                    disabled={!values.courseId}
-                    error={touched.capacity && !!errors.capacity}
-                    helperText={<ErrorMessage name="capacity" />}
-                    InputProps={{ sx: { px: 2, py: 1 } }}
-                    sx={{ mb: 3 }}
-                  />
-                </Grid>
-
-                {/* Description */}
-                <Grid item xs={12}>
-                  <Field
-                    as={TextField}
-                    label="Description (Optional)"
-                    variant="outlined"
-                    name="description"
-                    fullWidth
-                    multiline
-                    rows={3}
-                    disabled={!values.courseId}
-                    InputProps={{ sx: { px: 2, py: 1 } }}
-                    sx={{ mb: 3 }}
-                  />
-                </Grid>
-
-                {/* Classroom Name Preview */}
-                {classroomName && (
-                  <Grid item xs={12}>
-                    <Box sx={{ p: 2, backgroundColor: 'info.lighter', borderRadius: 1, mb: 2 }}>
-                      <Typography variant="subtitle2">Classroom Name:</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
-                        {classroomName}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                )}
+                </Field>
+                <ErrorMessage name="courseId" component="div" style={{ color: 'red' }} />
               </Grid>
 
-              <Divider sx={{ mt: 3, mb: 2 }} />
+              {/* INTAKE */}
+              <Grid item xs={12} sm={6}>
+                <Field name="batchId">
+                  {({ field }) => (
+                    <Select
+                      sx={{ mb: 3, minHeight: '3.5rem' }}
+                      {...field}
+                      fullWidth
+                      displayEmpty
+                      onChange={(e) => handleBatchChange(e.target.value, values, setFieldValue)}
+                    >
+                      <MenuItem value="" disabled>
+                        Select Intake
+                      </MenuItem>
+                      {batches.map((b) => (
+                        <MenuItem key={b._id} value={b._id}>
+                          {b.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+                <ErrorMessage name="batchId" component="div" style={{ color: 'red' }} />
+              </Grid>
 
-              <Grid item xs={12} sm={6} style={{ textAlign: 'right' }}>
+              {/* MODULE */}
+              <Grid item xs={12} sm={6}>
+                <Field name="moduleId">
+                  {({ field }) => (
+                    <Select sx={{ mb: 3, minHeight: '3.5rem' }} {...field} fullWidth displayEmpty>
+                      <MenuItem value="">Select Module</MenuItem>
+                      {modules.map((m) => (
+                        <MenuItem key={m._id} value={m._id}>
+                          {m.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+                <ErrorMessage name="moduleId" component="div" style={{ color: 'red' }} />
+              </Grid>
+
+              {/* MONTH */}
+              <Grid item xs={12} sm={6}>
+                <Field name="month">
+                  {({ field }) => (
+                    <Select
+                      sx={{ mb: 3, minHeight: '3.5rem' }}
+                      {...field}
+                      fullWidth
+                      displayEmpty
+                      onChange={(e) => handleMonthChange(e.target.value, values, setFieldValue)}
+                    >
+                      <MenuItem value="" disabled>
+                        Select Month
+                      </MenuItem>
+                      {[
+                        'January',
+                        'February',
+                        'March',
+                        'April',
+                        'May',
+                        'June',
+                        'July',
+                        'August',
+                        'September',
+                        'October',
+                        'November',
+                        'December'
+                      ].map((m) => (
+                        <MenuItem key={m} value={m}>
+                          {m}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+                <ErrorMessage name="month" component="div" style={{ color: 'red' }} />
+              </Grid>
+
+              {/* Capacity */}
+              <Grid item xs={12} sm={6}>
+                <Field
+                  rows={3}
+                  sx={{ mb: 3, minHeight: '3.5rem' }}
+                  as={TextField}
+                  name="capacity"
+                  label="Capacity"
+                  type="number"
+                  fullWidth
+                  InputProps={{
+                    sx: { px: 2, py: 1 }
+                  }}
+                />
+              </Grid>
+
+              {/* Description */}
+              <Grid item xs={12}>
+                <Field
+                  sx={{ mb: 3, minHeight: '3.5rem' }}
+                  as={TextField}
+                  name="description"
+                  label="Description"
+                  fullWidth
+                  multiline
+                  rows={3}
+                />
+              </Grid>
+
+              <Divider sx={{ my: 2, width: '100%' }} />
+
+              {/* Preview */}
+              {classroomName && (
+                <Grid item xs={12}>
+                  <Box sx={{ p: 2, bgcolor: 'info.lighter', borderRadius: 1 }}>
+                    <Typography variant="subtitle2">Classroom Name</Typography>
+                    <Typography variant="h6">{classroomName}</Typography>
+                  </Box>
+                </Grid>
+              )}
+
+              {/* Submit */}
+              <Grid item xs={12} textAlign="right">
                 <Button
                   type="submit"
                   variant="contained"
-                  color="primary"
-                  size="small"
-                  disabled={submitting || !classroomName}
-                  endIcon={submitting ? <CircularProgress size={20} color="inherit" /> : null}
+                  disabled={!classroomName || submitting}
+                  endIcon={submitting && <CircularProgress size={20} />}
                 >
                   Create Classroom
                 </Button>

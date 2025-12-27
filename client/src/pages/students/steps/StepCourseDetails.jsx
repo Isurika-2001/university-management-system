@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo } from 'react';
-import { Card, CardContent, Box, Typography, Grid, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import React, { useEffect, useMemo, useCallback } from 'react';
+import { Card, CardContent, Box, Typography, Grid, FormControl, InputLabel, Select, MenuItem, Alert } from '@mui/material';
+import { PATHWAY_LIST } from 'constants/pathways';
+import { classroomAPI } from 'api/classrooms';
 
 const StepCourseDetails = ({
   IconCmp,
@@ -7,59 +9,167 @@ const StepCourseDetails = ({
   courseOptions,
   batchOptions,
   batchOptionsMap,
-  selectedCourse,
-  setSelectedCourse,
   fetchBatches,
-  setNextDisabled, // Controls wizard "Next" button
-  updateStepCompletion,
-  isUpdateMode = false // New prop to indicate if this is update mode
+  setNextDisabled,
+  updateStepCompletion
 }) => {
   const { values, setFieldValue } = formBag;
+  const [classrooms, setClassrooms] = React.useState([]);
+  const [loadingClassrooms, setLoadingClassrooms] = React.useState(false);
 
-  // Sync selectedCourses + courseInfoById in Formik whenever enrollments change
-  useEffect(() => {
-    if (Array.isArray(values.enrollments)) {
-      const selectedIds = values.enrollments.map((enr) => enr.courseId).filter(Boolean);
+  // Check if in edit mode with multiple enrollments (read-only)
+  const isEditModeMultipleEnrollments = values.enrollments && values.enrollments.length > 1;
 
-      // Update selectedCourses in formik for StepPaymentSchema
-      setFieldValue('selectedCourses', selectedIds);
+  // Single enrollment flow: extract from first (and only) enrollment
+  const currentEnrollment = values.enrollments?.[0] || {};
+  const selectedPathway = currentEnrollment.pathway || '';
+  const selectedCourse = currentEnrollment.courseId || '';
+  const selectedBatch = currentEnrollment.batchId || '';
+  const selectedClassroom = currentEnrollment.classroomId || '';
 
-      // Build courseInfoById for displaying names later
-      const infoMap = {};
-      values.enrollments.forEach((enr) => {
-        if (enr.courseId) {
-          infoMap[enr.courseId] = { name: enr.courseName };
-        }
-      });
-      setFieldValue('courseInfoById', infoMap);
+  // Filter courses by selected pathway
+  const pathwayCoursesOptions = useMemo(() => {
+    if (!selectedPathway) return [];
+    return courseOptions.filter((c) => c.pathway === selectedPathway);
+  }, [selectedPathway, courseOptions]);
+
+  // Filter batches by selected course
+  const courseBatchesOptions = useMemo(() => {
+    if (!selectedCourse) return [];
+    if (batchOptionsMap && batchOptionsMap[selectedCourse]) {
+      return batchOptionsMap[selectedCourse];
     }
-  }, [values.enrollments, setFieldValue]);
+    return batchOptions.filter((b) => b.courseId === selectedCourse);
+  }, [selectedCourse, batchOptionsMap, batchOptions]);
 
-  // Enable/disable Next button based on enrollment availability
-  useEffect(() => {
-    const hasEnrollment = Array.isArray(values.enrollments) && values.enrollments.length > 0;
-    if (setNextDisabled) {
-      setNextDisabled(!hasEnrollment);
+  // Fetch classrooms for selected batch
+  const fetchClassrooms = useCallback(async (batchId) => {
+    if (!batchId) {
+      setClassrooms([]);
+      return;
     }
-  }, [values.enrollments, setNextDisabled]);
+    setLoadingClassrooms(true);
+    try {
+      const response = await classroomAPI.getAll({ batchId });
+      const classroomList = Array.isArray(response) ? response : response?.data || [];
+      setClassrooms(classroomList);
+      console.log('Fetched classrooms for batch:', batchId, classroomList);
+    } catch (error) {
+      console.error('Error fetching classrooms:', error);
+      setClassrooms([]);
+    } finally {
+      setLoadingClassrooms(false);
+    }
+  }, []);
 
-  // Update completion status when values change
+  // Use fetched classrooms directly (no additional filtering needed since API already filters by batchId)
+  const batchClassroomsOptions = useMemo(() => {
+    return classrooms;
+  }, [classrooms]);
+
+  // Enable/disable Next button: requires pathway + course + batch + classroom
+  useEffect(() => {
+    if (!setNextDisabled) return;
+    // If editing and student has multiple enrollments, allow Next (read-only)
+    if (isEditModeMultipleEnrollments) {
+      setNextDisabled(false);
+      return;
+    }
+    const isComplete = selectedPathway && selectedCourse && selectedBatch && selectedClassroom;
+    setNextDisabled(!isComplete);
+  }, [selectedPathway, selectedCourse, selectedBatch, selectedClassroom, setNextDisabled, isEditModeMultipleEnrollments]);
+
+  // Update completion status
   useEffect(() => {
     if (updateStepCompletion) {
       updateStepCompletion(values);
     }
   }, [values.enrollments, updateStepCompletion]);
 
-  // Derived batches for "Add New Enrollment > Intake"
-  // Show batches for currently selectedCourse (not all batches)
-  const newEnrollmentBatchOptions = useMemo(() => {
-    if (!selectedCourse) return [];
-    // Prefer batchOptionsMap, fallback to batchOptions if not mapped
-    if (batchOptionsMap && batchOptionsMap[selectedCourse]) {
-      return batchOptionsMap[selectedCourse];
+  // Fetch classrooms when batch changes
+  useEffect(() => {
+    if (selectedBatch) {
+      fetchClassrooms(selectedBatch);
+      // Reset classroom selection when batch changes
+      setFieldValue('enrollments', [
+        {
+          pathway: selectedPathway,
+          courseId: selectedCourse,
+          batchId: selectedBatch,
+          classroomId: '',
+          courseName: currentEnrollment.courseName || '',
+          batchName: currentEnrollment.batchName || '',
+          classroomName: ''
+        }
+      ]);
     }
-    return batchOptions.filter((b) => b.courseId === selectedCourse);
-  }, [selectedCourse, batchOptionsMap, batchOptions]);
+  }, [selectedBatch, selectedPathway, selectedCourse]);
+
+  const handlePathwayChange = (pathway) => {
+    // Reset course, batch, and classroom when pathway changes
+    setFieldValue('enrollments', [
+      {
+        pathway,
+        courseId: '',
+        batchId: '',
+        classroomId: '',
+        courseName: '',
+        batchName: '',
+        classroomName: ''
+      }
+    ]);
+  };
+
+  const handleCourseChange = async (courseId) => {
+    const course = pathwayCoursesOptions.find((c) => c._id === courseId);
+    setFieldValue('enrollments', [
+      {
+        pathway: selectedPathway,
+        courseId,
+        batchId: '',
+        classroomId: '',
+        courseName: course?.name || '',
+        batchName: '',
+        classroomName: ''
+      }
+    ]);
+    // Fetch batches for this course
+    if (fetchBatches) {
+      await fetchBatches(courseId);
+    }
+  };
+
+  const handleBatchChange = (batchId) => {
+    const batch = courseBatchesOptions.find((b) => b._id === batchId);
+    setFieldValue('enrollments', [
+      {
+        pathway: selectedPathway,
+        courseId: selectedCourse,
+        batchId,
+        classroomId: '',
+        courseName: currentEnrollment.courseName || '',
+        batchName: batch?.name || '',
+        classroomName: ''
+      }
+    ]);
+    // Fetch classrooms for this batch
+    fetchClassrooms(batchId);
+  };
+
+  const handleClassroomChange = (classroomId) => {
+    const classroom = batchClassroomsOptions.find((cr) => cr._id === classroomId);
+    setFieldValue('enrollments', [
+      {
+        pathway: selectedPathway,
+        courseId: selectedCourse,
+        batchId: selectedBatch,
+        classroomId,
+        courseName: currentEnrollment.courseName || '',
+        batchName: currentEnrollment.batchName || '',
+        classroomName: classroom?.name || ''
+      }
+    ]);
+  };
 
   return (
     <Card>
@@ -69,206 +179,152 @@ const StepCourseDetails = ({
           <Typography variant="h5">Course Details</Typography>
         </Box>
 
-        {/* Existing Enrollments */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            {isUpdateMode ? 'Current Enrollments (Read Only):' : 'Current Enrollments:'}
-          </Typography>
-          {values.enrollments?.length > 0 ? (
-            values.enrollments.map((enrollment, index) => (
-              <Box
-                key={index}
-                sx={{
-                  mb: 2,
-                  p: 2,
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 1,
-                  backgroundColor: isUpdateMode ? '#f5f5f5' : 'transparent'
-                }}
-              >
-                <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} sm={isUpdateMode ? 6 : 4}>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Course:</strong> {enrollment.courseName || enrollment.courseId?.name || 'Not selected'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={isUpdateMode ? 6 : 4}>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Intake:</strong> {enrollment.batchName || enrollment.batchId?.name || 'Not selected'}
-                    </Typography>
-                  </Grid>
-                  {!isUpdateMode && (
-                    <Grid item xs={12} sm={4}>
-                      <Button
-                        size="small"
-                        color="error"
-                        variant="outlined"
-                        onClick={() => {
-                          const newEnrollments = values.enrollments.filter((_, i) => i !== index);
-                          setFieldValue('enrollments', newEnrollments);
-                        }}
-                      >
-                        Remove
-                      </Button>
-                    </Grid>
-                  )}
-                </Grid>
-              </Box>
-            ))
-          ) : (
-            <Typography variant="body2" color="textSecondary">
-              No enrollments yet
-            </Typography>
-          )}
-        </Box>
-
-        {/* Add New Enrollment */}
-        <Box sx={{ mt: 3 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            {isUpdateMode ? 'Add Additional Enrollment:' : 'Add New Enrollment:'}
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={5}>
-              <FormControl fullWidth>
-                <InputLabel>Course</InputLabel>
-                <Select
-                  value={selectedCourse}
-                  onChange={(e) => {
-                    setSelectedCourse(e.target.value);
-                    fetchBatches(e.target.value);
-                  }}
-                  label="Course"
-                >
-                  {courseOptions.map((course) => (
-                    <MenuItem key={course._id} value={course._id}>
-                      {course.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={5}>
-              <FormControl fullWidth>
-                <InputLabel>Intake</InputLabel>
-                <Select
-                  value="" // always empty in add-mode
-                  onChange={(e) => {
-                    const selectedBatch = e.target.value;
-                    const newEnrollment = {
-                      courseId: selectedCourse,
-                      batchId: selectedBatch,
-                      courseName: courseOptions.find((c) => c._id === selectedCourse)?.name || '',
-                      batchName:
-                        newEnrollmentBatchOptions.find((b) => b._id === selectedBatch)?.name ||
-                        batchOptions.find((b) => b._id === selectedBatch)?.name ||
-                        ''
-                    };
-                    const currentEnrollments = values.enrollments || [];
-                    setFieldValue('enrollments', [...currentEnrollments, newEnrollment]);
-                    setSelectedCourse('');
-                  }}
-                  label="Intake"
-                  disabled={!selectedCourse}
-                >
-                  {newEnrollmentBatchOptions.length === 0 && selectedCourse ? (
-                    <MenuItem value="" disabled>
-                      No intakes available
-                    </MenuItem>
-                  ) : (
-                    newEnrollmentBatchOptions.map((batch) => (
-                      <MenuItem key={batch._id} value={batch._id}>
-                        {batch.name}
-                      </MenuItem>
-                    ))
-                  )}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </Box>
-
-        {/* Edit Enrollments - Only show in non-update mode */}
-        {!isUpdateMode && values.enrollments?.length > 0 && (
+        {isEditModeMultipleEnrollments ? (
           <Box sx={{ mt: 3 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Edit Enrollments:
-            </Typography>
-            {values.enrollments.map((enrollment, index) => {
-              // Only show batches mapped to enrollment.courseId for each enrollment row
-              const courseBatches =
-                batchOptionsMap && enrollment.courseId
-                  ? batchOptionsMap[enrollment.courseId] || []
-                  : batchOptions.filter((b) => b.courseId === enrollment.courseId);
-
-              return (
-                <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={5}>
-                      <FormControl fullWidth>
-                        <InputLabel>Course</InputLabel>
-                        <Select
-                          value={enrollment.courseId || ''}
-                          onChange={(e) => {
-                            const selected = e.target.value;
-                            const updated = [...values.enrollments];
-                            updated[index] = {
-                              ...updated[index],
-                              courseId: selected,
-                              courseName: courseOptions.find((c) => c._id === selected)?.name || '',
-                              batchId: '',
-                              batchName: ''
-                            };
-                            setFieldValue('enrollments', updated);
-                            if (selected) fetchBatches(selected);
-                          }}
-                          label="Course"
-                        >
-                          {courseOptions.map((course) => (
-                            <MenuItem key={course._id} value={course._id}>
-                              {course.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-
-                    <Grid item xs={12} sm={5}>
-                      <FormControl fullWidth>
-                        <InputLabel>Intake</InputLabel>
-                        <Select
-                          value={enrollment.batchId || ''}
-                          onChange={(e) => {
-                            const selected = e.target.value;
-                            const updated = [...values.enrollments];
-                            updated[index] = {
-                              ...updated[index],
-                              batchId: selected,
-                              batchName: courseBatches.find((b) => b._id === selected)?.name || ''
-                            };
-                            setFieldValue('enrollments', updated);
-                          }}
-                          label="Intake"
-                          disabled={!enrollment.courseId}
-                        >
-                          {courseBatches.length === 0 && enrollment.courseId ? (
-                            <MenuItem value="" disabled>
-                              No intakes available
-                            </MenuItem>
-                          ) : (
-                            courseBatches.map((batch) => (
-                              <MenuItem key={batch._id} value={batch._id}>
-                                {batch.name}
-                              </MenuItem>
-                            ))
-                          )}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                  </Grid>
+            <Alert severity="info">
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Existing Enrollments (read-only):
+              </Typography>
+              {values.enrollments.map((enr, idx) => (
+                <Box key={idx} sx={{ mb: 1 }}>
+                  <Typography variant="body2">
+                    <strong>Pathway:</strong> {PATHWAY_LIST.find((p) => p.id === enr.pathway)?.label}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Course:</strong> {enr.courseName}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Intake:</strong> {enr.batchName}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Classroom:</strong> {enr.classroomName}
+                  </Typography>
                 </Box>
-              );
-            })}
+              ))}
+            </Alert>
+          </Box>
+        ) : (
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle2" gutterBottom sx={{ mb: 2 }}>
+              Select your pathway, course, intake, and classroom:
+            </Typography>
+
+            <Grid container spacing={2}>
+              {/* Step 1: Pathway Selection */}
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Pathway</InputLabel>
+                  <Select
+                    value={selectedPathway}
+                    onChange={(e) => handlePathwayChange(e.target.value)}
+                    label="Pathway"
+                  >
+                    <MenuItem value="">Select Pathway</MenuItem>
+                    {PATHWAY_LIST.map((p) => (
+                      <MenuItem key={p.id} value={p.id}>
+                        {p.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Step 2: Course Selection (filtered by pathway) */}
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth disabled={!selectedPathway}>
+                  <InputLabel>Course</InputLabel>
+                  <Select
+                    value={selectedCourse}
+                    onChange={(e) => handleCourseChange(e.target.value)}
+                    label="Course"
+                  >
+                    <MenuItem value="">
+                      {selectedPathway ? 'Select Course' : 'Select Pathway First'}
+                    </MenuItem>
+                    {pathwayCoursesOptions.map((course) => (
+                      <MenuItem key={course._id} value={course._id}>
+                        {course.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Step 3: Intake/Batch Selection (filtered by course) */}
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth disabled={!selectedCourse}>
+                  <InputLabel>Intake</InputLabel>
+                  <Select
+                    value={selectedBatch}
+                    onChange={(e) => handleBatchChange(e.target.value)}
+                    label="Intake"
+                  >
+                    <MenuItem value="">
+                      {selectedCourse ? 'Select Intake' : 'Select Course First'}
+                    </MenuItem>
+                    {courseBatchesOptions.length > 0 ? (
+                      courseBatchesOptions.map((batch) => (
+                        <MenuItem key={batch._id} value={batch._id}>
+                          {batch.name}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem value="" disabled>
+                        No intakes available
+                      </MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Step 4: Classroom Selection (filtered by batch) */}
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth disabled={!selectedBatch || loadingClassrooms}>
+                  <InputLabel>Classroom</InputLabel>
+                  <Select
+                    value={selectedClassroom}
+                    onChange={(e) => handleClassroomChange(e.target.value)}
+                    label="Classroom"
+                  >
+                    <MenuItem value="">
+                      {selectedBatch ? 'Select Classroom' : 'Select Intake First'}
+                    </MenuItem>
+                    {batchClassroomsOptions.length > 0 ? (
+                      batchClassroomsOptions.map((classroom) => (
+                        <MenuItem key={classroom._id} value={classroom._id}>
+                          {classroom.name}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem value="" disabled>
+                        {loadingClassrooms ? 'Loading...' : 'No classrooms available'}
+                      </MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+
+            {/* Display Selected Enrollment Summary */}
+            {selectedPathway && selectedCourse && selectedBatch && selectedClassroom && (
+              <Box sx={{ mt: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Selected Enrollment:
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Pathway:</strong> {PATHWAY_LIST.find((p) => p.id === selectedPathway)?.label}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Course:</strong> {currentEnrollment.courseName}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Intake:</strong> {currentEnrollment.batchName}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Classroom:</strong> {currentEnrollment.classroomName}
+                </Typography>
+              </Box>
+            )}
           </Box>
         )}
       </CardContent>
