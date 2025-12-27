@@ -98,7 +98,7 @@ const UpdateRequiredDocument = () => {
     };
 
     fetchDocument();
-  }, [documentId]);
+  }, [documentId, showErrorSwal]);
 
   const formik = useFormik({
     initialValues: {

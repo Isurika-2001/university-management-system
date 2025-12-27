@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import MainCard from 'components/MainCard';
 import { PATHWAY_LIST } from 'constants/pathways';
 import { modulesAPI } from '../../api/modules';
@@ -54,11 +54,7 @@ const View = () => {
     Toast.fire({ icon: 'error', title: msg });
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [coursesRes, modulesRes] = await Promise.all([coursesAPI.getAll(), modulesAPI.getAll()]);
 
@@ -79,7 +75,11 @@ const View = () => {
       console.error(error);
       showErrorSwal('Error loading modules');
     }
-  };
+  }, [setData, showErrorSwal]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleOpenDialog = (course) => {
     setSelectedCourse(course);

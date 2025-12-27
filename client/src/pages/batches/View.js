@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Button } from '@mui/material';
 import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -64,17 +64,7 @@ const View = () => {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
-  // Fetch batches data when page, rowsPerPage, debouncedSearchTerm, courseFilter, or sorting changes
-  useEffect(() => {
-    fetchData();
-  }, [page, rowsPerPage, debouncedSearchTerm, courseFilter, orderBy, order]);
-
-  // Fetch courses for filter dropdown on mount
-  useEffect(() => {
-    fetchCourseData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const params = {
@@ -95,7 +85,12 @@ const View = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, rowsPerPage, debouncedSearchTerm, courseFilter, orderBy, order]);
+
+  // Fetch batches data when page, rowsPerPage, debouncedSearchTerm, courseFilter, or sorting changes
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const fetchCourseData = async () => {
     try {

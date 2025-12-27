@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   TextField,
   Button,
@@ -85,33 +85,33 @@ const AddEnrollment = () => {
         fetchStudents();
       }
     }
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, searchStudents, fetchStudents, studentOptions.length]);
 
   useEffect(() => {
     fetchCourses();
     fetchStudents(); // Load initial students
-  }, []);
+  }, [fetchCourses, fetchStudents]);
 
   useEffect(() => {
     if (selectedPathway) {
       fetchCourses(selectedPathway);
     }
-  }, [selectedPathway]);
+  }, [selectedPathway, fetchCourses]);
 
   useEffect(() => {
     if (selectedCourse) {
       fetchBatches(selectedCourse);
     }
-  }, [selectedCourse]);
+  }, [selectedCourse, fetchBatches]);
 
   useEffect(() => {
     if (selectedCourse && selectedBatch) {
       fetchClassrooms(selectedCourse, selectedBatch);
     }
-  }, [selectedCourse, selectedBatch]);
+  }, [selectedCourse, selectedBatch, fetchClassrooms]);
 
   // Fetch student options
-  async function fetchStudents() {
+  const fetchStudents = useCallback(async () => {
     try {
       const response = await fetch(apiRoutes.studentRoute, {
         method: 'GET',
@@ -135,134 +135,146 @@ const AddEnrollment = () => {
       console.error('Error fetching students:', error);
       return [];
     }
-  }
+  }, [user.token, setStudentOptions]);
 
   // Search students with debounced search
-  async function searchStudents(searchTerm) {
-    try {
-      setSearchingStudents(true);
-      const response = await fetch(`${apiRoutes.studentRoute}?search=${encodeURIComponent(searchTerm)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      });
+  const searchStudents = useCallback(
+    async (searchTerm) => {
+      try {
+        setSearchingStudents(true);
+        const response = await fetch(`${apiRoutes.studentRoute}?search=${encodeURIComponent(searchTerm)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`
+          }
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
+        if (!response.ok) {
+          if (response.status === 500) {
+            console.error('Internal Server Error.');
+            return;
+          }
           return;
         }
-        return;
+        setStudentOptions(data.data || data);
+      } catch (error) {
+        console.error('Error searching students:', error);
+        return [];
+      } finally {
+        setSearchingStudents(false);
       }
-      setStudentOptions(data.data || data);
-    } catch (error) {
-      console.error('Error searching students:', error);
-      return [];
-    } finally {
-      setSearchingStudents(false);
-    }
-  }
+    },
+    [user.token, setSearchingStudents, setStudentOptions]
+  );
 
   // Fetch course options
-  async function fetchCourses(pathwayId) {
-    let url = apiRoutes.courseRoute;
-    if (pathwayId) {
-      url = `${apiRoutes.courseRoute}?pathway=${pathwayId}`;
-    }
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      });
+  const fetchCourses = useCallback(
+    async (pathwayId) => {
+      let url = apiRoutes.courseRoute;
+      if (pathwayId) {
+        url = `${apiRoutes.courseRoute}?pathway=${pathwayId}`;
+      }
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`
+          }
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
+        if (!response.ok) {
+          if (response.status === 500) {
+            console.error('Internal Server Error.');
+            return;
+          }
           return;
         }
-        return;
+        setCourseOptions(data);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+        return [];
       }
-      setCourseOptions(data);
-    } catch (error) {
-      console.error('Error fetching courses:', error);
-      return [];
-    }
-  }
+    },
+    [user.token, setCourseOptions]
+  );
 
   // Fetch batch options
-  async function fetchBatches(courseId) {
-    if (!courseId) {
-      setBatchOptions([]);
-      return;
-    }
-
-    try {
-      const response = await fetch(apiRoutes.batchRoute + `course/${courseId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          return;
-        }
+  const fetchBatches = useCallback(
+    async (courseId) => {
+      if (!courseId) {
+        setBatchOptions([]);
         return;
       }
 
-      setBatchOptions(data);
-    } catch (error) {
-      console.error('Error fetching batches:', error);
-      return [];
-    }
-  }
+      try {
+        const response = await fetch(apiRoutes.batchRoute + `course/${courseId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          if (response.status === 500) {
+            console.error('Internal Server Error.');
+            return;
+          }
+          return;
+        }
+
+        setBatchOptions(data);
+      } catch (error) {
+        console.error('Error fetching batches:', error);
+        return [];
+      }
+    },
+    [user.token, setBatchOptions]
+  );
 
   // Fetch classroom options
-  async function fetchClassrooms(courseId, batchId) {
-    if (!courseId || !batchId) {
-      setClassroomOptions([]);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${apiRoutes.classroomRoute}course/${courseId}/batch/${batchId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 500) {
-          console.error('Internal Server Error.');
-          return;
-        }
+  const fetchClassrooms = useCallback(
+    async (courseId, batchId) => {
+      if (!courseId || !batchId) {
+        setClassroomOptions([]);
         return;
       }
 
-      setClassroomOptions(data);
-    } catch (error) {
-      console.error('Error fetching classrooms:', error);
-      return [];
-    }
-  }
+      try {
+        const response = await fetch(`${apiRoutes.classroomRoute}course/${courseId}/batch/${batchId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          if (response.status === 500) {
+            console.error('Internal Server Error.');
+            return;
+          }
+          return;
+        }
+
+        setClassroomOptions(data);
+      } catch (error) {
+        console.error('Error fetching classrooms:', error);
+        return [];
+      }
+    },
+    [user.token, setClassroomOptions]
+  );
 
   const initialValues = {
     studentId: '',

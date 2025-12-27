@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import {
   Table,
   TableContainer,
@@ -302,6 +303,51 @@ const DataTable = ({
       )}
     </MainCard>
   );
+};
+
+DataTable.propTypes = {
+  title: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+  data: PropTypes.array,
+  loading: PropTypes.bool,
+  totalCount: PropTypes.number,
+  page: PropTypes.number,
+  rowsPerPage: PropTypes.number,
+  onPageChange: PropTypes.func,
+  onRowsPerPageChange: PropTypes.func,
+  onSearch: PropTypes.func,
+  onSort: PropTypes.func,
+  orderBy: PropTypes.string,
+  order: PropTypes.oneOf(['asc', 'desc']),
+  sortableColumns: PropTypes.array,
+  filters: PropTypes.array,
+  actions: PropTypes.array,
+  columns: PropTypes.array.isRequired,
+  onRowClick: PropTypes.func,
+  onSelectionChange: PropTypes.func,
+  selected: PropTypes.array,
+  searchPlaceholder: PropTypes.string,
+  searchDebounceMs: PropTypes.number,
+  rowsPerPageOptions: PropTypes.array,
+  showSearch: PropTypes.bool,
+  showFilters: PropTypes.bool,
+  showActions: PropTypes.bool,
+  showPagination: PropTypes.bool,
+  showSelection: PropTypes.bool,
+  emptyMessage: PropTypes.string,
+  searchValue: PropTypes.string,
+  onSearchChange: PropTypes.func,
+  filterValues: PropTypes.object,
+  onFilterChange: PropTypes.func,
+  exportFunction: PropTypes.func,
+  exportButtonText: PropTypes.string,
+  exportButtonIcon: PropTypes.node,
+  customHeader: PropTypes.node,
+  customFooter: PropTypes.node,
+  tableProps: PropTypes.object,
+  containerProps: PropTypes.object,
+  searchFieldProps: PropTypes.object,
+  filterFieldProps: PropTypes.object,
+  actionButtonProps: PropTypes.object
 };
 
 export default DataTable;

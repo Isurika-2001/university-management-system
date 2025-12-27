@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { examAPI } from 'api/exams';
 import { classroomAPI } from 'api/classrooms';
@@ -81,7 +81,22 @@ export default function ExamDetail() {
   const [openAddTake, setOpenAddTake] = useState(false);
   const [newTakeData, setNewTakeData] = useState({ studentId: '', takeType: 'resit', mark: '' });
 
-  const fetchExamData = async () => {
+  const fetchExamData = useCallback(async () => {
+    if (!selectedExam) return;
+    try {
+      const resp = await examAPI.get(selectedExam._id);
+      const marks = resp?.data?.marks || [];
+      const grouped = {};
+      marks.forEach((m) => {
+        const studentData = students.find((s) => (s.studentId?._id || s._id) === (m.studentId?._id || m.studentId));
+        grouped[m.studentId?._id || m.studentId] = {
+          takes: m.takes || [],
+          examMark: m,
+          student: studentData
+        };
+      });
+      setMarksByStudent(grouped);
+  const fetchExamData = useCallback(async () => {
     if (!selectedExam) return;
     try {
       const resp = await examAPI.get(selectedExam._id);
@@ -99,7 +114,7 @@ export default function ExamDetail() {
     } catch (err) {
       console.error('Error fetching marks:', err);
     }
-  };
+  }, [selectedExam, students, setMarksByStudent]);
 
   useEffect(() => {
     if (!classroomId) {
@@ -128,7 +143,7 @@ export default function ExamDetail() {
 
   useEffect(() => {
     fetchExamData();
-  }, [selectedExam, students]);
+  }, [selectedExam, students, fetchExamData]);
 
   const handleAddTake = async () => {
     const { studentId, takeType, mark } = newTakeData;

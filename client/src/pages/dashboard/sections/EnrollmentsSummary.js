@@ -84,7 +84,7 @@ const EnrollmentSummary = () => {
       }
     }
     fetchData();
-  }, []);
+  }, [logout, user.token]);
 
   const metricCards = [
     {

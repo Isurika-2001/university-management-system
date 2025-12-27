@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Table,
@@ -57,11 +57,7 @@ const Detail = () => {
     Toast.fire({ icon: 'error', title: msg });
   };
 
-  useEffect(() => {
-    fetchClassroom();
-  }, [id]);
-
-  const fetchClassroom = async () => {
+  const fetchClassroom = useCallback(async () => {
     try {
       const response = await classroomAPI.getById(id);
       if (response?.data) {
@@ -74,7 +70,11 @@ const Detail = () => {
       showErrorSwal('Error loading classroom');
       setLoading(false);
     }
-  };
+  }, [id, setClassroom, setStudents, setLoading, showErrorSwal]);
+
+  useEffect(() => {
+    fetchClassroom();
+  }, [fetchClassroom]);
 
   const getStatusColor = (status) => {
     const statusObj = STATUS_LIST.find((s) => s.value === status);

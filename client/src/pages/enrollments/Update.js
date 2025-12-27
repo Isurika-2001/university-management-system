@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Grid, LinearProgress, CircularProgress, Typography, TextField, Collapse, IconButton } from '@mui/material';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box } from '@mui/material';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
@@ -77,7 +77,7 @@ const UpdateForm = () => {
     fetchData();
     fetchCourses();
     fetchEnrollments();
-  }, [id]);
+  }, [id, fetchData, fetchCourses, fetchEnrollments]);
 
   useEffect(() => {
     if (selectedPathway) {
@@ -90,15 +90,15 @@ const UpdateForm = () => {
 
   useEffect(() => {
     fetchIntakes(selectedCourse);
-  }, [selectedCourse]);
+  }, [selectedCourse, fetchIntakes]);
 
   useEffect(() => {
     if (selectedCourse && selectedIntake) {
       fetchClassrooms(selectedCourse, selectedIntake);
     }
-  }, [selectedCourse, selectedIntake]);
+  }, [selectedCourse, selectedIntake, fetchClassrooms]);
 
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     console.log('Fetching student data for ID:', id);
 
@@ -119,9 +119,9 @@ const UpdateForm = () => {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id, setData, setLoading]);
 
-  async function fetchEnrollments() {
+  const fetchEnrollments = useCallback(async () => {
     console.log('Fetching enrollments for student ID:', id);
 
     if (!id) {
@@ -141,9 +141,9 @@ const UpdateForm = () => {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id, setEnrollments, setLoading]);
 
-  async function fetchCourses() {
+  const fetchCourses = useCallback(async () => {
     try {
       const response = await coursesAPI.getAll();
       setAllCourseOptions(response || []);
@@ -153,35 +153,41 @@ const UpdateForm = () => {
       setCourseOptions([]);
       setAllCourseOptions([]);
     }
-  }
+  }, [setAllCourseOptions, setCourseOptions]);
 
-  async function fetchIntakes(courseId) {
-    if (!courseId) {
-      setIntakeOptions([]);
-      return;
-    }
-    try {
-      const response = await batchesAPI.getByCourseId(courseId);
-      setIntakeOptions(response.data || response || []);
-    } catch (error) {
-      console.error('Error fetching intakes:', error);
-      setIntakeOptions([]);
-    }
-  }
+  const fetchIntakes = useCallback(
+    async (courseId) => {
+      if (!courseId) {
+        setIntakeOptions([]);
+        return;
+      }
+      try {
+        const response = await batchesAPI.getByCourseId(courseId);
+        setIntakeOptions(response.data || response || []);
+      } catch (error) {
+        console.error('Error fetching intakes:', error);
+        setIntakeOptions([]);
+      }
+    },
+    [setIntakeOptions]
+  );
 
-  async function fetchClassrooms(courseId, intakeId) {
-    if (!courseId || !intakeId) {
-      setClassroomOptions([]);
-      return;
-    }
-    try {
-      const response = await classroomAPI.getByCourseAndBatch(courseId, intakeId);
-      setClassroomOptions(response || []);
-    } catch (error) {
-      console.error('Error fetching classrooms:', error);
-      setClassroomOptions([]);
-    }
-  }
+  const fetchClassrooms = useCallback(
+    async (courseId, intakeId) => {
+      if (!courseId || !intakeId) {
+        setClassroomOptions([]);
+        return;
+      }
+      try {
+        const response = await classroomAPI.getByCourseAndBatch(courseId, intakeId);
+        setClassroomOptions(response || []);
+      } catch (error) {
+        console.error('Error fetching classrooms:', error);
+        setClassroomOptions([]);
+      }
+    },
+    [setClassroomOptions]
+  );
 
   const handleSubmit = async (values) => {
     try {

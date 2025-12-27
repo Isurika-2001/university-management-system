@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import PropTypes from 'prop-types';
 import { useAuthContext } from 'src/contexts/auth-context';
@@ -8,6 +8,25 @@ export const AuthGuard = (props) => {
   const router = useRouter();
   const { isAuthenticated, user } = useAuthContext();
   const [checked, setChecked] = useState(false);
+
+  const redirectToLogin = useCallback(() => {
+    router
+      .replace({
+        pathname: '/auth/login',
+        query: router.asPath !== '/' ? { continueUrl: router.asPath } : undefined
+      })
+      .catch(console.error);
+  }, [router]);
+
+  const redirectToUnauthorized = useCallback(() => {
+    router.replace('/404').catch(console.error);
+  }, [router]);
+
+  const isUserTypeAllowed = (user, allowedUserTypes) => {
+    const userType = user?.userType || {};
+    const userTypeName = userType.name || '';
+    return allowedUserTypes.includes(userTypeName);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -36,26 +55,7 @@ export const AuthGuard = (props) => {
     return () => {
       isMounted = false;
     };
-  }, [isAuthenticated, user, requiredPermissions, allowedUserTypes]);
-
-  const redirectToLogin = () => {
-    router
-      .replace({
-        pathname: '/auth/login',
-        query: router.asPath !== '/' ? { continueUrl: router.asPath } : undefined
-      })
-      .catch(console.error);
-  };
-
-  const redirectToUnauthorized = () => {
-    router.replace('/404').catch(console.error);
-  };
-
-  const isUserTypeAllowed = (user, allowedUserTypes) => {
-    const userType = user?.userType || {};
-    const userTypeName = userType.name || '';
-    return allowedUserTypes.includes(userTypeName);
-  };
+  }, [isAuthenticated, user, allowedUserTypes, redirectToLogin, redirectToUnauthorized]);
 
   if (!checked) {
     return null;

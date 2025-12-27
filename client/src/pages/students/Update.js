@@ -365,7 +365,7 @@ const UpdateStudent = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, user.token, navigate]);
+  }, [id, user.token, navigate, showErrorSwal, showSuccessSwal]);
 
   const fetchRequiredDocs = useCallback(async () => {
     try {
@@ -402,7 +402,7 @@ const UpdateStudent = () => {
   useEffect(() => {
     // This will be called when requiredDocuments change
     // The actual completion check will be done in individual step components
-  }, [requiredDocuments]);
+  }, [requiredDocuments, studentData]);
 
   const handleNext = async (values, { setTouched, setFieldError }) => {
     // Validate only the current step fields

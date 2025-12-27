@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   TableContainer,
@@ -50,11 +50,7 @@ const View = () => {
     Toast.fire({ icon: 'error', title: msg });
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const response = await classroomAPI.getAll();
       if (response?.data) {
@@ -67,7 +63,11 @@ const View = () => {
       showErrorSwal('Error fetching classrooms');
       setLoading(false);
     }
-  };
+  }, [setData, setFilteredData, setLoading, showErrorSwal]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSearch = (event) => {
     const term = event.target.value.toLowerCase();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   TableContainer,
@@ -81,11 +81,11 @@ const EnrollmentsView = () => {
   // Fetch data whenever page, rowsPerPage, debouncedSearchTerm, sortBy, or sortOrder changes
   useEffect(() => {
     fetchData();
-  }, [page, rowsPerPage, debouncedSearchTerm, sortBy, sortOrder, courseFilter, batchFilter]);
+  }, [page, rowsPerPage, debouncedSearchTerm, sortBy, sortOrder, courseFilter, batchFilter, fetchData]);
 
   useEffect(() => {
     fetchCourses();
-  }, []);
+  }, [fetchCourses]);
 
   useEffect(() => {
     if (courseFilter) {
@@ -94,9 +94,9 @@ const EnrollmentsView = () => {
       setBatches([]);
       setBatchFilter('');
     }
-  }, [courseFilter]);
+  }, [courseFilter, fetchBatches, setBatches, setBatchFilter]);
 
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -133,9 +133,21 @@ const EnrollmentsView = () => {
       console.error('Error fetching data:', error.message);
       setLoading(false);
     }
-  }
+  }, [
+    page,
+    rowsPerPage,
+    debouncedSearchTerm,
+    sortBy,
+    sortOrder,
+    courseFilter,
+    batchFilter,
+    user.token,
+    setData,
+    setTotalCount,
+    setLoading
+  ]);
 
-  async function fetchCourses() {
+  const fetchCourses = useCallback(async () => {
     try {
       const response = await fetch(apiRoutes.courseRoute, {
         method: 'GET',
@@ -154,28 +166,31 @@ const EnrollmentsView = () => {
     } catch (error) {
       console.error('Error fetching courses:', error);
     }
-  }
+  }, [user.token, setCourses]);
 
-  async function fetchBatches(courseId) {
-    try {
-      const response = await fetch(`${apiRoutes.batchRoute}course/${courseId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
+  const fetchBatches = useCallback(
+    async (courseId) => {
+      try {
+        const response = await fetch(`${apiRoutes.batchRoute}course/${courseId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch batches');
         }
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch batches');
+        const data = await response.json();
+        setBatches(data);
+      } catch (error) {
+        console.error('Error fetching batches:', error);
       }
-
-      const data = await response.json();
-      setBatches(data);
-    } catch (error) {
-      console.error('Error fetching batches:', error);
-    }
-  }
+    },
+    [user.token, setBatches]
+  );
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
