@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, TextField, Button, Grid, Divider, CircularProgress, LinearProgress, MenuItem } from '@mui/material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
@@ -13,7 +13,7 @@ function UpdateUser() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
 
-  const Toast = withReactContent(
+  const Toast = useMemo(() => withReactContent(
     Swal.mixin({
       toast: true,
       position: 'bottom',
@@ -25,7 +25,7 @@ function UpdateUser() {
       timer: 3500,
       timerProgressBar: true
     })
-  );
+  ), []);
 
   const showSuccessSwal = useCallback(
     (e) => {

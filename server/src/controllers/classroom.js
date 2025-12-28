@@ -121,6 +121,7 @@ async function createClassroom(req, res) {
 async function getClassroomById(req, res) {
   try {
     const { id } = req.params;
+    const { fresh } = req.query; // 'fresh' parameter from frontend (currently not used for explicit cache busting as Mongoose.findById typically gets fresh data)
 
     const classroom = await Classroom.findById(id)
       .populate('courseId', 'name code')

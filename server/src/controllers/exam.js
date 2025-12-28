@@ -8,8 +8,42 @@ const PASS_THRESHOLD = 40;
 
 async function getAllExams(req, res) {
   try {
-    const exams = await Exam.find().populate('classroomId').sort({ createdAt: -1 });
-    res.json({ success: true, data: exams });
+    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', search = '' } = req.query;
+
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    let filter = {};
+    if (search) {
+      filter = {
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+        ]
+      };
+    }
+
+    const sort = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    const totalExams = await Exam.countDocuments(filter);
+    const exams = await Exam.find(filter)
+      .populate('classroomId')
+      .sort(sort)
+      .skip(skip)
+      .limit(limitNum);
+
+    res.json({
+      success: true,
+      data: exams,
+      pagination: {
+        total: totalExams,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(totalExams / limitNum)
+      }
+    });
   } catch (err) {
     logger.error('getAllExams error', err);
     res.status(500).json({ success: false, error: err.message });

@@ -1,12 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Typography, Table, TableHead, TableRow, TableCell, TableBody, Paper, CircularProgress } from '@mui/material';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Box, Typography, Table, TableHead, TableRow, TableCell, TableBody, Paper, CircularProgress, Chip } from '@mui/material';
 import { apiRoutes } from 'config';
 import { useAuthContext } from 'context/useAuthContext';
+import { STATUS_LIST } from 'constants/statuses';
 
 const ClassroomHistory = ({ enrollmentId }) => {
   const { user } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState([]);
+
+  const getStatusColor = useMemo(() => {
+    return (status) => {
+      const statusObj = STATUS_LIST.find((s) => s.value === status);
+      return statusObj?.color || 'default';
+    };
+  }, []);
+
+  const getStatusLabel = useMemo(() => {
+    return (status) => {
+      const statusObj = STATUS_LIST.find((s) => s.value === status);
+      return statusObj?.label || status;
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -75,7 +90,9 @@ const ClassroomHistory = ({ enrollmentId }) => {
                     <TableCell>{h.classroomId?.batchId?.name || '-'}</TableCell>
                     <TableCell>{h.classroomId?.moduleId?.name || '-'}</TableCell>
                     <TableCell>{h.createdAt ? new Date(h.createdAt).toLocaleString() : '-'}</TableCell>
-                    <TableCell>{h.status || '-'}</TableCell>
+                    <TableCell>
+                      <Chip label={getStatusLabel(h.status)} color={getStatusColor(h.status)} size="small" />
+                    </TableCell>
                   </TableRow>
                 ))
               )}

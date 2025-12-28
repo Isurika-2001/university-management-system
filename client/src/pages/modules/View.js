@@ -21,7 +21,8 @@ import {
   Chip,
   Grid,
   IconButton,
-  Typography
+  Typography,
+  CircularProgress
 } from '@mui/material';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import Swal from 'sweetalert2';
@@ -33,6 +34,7 @@ const View = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [moduleInput, setModuleInput] = useState('');
   const [tempModules, setTempModules] = useState([]);
+  const [isSavingModules, setIsSavingModules] = useState(false); // New state for saving modules loading
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -110,6 +112,7 @@ const View = () => {
     if (!selectedCourse) return;
 
     try {
+      setIsSavingModules(true); // Set loading true
       await modulesAPI.upsert({ courseId: selectedCourse.courseId || selectedCourse.courseId || selectedCourse._id, modules: tempModules });
       await fetchData();
       setOpenDialog(false);
@@ -117,6 +120,8 @@ const View = () => {
     } catch (err) {
       console.error(err);
       showErrorSwal('Error saving modules');
+    } finally {
+      setIsSavingModules(false); // Set loading false
     }
   };
 
@@ -219,8 +224,8 @@ const View = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSave} variant="contained" color="primary">
-            Save Modules
+          <Button onClick={handleSave} variant="contained" color="primary" disabled={isSavingModules}>
+            {isSavingModules ? <CircularProgress size={20} color="inherit" /> : 'Save Modules'}
           </Button>
         </DialogActions>
       </Dialog>

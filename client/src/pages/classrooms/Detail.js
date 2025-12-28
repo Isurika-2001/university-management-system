@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Table,
@@ -17,14 +17,15 @@ import {
   DialogActions,
   Typography,
   Chip,
-  Grid
+  Grid,
+  CircularProgress
 } from '@mui/material';
-import { ArrowLeftOutlined, UserAddOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, UserAddOutlined, DeleteOutlined } from '@ant-design/icons';
 import MainCard from 'components/MainCard';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { classroomAPI } from 'api/classrooms';
-import { STATUS_LIST } from 'constants/statuses';
+import { STATUSES, STATUS_LIST } from 'constants/statuses';
 
 const Detail = () => {
   const { id } = useParams();
@@ -36,17 +37,24 @@ const Detail = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [eligibleClassrooms, setEligibleClassrooms] = useState([]);
   const [selectedNewClassroom, setSelectedNewClassroom] = useState(null);
+  const [isHolding, setIsHolding] = useState(false); // New state for hold button loading
+  const [isAddingToNew, setIsAddingToNew] = useState(false); // New state for confirm add to new button loading
+  const [isRemoving, setIsRemoving] = useState(false); // State for remove button loading
 
-  const Toast = withReactContent(
-    Swal.mixin({
-      toast: true,
-      position: 'bottom',
-      customClass: { popup: 'colored-toast' },
-      background: 'primary',
-      showConfirmButton: false,
-      timer: 3500,
-      timerProgressBar: true
-    })
+  const Toast = useMemo(
+    () =>
+      withReactContent(
+        Swal.mixin({
+          toast: true,
+          position: 'bottom',
+          customClass: { popup: 'colored-toast' },
+          background: 'primary',
+          showConfirmButton: false,
+          timer: 3500,
+          timerProgressBar: true
+        })
+      ),
+    []
   );
 
   const showSuccessSwal = useCallback(
@@ -93,7 +101,62 @@ const Detail = () => {
   };
 
   const isEligibleForTransfer = (status) => {
-    return ['pass', 'fail'].includes(status);
+    return [STATUSES.PASS, STATUSES.FAIL, STATUSES.HOLD].includes(status);
+  };
+
+  const handleHoldStatus = async (classroomStudentId) => {
+    try {
+      setIsHolding(true);
+      await classroomAPI.updateStudentStatus(classroomStudentId, STATUSES.HOLD);
+      showSuccessSwal('Classroom student status updated to Hold');
+      fetchClassroom(); // Refresh data
+    } catch (error) {
+      console.error('Error updating classroom student status:', error);
+      showErrorSwal('Error updating student status');
+    } finally {
+      setIsHolding(false);
+    }
+  };
+
+  const handleContinueStatus = async (classroomStudentId) => {
+    try {
+      setIsHolding(true);
+      await classroomAPI.updateStudentStatus(classroomStudentId, STATUSES.ACTIVE);
+      showSuccessSwal('Classroom student status updated to Active');
+      fetchClassroom(); // Refresh data
+    } catch (error) {
+      console.error('Error updating classroom student status:', error);
+      showErrorSwal('Error updating student status');
+    } finally {
+      setIsHolding(false);
+    }
+  };
+
+  const handleRemoveFromClassroom = async (classroomStudentId, studentName) => {
+    try {
+      const result = await Swal.fire({
+        title: 'Remove Student',
+        text: `Are you sure you want to remove ${studentName} from this classroom?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d32f2f',
+        cancelButtonColor: '#757575',
+        confirmButtonText: 'Yes, Remove',
+        cancelButtonText: 'Cancel'
+      });
+
+      if (result.isConfirmed) {
+        setIsRemoving(true);
+        await classroomAPI.removeStudent(classroomStudentId);
+        showSuccessSwal('Student removed from classroom');
+        fetchClassroom(); // Refresh data
+      }
+    } catch (error) {
+      console.error('Error removing student from classroom:', error);
+      showErrorSwal('Error removing student from classroom');
+    } finally {
+      setIsRemoving(false);
+    }
   };
 
   const handleAddToNew = async (student) => {
@@ -119,6 +182,7 @@ const Detail = () => {
     }
 
     try {
+      setIsAddingToNew(true); // Set loading true
       await classroomAPI.addStudentToClassroom({
         classroomId: selectedNewClassroom._id,
         enrollmentId: selectedStudent.enrollmentId._id,
@@ -132,6 +196,8 @@ const Detail = () => {
     } catch (error) {
       console.error(error);
       showErrorSwal('Error adding student to classroom');
+    } finally {
+      setIsAddingToNew(false); // Set loading false
     }
   };
 
@@ -217,18 +283,64 @@ const Detail = () => {
                       <Chip label={getStatusLabel(student.status)} color={getStatusColor(student.status)} size="small" />
                     </TableCell>
                     <TableCell>
-                      {isEligibleForTransfer(student.status) ? (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<UserAddOutlined />}
-                          onClick={() => handleAddToNew(student)}
-                          color="primary"
-                        >
-                          Add to New
-                        </Button>
-                      ) : (
+                      {student.status === STATUSES.TRANSFERRED ? (
                         <Chip label="Not Eligible" color="error" variant="outlined" size="small" />
+                      ) : (
+                        <>
+                          {student.status !== STATUSES.HOLD && student.status !== STATUSES.PASS && student.status !== STATUSES.FAIL && (
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={() => handleHoldStatus(student._id)}
+                              color="warning"
+                              sx={{ mr: 1 }}
+                              disabled={isHolding}
+                            >
+                              Hold
+                            </Button>
+                          )}
+                          {student.status === STATUSES.HOLD && (
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={() => handleContinueStatus(student._id)}
+                              color="success"
+                              sx={{ mr: 1 }}
+                              disabled={isHolding}
+                            >
+                              Continue
+                            </Button>
+                          )}
+                          {isEligibleForTransfer(student.status) ? (
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<UserAddOutlined />}
+                              onClick={() => handleAddToNew(student)}
+                              color="primary"
+                              sx={{ mr: 1 }}
+                            >
+                              Add to New
+                            </Button>
+                          ) : (
+                            <Chip label="Not Eligible" color="error" variant="outlined" size="small" sx={{ mr: 1 }} />
+                          )}
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<DeleteOutlined />}
+                            onClick={() =>
+                              handleRemoveFromClassroom(
+                                student._id,
+                                `${student.studentId?.firstName || ''} ${student.studentId?.lastName || ''}`.trim()
+                              )
+                            }
+                            color="error"
+                            disabled={isRemoving}
+                          >
+                            Remove
+                          </Button>
+                        </>
                       )}
                     </TableCell>
                   </TableRow>
@@ -294,8 +406,8 @@ const Detail = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
-          <Button onClick={handleConfirmAddToNew} variant="contained" disabled={!selectedNewClassroom}>
-            Confirm
+          <Button onClick={handleConfirmAddToNew} variant="contained" disabled={!selectedNewClassroom || isAddingToNew}>
+            {isAddingToNew ? <CircularProgress size={20} color="inherit" /> : 'Confirm'}
           </Button>
         </DialogActions>
       </Dialog>

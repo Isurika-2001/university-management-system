@@ -35,6 +35,7 @@ const UpdateForm = () => {
   const [selectedEnrollment, setSelectedEnrollment] = useState(null);
   const [transferData, setTransferData] = useState({
     batchId: '',
+    classroomId: '', // Added for new classroom selection
     reason: ''
   });
   const [expandedEnrollment, setExpandedEnrollment] = useState(null);
@@ -42,6 +43,7 @@ const UpdateForm = () => {
   const [selectedEnrollmentForClassroom, setSelectedEnrollmentForClassroom] = useState(null);
   const [eligibleClassrooms, setEligibleClassrooms] = useState([]);
   const [selectedClassroomForAdd, setSelectedClassroomForAdd] = useState('');
+  
 
   const { id } = useParams();
 
@@ -73,11 +75,7 @@ const UpdateForm = () => {
     });
   };
 
-  useEffect(() => {
-    fetchData();
-    fetchCourses();
-    fetchEnrollments();
-  }, [id, fetchData, fetchCourses, fetchEnrollments]);
+  
 
   useEffect(() => {
     if (selectedPathway) {
@@ -88,15 +86,7 @@ const UpdateForm = () => {
     }
   }, [selectedPathway, allCourseOptions]);
 
-  useEffect(() => {
-    fetchIntakes(selectedCourse);
-  }, [selectedCourse, fetchIntakes]);
-
-  useEffect(() => {
-    if (selectedCourse && selectedIntake) {
-      fetchClassrooms(selectedCourse, selectedIntake);
-    }
-  }, [selectedCourse, selectedIntake, fetchClassrooms]);
+  
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -133,15 +123,35 @@ const UpdateForm = () => {
     try {
       setLoading(true);
       const response = await enrollmentsAPI.getByStudentId(id);
-      console.log('Enrollments response:', response);
-      setEnrollments(response.data || []);
+      let fetchedEnrollments = response.data || [];
+      console.log('Enrollments response:', fetchedEnrollments);
+
+      // For each enrollment, check its classroom history
+      const enrollmentsWithClassroomStatus = await Promise.all(
+        fetchedEnrollments.map(async (enrollment) => {
+          try {
+            const history = await studentsAPI.getEnrollmentClassroomHistory(enrollment._id);
+            // An enrollment has an assigned classroom if its history contains any record
+            // with a status that isn't 'removed' or 'inactive'.
+            // For simplicity, let's assume if there's any history, it has been assigned at some point.
+            // A more robust check might look for an 'active' status in the history.
+            const hasAssignedClassroom = history?.data?.length > 0;
+            return { ...enrollment, hasAssignedClassroom };
+          } catch (historyError) {
+            console.error(`Error fetching classroom history for enrollment ${enrollment._id}:`, historyError);
+            return { ...enrollment, hasAssignedClassroom: false }; // Default to false on error
+          }
+        })
+      );
+
+      setEnrollments(enrollmentsWithClassroomStatus);
     } catch (error) {
       console.error('Error fetching enrollments:', error);
       setEnrollments([]);
     } finally {
       setLoading(false);
     }
-  }, [id, setEnrollments, setLoading]);
+  }, [id, setEnrollments, setLoading, studentsAPI]);
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -189,6 +199,31 @@ const UpdateForm = () => {
     [setClassroomOptions]
   );
 
+    useEffect(() => {
+      fetchData();
+      fetchCourses();
+      fetchEnrollments();
+    }, [id, fetchData, fetchCourses, fetchEnrollments]);
+
+    useEffect(() => {
+      fetchIntakes(selectedCourse);
+    }, [selectedCourse, fetchIntakes]);
+
+    useEffect(() => {
+      if (selectedCourse && selectedIntake) {
+        fetchClassrooms(selectedCourse, selectedIntake);
+      }
+    }, [selectedCourse, selectedIntake, fetchClassrooms]);
+
+    // Fetch classrooms for transfer dialog
+    useEffect(() => {
+      if (selectedCourse && transferData.batchId) {
+        fetchClassrooms(selectedCourse, transferData.batchId);
+      } else {
+        setClassroomOptions([]);
+      }
+    }, [selectedCourse, transferData.batchId, fetchClassrooms, setClassroomOptions]);
+
   const handleSubmit = async (values) => {
     try {
       setSubmitting(true);
@@ -233,11 +268,13 @@ const UpdateForm = () => {
     setSelectedEnrollment(enrollment);
     setTransferData({
       batchId: '',
+      classroomId: '', // Reset classroomId
       reason: ''
     });
     setOpenTransferDialog(true);
 
     if (enrollment.courseId) {
+      setSelectedCourse(enrollment.courseId._id || enrollment.courseId); // Set selectedCourse for reuse
       await fetchIntakes(enrollment.courseId);
     }
   };
@@ -248,8 +285,8 @@ const UpdateForm = () => {
       console.log('Submitting transfer data:', transferData);
       console.log('Selected enrollment:', selectedEnrollment);
 
-      if (!transferData.batchId || !transferData.reason) {
-        showErrorSwal('Please select a new intake and provide a transfer reason');
+      if (!transferData.batchId || !transferData.reason || !transferData.classroomId) { // Added classroomId validation
+        showErrorSwal('Please select a new intake, classroom and provide a transfer reason'); // Updated message
         return;
       }
 
@@ -311,6 +348,8 @@ const UpdateForm = () => {
       setSubmitting(false);
     }
   };
+
+  
 
   const initialValues = {
     pathway: '',
@@ -407,16 +446,20 @@ const UpdateForm = () => {
                           <TableCell>{new Date(enrollment.enrollmentDate).toLocaleDateString()}</TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', gap: 1 }}>
-                              <Button
-                                variant="outlined"
-                                color="primary"
-                                size="small"
-                                onClick={() => handleAddClassroom(enrollment)}
-                                disabled={submitting}
-                                startIcon={<FileAddOutlined />}
-                              >
-                                Add Classroom
-                              </Button>
+                              {/* Add Classroom button - show only if no classroom is assigned */}
+                              {!enrollment.hasAssignedClassroom && (
+                                <Button
+                                  variant="outlined"
+                                  color="primary"
+                                  size="small"
+                                  onClick={() => handleAddClassroom(enrollment)}
+                                  disabled={submitting}
+                                  startIcon={<FileAddOutlined />}
+                                >
+                                  Add Classroom
+                                </Button>
+                              )}
+                              
                               <Button
                                 variant="outlined"
                                 color="secondary"
@@ -600,11 +643,27 @@ const UpdateForm = () => {
               <Select
                 value={transferData.batchId}
                 label="New Intake"
-                onChange={(e) => setTransferData({ ...transferData, batchId: e.target.value })}
+                onChange={(e) => setTransferData({ ...transferData, batchId: e.target.value, classroomId: '' })} // Reset classroom on intake change
               >
                 {intakeOptions.map((intake) => (
                   <MenuItem key={intake._id} value={intake._id}>
                     {intake.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>New Classroom</InputLabel>
+              <Select
+                value={transferData.classroomId}
+                label="New Classroom"
+                onChange={(e) => setTransferData({ ...transferData, classroomId: e.target.value })}
+                disabled={!transferData.batchId} // Disable if no intake selected
+              >
+                {classroomOptions.map((classroom) => (
+                  <MenuItem key={classroom._id} value={classroom._id}>
+                    {classroom.name}
                   </MenuItem>
                 ))}
               </Select>
@@ -637,29 +696,29 @@ const UpdateForm = () => {
 
       {/* Add Classroom Dialog */}
       <Dialog open={openAddClassroomDialog} onClose={() => setOpenAddClassroomDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add New Classroom</DialogTitle>
+        <DialogTitle>Add Student to Classroom</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
-            {selectedEnrollmentForClassroom && (
-              <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  Enrollment Details
-                </Typography>
-                <Typography variant="body2">Course: {selectedEnrollmentForClassroom.course?.name || 'N/A'}</Typography>
-                <Typography variant="body2">Intake: {selectedEnrollmentForClassroom.batch?.name || 'N/A'}</Typography>
-              </Box>
+            {eligibleClassrooms.length > 0 ? (
+              <FormControl fullWidth>
+                <InputLabel>Select Classroom</InputLabel>
+                <Select
+                  value={selectedClassroomForAdd}
+                  label="Select Classroom"
+                  onChange={(e) => setSelectedClassroomForAdd(e.target.value)}
+                >
+                  {eligibleClassrooms.map((cls) => (
+                    <MenuItem key={cls._id} value={cls._id}>
+                      {cls.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            ) : (
+              <Typography color="textSecondary" align="center">
+                No eligible classrooms found.
+              </Typography>
             )}
-
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>New Classroom</InputLabel>
-              <Select value={selectedClassroomForAdd} label="New Classroom" onChange={(e) => setSelectedClassroomForAdd(e.target.value)}>
-                {eligibleClassrooms.map((classroom) => (
-                  <MenuItem key={classroom._id} value={classroom._id}>
-                    {classroom.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -667,10 +726,10 @@ const UpdateForm = () => {
           <Button
             onClick={handleAddClassroomSubmit}
             variant="contained"
-            disabled={submitting}
+            disabled={submitting || !selectedClassroomForAdd}
             endIcon={submitting ? <CircularProgress size={20} /> : null}
           >
-            Add to Classroom
+            Add
           </Button>
         </DialogActions>
       </Dialog>

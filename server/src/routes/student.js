@@ -9,7 +9,8 @@ const {
   AddCourseRegistration,
   deleteCourseRegistration,
   importStudentsFromExcel,
-  getEnrollmentClassroomHistory
+  getEnrollmentClassroomHistory,
+  updateStudentStatus
 } = require('../controllers/student');
 const authenticate = require('../middleware/authMiddleware');
 const { checkPermission } = require('../middleware/permissions');
@@ -45,6 +46,7 @@ router.get('/:id', authenticate, checkPermission('student', 'read'), getStudentB
 router.put('/:id', authenticate, checkPermission('student', 'update'), updateStudent);
 router.post('/enrollment/:id', authenticate, checkPermission('student', 'update'), AddCourseRegistration);
 router.delete('/enrollment/:id', authenticate, checkPermission('student', 'update'), deleteCourseRegistration);
+router.patch('/:studentId/status', authenticate, checkPermission('student', 'update'), updateStudentStatus);
 
 // Define other routes
 

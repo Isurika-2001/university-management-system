@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button, CircularProgress, Typography, Box, Stepper, Step, StepLabel } from '@mui/material';
 import {
   UserOutlined,
@@ -92,17 +92,21 @@ const UpdateStudent = () => {
     setNextDisabled(false);
   }, [activeStep]);
 
-  const Toast = withReactContent(
-    Swal.mixin({
-      toast: true,
-      position: 'bottom',
-      customClass: { popup: 'colored-toast' },
-      background: 'primary',
-      showConfirmButton: false,
-      timer: 3500,
-      timerProgressBar: true,
-      allowHtml: true
-    })
+  const Toast = useMemo(
+    () =>
+      withReactContent(
+        Swal.mixin({
+          toast: true,
+          position: 'bottom',
+          customClass: { popup: 'colored-toast' },
+          background: 'primary',
+          showConfirmButton: false,
+          timer: 3500,
+          timerProgressBar: true,
+          allowHtml: true
+        })
+      ),
+    []
   );
 
   const showSuccessSwal = useCallback((e) => Toast.fire({ icon: 'success', title: e }), [Toast]);
@@ -353,19 +357,20 @@ const UpdateStudent = () => {
       const data = await response.json();
       if (!response.ok) {
         showErrorSwal('Failed to fetch student data');
-        showSuccessSwal('Student updated successfully');
-        navigate('/app/students');
+        setStudentData(null); // Explicitly set to null if not found
+        // No need to navigate here, the !studentData check will handle displaying "Student not found"
         return;
       }
       setStudentData(data);
     } catch (err) {
       console.error('Error fetching student:', err);
       showErrorSwal('Error fetching student data');
-      navigate('/students');
+      setStudentData(null); // Explicitly set to null on error
+      // No need to navigate here, the !studentData check will handle displaying "Student not found"
     } finally {
       setLoading(false);
     }
-  }, [id, user.token, navigate, showErrorSwal, showSuccessSwal]);
+  }, [id, user.token, showErrorSwal]); // navigate is not needed here as we are not navigating away
 
   const fetchRequiredDocs = useCallback(async () => {
     try {
@@ -379,13 +384,16 @@ const UpdateStudent = () => {
     } catch (err) {
       console.error('Error fetching required documents:', err);
       setRequiredDocuments([]);
+      showErrorSwal('Error fetching required documents');
     }
-  }, [user.token, setRequiredDocuments]);
+  }, [user.token, setRequiredDocuments, showErrorSwal]);
 
   useEffect(() => {
-    fetchStudent();
-    fetchRequiredDocs();
-  }, [fetchStudent, fetchRequiredDocs]);
+    if (user?.token) {
+      fetchStudent();
+      fetchRequiredDocs();
+    }
+  }, [fetchStudent, fetchRequiredDocs, user?.token]);
 
   // Update step completion when student data is loaded
   useEffect(() => {
@@ -398,11 +406,8 @@ const UpdateStudent = () => {
     }
   }, [studentData, requiredDocuments, prepareInitialValues, updateStepCompletion]);
 
-  // Update step completion status when required documents change
-  useEffect(() => {
-    // This will be called when requiredDocuments change
-    // The actual completion check will be done in individual step components
-  }, [requiredDocuments, studentData]);
+  // Prepare initial form values (useMemo must be called unconditionally)
+  const initialValues = useMemo(() => prepareInitialValues(), [prepareInitialValues]);
 
   const handleNext = async (values, { setTouched, setFieldError }) => {
     // Validate only the current step fields
@@ -729,8 +734,6 @@ const UpdateStudent = () => {
       </MainCard>
     );
   }
-
-  const initialValues = prepareInitialValues();
 
   return (
     <MainCard title="Update Student Registration">

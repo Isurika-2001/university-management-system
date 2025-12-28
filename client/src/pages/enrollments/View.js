@@ -26,8 +26,11 @@ import { useAuthContext } from 'context/useAuthContext';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { apiRoutes } from 'config';
+import { enrollmentsAPI } from '../../api/enrollments';
+import { CircularProgress } from '@mui/material';
 
 const EnrollmentsView = () => {
+  // --- State Definitions ---
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
@@ -42,17 +45,18 @@ const EnrollmentsView = () => {
   const [batchFilter, setBatchFilter] = useState('');
   const [courses, setCourses] = useState([]);
   const [batches, setBatches] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false); // New state for delete loading
+  const [isUploading, setIsUploading] = useState(false); // New state for export loading
 
   const navigate = useNavigate();
   const { user } = useAuthContext();
 
+  // --- Memoized UI/Utility Functions ---
   const Toast = withReactContent(
     Swal.mixin({
       toast: true,
       position: 'bottom',
-      customClass: {
-        popup: 'colored-toast'
-      },
+      customClass: { popup: 'colored-toast' },
       background: 'primary',
       showConfirmButton: false,
       timer: 3500,
@@ -67,35 +71,14 @@ const EnrollmentsView = () => {
     });
   };
 
-  // Debounce searchTerm
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 500);
+  const showSuccessSwal = (e) => {
+    Toast.fire({
+      icon: 'success',
+      title: e
+    });
+  };
 
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [searchTerm]);
-
-  // Fetch data whenever page, rowsPerPage, debouncedSearchTerm, sortBy, or sortOrder changes
-  useEffect(() => {
-    fetchData();
-  }, [page, rowsPerPage, debouncedSearchTerm, sortBy, sortOrder, courseFilter, batchFilter, fetchData]);
-
-  useEffect(() => {
-    fetchCourses();
-  }, [fetchCourses]);
-
-  useEffect(() => {
-    if (courseFilter) {
-      fetchBatches(courseFilter);
-    } else {
-      setBatches([]);
-      setBatchFilter('');
-    }
-  }, [courseFilter, fetchBatches, setBatches, setBatchFilter]);
-
+  // --- Memoized Data Fetching Functions (useCallback) ---
   const fetchData = useCallback(async () => {
     setLoading(true);
 
@@ -192,6 +175,138 @@ const EnrollmentsView = () => {
     [user.token, setBatches]
   );
 
+  const handleDeleteEnrollment = async (id) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        setIsDeleting(true);
+        await enrollmentsAPI.delete(id);
+        showSuccessSwal('Enrollment deleted successfully');
+        fetchData(); // Refresh the table
+      } catch (error) {
+        console.error('Error deleting enrollment:', error);
+        showErrorSwal('Failed to delete enrollment');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
+  const exportToCSV = async () => {
+    try {
+      setIsUploading(true);
+      const params = new URLSearchParams();
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+      if (courseFilter) params.append('courseId', courseFilter);
+      if (batchFilter) params.append('batchId', batchFilter);
+      params.append('sortBy', sortBy);
+      params.append('sortOrder', sortOrder);
+      params.append('format', 'csv');
+
+      const response = await fetch(`${apiRoutes.enrollmentRoute}export?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Error exporting enrollments');
+
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = 'enrollments_export.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Export error:', error.message);
+      showErrorSwal('Failed to export enrollments');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const exportToExcel = async () => {
+    try {
+      setIsUploading(true);
+      const params = new URLSearchParams();
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+      if (courseFilter) params.append('courseId', courseFilter);
+      if (batchFilter) params.append('batchId', batchFilter);
+      params.append('sortBy', sortBy);
+      params.append('sortOrder', sortOrder);
+      params.append('format', 'excel');
+
+      const response = await fetch(`${apiRoutes.enrollmentRoute}export?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Error exporting enrollments');
+
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = 'enrollments_export.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Export error:', error.message);
+      showErrorSwal('Failed to export enrollments');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+
+  // --- useEffect Hooks ---
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (user?.token) {
+      fetchCourses();
+    }
+  }, [fetchCourses, user?.token]);
+
+  useEffect(() => {
+    if (courseFilter) {
+      fetchBatches(courseFilter);
+    } else {
+      setBatches([]);
+      setBatchFilter('');
+    }
+  }, [courseFilter, fetchBatches, setBatches, setBatchFilter]);
+
+  useEffect(() => {
+    if (user?.token) {
+      fetchData();
+    }
+  }, [fetchData, user?.token]);
+
+  // --- Other Handler Functions (regular) ---
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
     setPage(0);
@@ -237,7 +352,7 @@ const EnrollmentsView = () => {
     } else if (selectedIndex === 0) {
       newSelected = newSelected.concat(selected.slice(1));
     } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
+      newSelected = newSelecteds.concat(selected.slice(0, -1));
     } else if (selectedIndex > 0) {
       newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
     }
@@ -253,70 +368,7 @@ const EnrollmentsView = () => {
     return sortOrder === 'asc' ? <ArrowUpOutlined /> : <ArrowDownOutlined />;
   };
 
-  const exportToCSV = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
-      if (courseFilter) params.append('courseId', courseFilter);
-      if (batchFilter) params.append('batchId', batchFilter);
-      params.append('sortBy', sortBy);
-      params.append('sortOrder', sortOrder);
-      params.append('format', 'csv');
-
-      const response = await fetch(`${apiRoutes.enrollmentRoute}export?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${user.token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Error exporting enrollments');
-
-      const blob = await response.blob();
-      const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = 'enrollments_export.csv';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Export error:', error.message);
-      showErrorSwal('Failed to export enrollments');
-    }
-  };
-
-  const exportToExcel = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
-      if (courseFilter) params.append('courseId', courseFilter);
-      if (batchFilter) params.append('batchId', batchFilter);
-      params.append('sortBy', sortBy);
-      params.append('sortOrder', sortOrder);
-      params.append('format', 'excel');
-
-      const response = await fetch(`${apiRoutes.enrollmentRoute}export?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${user.token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Error exporting enrollments');
-
-      const blob = await response.blob();
-      const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = 'enrollments_export.xlsx';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Export error:', error.message);
-      showErrorSwal('Failed to export enrollments');
-    }
-  };
-
+  // --- JSX Return ---
   return (
     <>
       <MainCard
@@ -365,8 +417,9 @@ const EnrollmentsView = () => {
               variant="outlined"
               color="success"
               onClick={exportToCSV}
-              startIcon={<UploadOutlined />}
+              startIcon={isUploading ? <CircularProgress size={16} color="inherit" /> : <UploadOutlined />}
               size="small"
+              disabled={isUploading}
               // style={{ display: 'none' }}
             >
               CSV
@@ -375,8 +428,9 @@ const EnrollmentsView = () => {
               variant="outlined"
               color="primary"
               onClick={exportToExcel}
-              startIcon={<UploadOutlined />}
+              startIcon={isUploading ? <CircularProgress size={16} color="inherit" /> : <UploadOutlined />}
               size="small"
+              disabled={isUploading}
               // style={{ display: 'none' }}
             >
               Excel
@@ -463,9 +517,8 @@ const EnrollmentsView = () => {
                       variant="outlined"
                       color="error"
                       startIcon={<DeleteOutlined />}
-                      onClick={() => {
-                        /* Handle delete */
-                      }}
+                      onClick={() => handleDeleteEnrollment(enrollment._id)}
+                      disabled={isDeleting}
                     >
                       Delete
                     </Button>

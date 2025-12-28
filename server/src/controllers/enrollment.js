@@ -8,6 +8,8 @@ const { getRequestInfo } = require('../middleware/requestInfo');
 const { getAndFormatCourseEnrollmentNumber } = require('../utilities/counter');
 const { generateCSV, generateExcel, enrollmentExportHeaders } = require('../utils/exportUtils');
 const logger = require('../utils/logger');
+const ClassroomStudent = require('../models/classroom_student'); // Import ClassroomStudent model
+const { STATUSES } = require('../config/statuses'); // Import STATUSES
 
 // Import getStudentCompletionStatus from student controller
 const { getStudentCompletionStatus } = require('./student');
@@ -486,11 +488,11 @@ async function deleteEnrollment(req, res) {
 
 async function addBatchTransfer(req, res) {
   try {
-    const { id } = req.params;
-    const transferData = req.body;
+    const { id } = req.params; // Enrollment ID
+    const { batchId, reason, classroomId: newClassroomId } = req.body; // newClassroomId from frontend
     const requestInfo = getRequestInfo(req);
 
-    logger.info('addBatchTransfer called with:', { id, transferData });
+    logger.info('addBatchTransfer called with:', { id, batchId, reason, newClassroomId });
 
     const enrollment = await Enrollment.findById(id);
 
@@ -502,33 +504,56 @@ async function addBatchTransfer(req, res) {
     }
 
     // Validate required fields
-    if (!transferData.batchId || !transferData.reason) {
+    if (!batchId || !reason || !newClassroomId) {
       return res.status(400).json({
         success: false,
-        message: 'Batch ID and reason are required'
+        message: 'Batch ID, Classroom ID, and reason are required'
       });
     }
 
-    // Prepare the update data
+    // --- Update previous ClassroomStudent records to 'transferred' ---
+    // Find all ClassroomStudent records for this enrollment that are active or on hold in the old batch/classroom
+    await ClassroomStudent.updateMany(
+      {
+        enrollmentId: enrollment._id,
+        status: { $in: [STATUSES.ACTIVE, STATUSES.HOLD] } // Only update active or held records
+      },
+      { $set: { status: STATUSES.TRANSFERRED } }
+    );
+    logger.info(`ClassroomStudent records for enrollment ${enrollment._id} set to 'transferred'.`);
+
+
+    // --- Create a new ClassroomStudent record for the transferred enrollment in the new classroom ---
+    const newClassroomStudent = new ClassroomStudent({
+      classroomId: newClassroomId,
+      enrollmentId: enrollment._id,
+      studentId: enrollment.studentId, // Use the studentId from the original enrollment
+      status: STATUSES.ACTIVE // New enrollment starts as active
+    });
+    await newClassroomStudent.save();
+    logger.info(`New ClassroomStudent record created for enrollment ${enrollment._id} in classroom ${newClassroomId}.`);
+
+
+    // --- Update the enrollment itself with the new batch ---
     const updateData = {
-      batchId: transferData.batchId,
+      batchId: batchId,
       $push: {
         batchTransfers: {
-          batch: transferData.batchId,
+          batch: batchId,
           date: new Date(),
-          reason: transferData.reason
+          reason: reason,
+          classroomId: newClassroomId // Also store the classroom to which it was transferred
         }
       }
     };
 
-    // Update the enrollment
     const updatedEnrollment = await Enrollment.findByIdAndUpdate(
       id,
       updateData,
       { new: true, runValidators: true }
     );
 
-    await ActivityLogger.logActivity(req.user, 'UPDATE', 'Enrollment', `Added batch transfer to enrollment ${updatedEnrollment.enrollment_no}`, requestInfo);
+    await ActivityLogger.logActivity(req.user, 'UPDATE', 'Enrollment', `Added batch/classroom transfer to enrollment ${updatedEnrollment.enrollment_no} to new batch ${batchId} and classroom ${newClassroomId}`, requestInfo);
 
     res.json({
       success: true,

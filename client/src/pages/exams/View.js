@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { examAPI } from 'api/exams';
 import { classroomAPI } from 'api/classrooms';
 import { useNavigate } from 'react-router-dom';
@@ -23,9 +23,12 @@ import {
   MenuItem,
   FormControl,
   FormLabel,
-  Alert
+  Alert,
+  TablePagination,
+  TableSortLabel,
+  TextField
 } from '@mui/material';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons'; // Add sort icons
 
 export default function ExamsView() {
   const [exams, setExams] = useState([]);
@@ -38,15 +41,31 @@ export default function ExamsView() {
   const [dialogLoading, setDialogLoading] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Pagination & Sorting state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
-  const fetchData = async () => {
+  // Debounce searchTerm
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+
       const [examsResp, classroomsResp] = await Promise.all([examAPI.listAll(), classroomAPI.getAll()]);
+
       setExams(examsResp?.data || []);
+      setTotalCount(examsResp?.pagination?.total || 0);
       setClassrooms(classroomsResp?.data || []);
       setError(null);
     } catch (err) {
@@ -55,6 +74,38 @@ export default function ExamsView() {
     } finally {
       setLoading(false);
     }
+  }, [page, rowsPerPage, sortBy, sortOrder, debouncedSearchTerm]); // Dependencies for fetchData
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]); // Only re-run if fetchData changes
+
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value);
+    setPage(0);
+  };
+
+  const handleSort = (property) => {
+    const isAsc = sortBy === property && sortOrder === 'asc';
+    setSortBy(property);
+    setSortOrder(isAsc ? 'desc' : 'asc');
+    setPage(0);
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const renderSortIcon = (column) => {
+    if (sortBy !== column) {
+      return null;
+    }
+    return sortOrder === 'asc' ? <ArrowUpOutlined /> : <ArrowDownOutlined />;
   };
 
   const handleAddExamClick = () => {
@@ -126,11 +177,23 @@ export default function ExamsView() {
             </Alert>
           )}
 
+          <Box sx={{ mb: 2 }}>
+            <TextField label="Search" variant="outlined" onChange={handleSearch} value={searchTerm} sx={{ minWidth: 300, maxWidth: 400 }} />
+          </Box>
+
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Exam Name</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>
+                    <TableSortLabel
+                      active={sortBy === 'name'}
+                      direction={sortBy === 'name' ? sortOrder : 'asc'}
+                      onClick={() => handleSort('name')}
+                    >
+                      Exam Name {renderSortIcon('name')}
+                    </TableSortLabel>
+                  </TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Classroom</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Course</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Batch</TableCell>
@@ -167,6 +230,16 @@ export default function ExamsView() {
           {exams.length === 0 && (
             <Box sx={{ p: 2, textAlign: 'center', color: '#999' }}>No exams found. Click &quot;Add Exam&quot; to create one.</Box>
           )}
+
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={totalCount}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
         </CardContent>
       </Card>
 
@@ -207,7 +280,7 @@ export default function ExamsView() {
             Cancel
           </Button>
           <Button onClick={handleCreateExam} variant="contained" disabled={dialogLoading || !selectedClassroom}>
-            {dialogLoading ? 'Creating...' : 'Create Exam'}
+            {dialogLoading ? <CircularProgress size={20} color="inherit" /> : 'Create Exam'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -8,7 +8,7 @@ export const classroomAPI = {
 
   // Get classroom by ID
   getById: async (id) => {
-    return api.get(`${apiRoutes.classroomRoute}${id}`);
+    return api.get(`${apiRoutes.classroomRoute}${id}?fresh=true`);
   },
 
   getByCourseAndBatch: async (courseId, batchId) => {

@@ -20,7 +20,7 @@ const studentSchema = new mongoose.Schema({
   // Student status
   status: {
     type: String,
-    enum: ['pending', 'completed', 'incomplete'],
+    enum: ['pending', 'completed', 'incomplete', 'hold'],
     default: 'pending'
   },
   // Step 1: Registration data

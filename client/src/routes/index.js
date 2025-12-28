@@ -159,18 +159,16 @@ export default function ThemeRoutes() {
         <Route path="required-documents" element={<Outlet />}>
           <Route
             index
-            element={permissions?.requiredDocument?.includes('R') ? <RequiredDocuments /> : <Navigate to="/app/access-denied" replace />}
+            element={permissions?.student?.includes('R') ? <RequiredDocuments /> : <Navigate to="/app/access-denied" replace />}
           />
           <Route
             path="add"
-            element={
-              permissions?.requiredDocument?.includes('C') ? <AddRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />
-            }
+            element={permissions?.student?.includes('C') ? <AddRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />}
           />
           <Route
             path="update/:id"
             element={
-              permissions?.requiredDocument?.includes('U') ? <UpdateRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />
+              permissions?.student?.includes('U') ? <UpdateRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />
             }
           />
         </Route>

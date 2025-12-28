@@ -1122,6 +1122,38 @@ async function getEnrollmentClassroomHistory(req, res) {
   }
 }
 
+async function updateStudentStatus(req, res) {
+  const { studentId } = req.params;
+  const { status } = req.body;
+  const requestInfo = getRequestInfo(req);
+
+  try {
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+
+    logger.info(`Attempting to update student ${studentId} status from ${student.status} to ${status}`); // BEFORE SAVE
+    const oldStatus = student.status;
+    student.status = status;
+    await student.save();
+    logger.info(`Student ${studentId} status successfully updated to ${student.status}`); // AFTER SAVE
+
+    await ActivityLogger.logActivity(
+      req.user,
+      'UPDATE',
+      'Student',
+      `Updated student ${student.registration_no} status from ${oldStatus} to ${status}`,
+      requestInfo
+    );
+
+    res.status(200).json({ success: true, message: 'Student status updated successfully', data: student });
+  } catch (error) {
+    logger.error('Error updating student status:', error);
+    res.status(500).json({ success: false, message: 'Error updating student status', error: error.message });
+  }
+}
+
 module.exports = {
   getAllStudents,
   getStudentById,
@@ -1133,4 +1165,5 @@ module.exports = {
   importStudentsFromExcel,
   getStudentCompletionStatus,
   getEnrollmentClassroomHistory,
+  updateStudentStatus,
 };
