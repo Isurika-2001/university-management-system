@@ -88,7 +88,8 @@ const startServer = async () => {
   try {
     await connectToDatabase();
     
-    app.listen(config.port, () => {
+    // Explicitly add '0.0.0.0' as the second argument
+    app.listen(config.port, '0.0.0.0', () => {
       logger.info(`Server is running on port ${config.port} in ${config.nodeEnv} mode`);
     });
   } catch (error) {
