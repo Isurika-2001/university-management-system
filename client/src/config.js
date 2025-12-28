@@ -12,7 +12,7 @@ const config = {
   basename: '/',
 
   // Base API URL
-  apiUrl: process.env.REACT_APP_API_URL || 'http://localhost:5000/api/'
+  apiUrl: process.env.REACT_APP_API_URL || 'https://ums-demo-be.vercel.app/api/'
 };
 
 // Route endpoints based on your Express routes
