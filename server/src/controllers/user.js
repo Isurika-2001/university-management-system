@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const ActivityLogger = require('../utils/activityLogger');
 const { getRequestInfo } = require('../middleware/requestInfo');
 const logger = require('../utils/logger');
+const { generateRandomPassword } = require('../utils/passwordUtils');
 
 /**
  * Helper: Returns the current JWT version. This should be set in your environment
@@ -51,8 +52,16 @@ async function getUsers(req, res) {
 
 async function createUser(req, res) {
   try {
-    const { name, password, email, user_type } = req.body;
+    const { name, email, user_type } = req.body;
+    let { password } = req.body;
     const requestInfo = getRequestInfo(req);
+    let generatedPassword = null;
+
+    // If no password is provided, generate one
+    if (!password) {
+      generatedPassword = generateRandomPassword();
+      password = generatedPassword; // Use the generated password for hashing and storage
+    }
 
     // Check if user_type exists in the user_type collection
     const user_type_document = await User_type.findById(user_type);
@@ -99,10 +108,18 @@ async function createUser(req, res) {
       model: 'User_type',
     });
 
+    const responseData = {
+      ...populatedUser.toObject(),
+    };
+
+    if (generatedPassword) {
+      responseData.generatedPassword = generatedPassword; // Add generated password to response if it was generated
+    }
+
     res.status(201).json({
       success: true,
       message: 'User created successfully',
-      data: populatedUser,
+      data: responseData,
     });
   } catch (error) {
     logger.error(error); // log for debugging
