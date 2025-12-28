@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { useAuthContext } from 'src/contexts/auth-context';
 
 export const AuthGuard = (props) => {
-  const { children, requiredPermissions, allowedUserTypes } = props;
+  const { children, allowedUserTypes } = props;
   const router = useRouter();
   const { isAuthenticated, user } = useAuthContext();
   const [checked, setChecked] = useState(false);

@@ -92,14 +92,19 @@ const View = () => {
     fetchData();
   }, [fetchData]);
 
-  const fetchCourseData = async () => {
+  const fetchCourseData = useCallback(async () => {
     try {
       const result = await coursesAPI.getAll();
       setCourses(result || []);
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [setCourses]);
+
+  // Fetch courses for filter dropdown on mount
+  useEffect(() => {
+    fetchCourseData();
+  }, [fetchCourseData]);
 
   const handleSearch = (searchValue) => {
     setSearchTerm(searchValue);

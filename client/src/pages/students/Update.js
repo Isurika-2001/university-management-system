@@ -105,8 +105,8 @@ const UpdateStudent = () => {
     })
   );
 
-  const showSuccessSwal = (e) => Toast.fire({ icon: 'success', title: e });
-  const showErrorSwal = (e) => Toast.fire({ icon: 'error', title: e });
+  const showSuccessSwal = useCallback((e) => Toast.fire({ icon: 'success', title: e }), [Toast]);
+  const showErrorSwal = useCallback((e) => Toast.fire({ icon: 'error', title: e }), [Toast]);
 
   // Function to prepare initial values from student data
   const prepareInitialValues = useCallback(() => {
@@ -380,7 +380,7 @@ const UpdateStudent = () => {
       console.error('Error fetching required documents:', err);
       setRequiredDocuments([]);
     }
-  }, [user.token]);
+  }, [user.token, setRequiredDocuments]);
 
   useEffect(() => {
     fetchStudent();

@@ -49,13 +49,19 @@ const Detail = () => {
     })
   );
 
-  const showSuccessSwal = (msg) => {
-    Toast.fire({ icon: 'success', title: msg });
-  };
+  const showSuccessSwal = useCallback(
+    (msg) => {
+      Toast.fire({ icon: 'success', title: msg });
+    },
+    [Toast]
+  );
 
-  const showErrorSwal = (msg) => {
-    Toast.fire({ icon: 'error', title: msg });
-  };
+  const showErrorSwal = useCallback(
+    (msg) => {
+      Toast.fire({ icon: 'error', title: msg });
+    },
+    [Toast]
+  );
 
   const fetchClassroom = useCallback(async () => {
     try {

@@ -43,19 +43,25 @@ const UpdateRequiredDocument = () => {
     })
   );
 
-  const showSuccessSwal = (message) => {
-    Toast.fire({
-      icon: 'success',
-      title: message
-    });
-  };
+  const showSuccessSwal = useCallback(
+    (message) => {
+      Toast.fire({
+        icon: 'success',
+        title: message
+      });
+    },
+    [Toast]
+  );
 
-  const showErrorSwal = (message) => {
-    Toast.fire({
-      icon: 'error',
-      title: message
-    });
-  };
+  const showErrorSwal = useCallback(
+    (message) => {
+      Toast.fire({
+        icon: 'error',
+        title: message
+      });
+    },
+    [Toast]
+  );
 
   // Validation schema
   const validationSchema = Yup.object({

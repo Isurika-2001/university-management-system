@@ -96,25 +96,12 @@ export default function ExamDetail() {
         };
       });
       setMarksByStudent(grouped);
-  const fetchExamData = useCallback(async () => {
-    if (!selectedExam) return;
-    try {
-      const resp = await examAPI.get(selectedExam._id);
-      const marks = resp?.data?.marks || [];
-      const grouped = {};
-      marks.forEach((m) => {
-        const studentData = students.find((s) => (s.studentId?._id || s._id) === (m.studentId?._id || m.studentId));
-        grouped[m.studentId?._id || m.studentId] = {
-          takes: m.takes || [],
-          examMark: m,
-          student: studentData
-        };
-      });
-      setMarksByStudent(grouped);
+      setLoading(false);
     } catch (err) {
-      console.error('Error fetching marks:', err);
+      console.error('Error fetching exam data:', err);
+      setLoading(false);
     }
-  }, [selectedExam, students, setMarksByStudent]);
+  }, [selectedExam, students]);
 
   useEffect(() => {
     if (!classroomId) {

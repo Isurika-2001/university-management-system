@@ -1,6 +1,5 @@
 import React from 'react';
 import { Grid, Typography, Card, CardContent } from '@mui/material';
-import { getUserRoleDisplayName } from '../../../utils/userTypeUtils';
 
 const UserRolePanels = ({ role, data }) => {
   // data structure depends on role
