@@ -1,10 +1,12 @@
-require("dotenv").config();
-const User = require("../models/user");
-const User_type = require("../models/user_type");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const ActivityLogger = require("../utils/activityLogger");
-const { getRequestInfo } = require("../middleware/requestInfo");
+require('dotenv').config();
+const User = require('../models/user');
+const User_type = require('../models/user_type');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const ActivityLogger = require('../utils/activityLogger');
+const { getRequestInfo } = require('../middleware/requestInfo');
+const logger = require('../utils/logger');
+const { generateRandomPassword } = require('../utils/passwordUtils');
 
 /**
  * Helper: Returns the current JWT version. This should be set in your environment
@@ -30,8 +32,8 @@ async function getUsers(req, res) {
     }
 
     const users = await User.find(filter).populate({
-      path: "user_type",
-      model: "User_type",
+      path: 'user_type',
+      model: 'User_type',
     });
     res.status(200).json({
       success: true,
@@ -39,10 +41,10 @@ async function getUsers(req, res) {
       message: 'Users retrieved successfully'
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    logger.error('Error fetching users:', error);
     res.status(500).json({ 
       success: false,
-      error: "Internal Server Error",
+      error: 'Internal Server Error',
       message: error.message 
     });
   }
@@ -50,8 +52,16 @@ async function getUsers(req, res) {
 
 async function createUser(req, res) {
   try {
-    const { name, password, email, user_type } = req.body;
+    const { name, email, user_type } = req.body;
+    let { password } = req.body;
     const requestInfo = getRequestInfo(req);
+    let generatedPassword = null;
+
+    // If no password is provided, generate one
+    if (!password) {
+      generatedPassword = generateRandomPassword();
+      password = generatedPassword; // Use the generated password for hashing and storage
+    }
 
     // Check if user_type exists in the user_type collection
     const user_type_document = await User_type.findById(user_type);
@@ -60,7 +70,7 @@ async function createUser(req, res) {
       return res.status(400).json({
         success: false,
         message: `User type not found with ID: ${user_type}`,
-        error: "User type not found"
+        error: 'User type not found'
       });
     }
 
@@ -70,8 +80,8 @@ async function createUser(req, res) {
     if (userAvailable) {
       return res.status(409).json({
         success: false,
-        message: "Email already exists",
-        error: "Email already exists"
+        message: 'Email already exists',
+        error: 'Email already exists'
       });
     }
 
@@ -94,21 +104,29 @@ async function createUser(req, res) {
 
     // Populate the user_type for the response
     const populatedUser = await User.findById(newUser._id).populate({
-      path: "user_type",
-      model: "User_type",
+      path: 'user_type',
+      model: 'User_type',
     });
+
+    const responseData = {
+      ...populatedUser.toObject(),
+    };
+
+    if (generatedPassword) {
+      responseData.generatedPassword = generatedPassword; // Add generated password to response if it was generated
+    }
 
     res.status(201).json({
       success: true,
-      message: "User created successfully",
-      data: populatedUser,
+      message: 'User created successfully',
+      data: responseData,
     });
   } catch (error) {
-    console.error(error); // log for debugging
+    logger.error(error); // log for debugging
 
     res.status(500).json({
       success: false,
-      message: "Error creating user",
+      message: 'Error creating user',
       error: error.message,
     });
   }
@@ -133,8 +151,8 @@ async function login(req, res) {
 
     // Find user by email and populate user_type
     const user = await User.findOne({ email }).populate({
-      path: "user_type",
-      model: "User_type",
+      path: 'user_type',
+      model: 'User_type',
     });
 
     if (!user) {
@@ -143,7 +161,7 @@ async function login(req, res) {
       
       return res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        message: 'Invalid email or password',
       });
     }
 
@@ -155,7 +173,7 @@ async function login(req, res) {
       
       return res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        message: 'Invalid email or password',
       });
     }
 
@@ -166,7 +184,7 @@ async function login(req, res) {
       
       return res.status(403).json({
         success: false,
-        message: "Permission denied. Please contact admin.",
+        message: 'Permission denied. Please contact admin.',
       });
     }
 
@@ -177,7 +195,7 @@ async function login(req, res) {
       
       return res.status(403).json({
         success: false,
-        message: "User type not configured. Please contact admin.",
+        message: 'User type not configured. Please contact admin.',
       });
     }
 
@@ -194,6 +212,9 @@ async function login(req, res) {
       finance: userType.finance,
       reports: userType.reports,
       requiredDocument: userType.requiredDocument,
+      classrooms: userType.classrooms,
+      modules: userType.modules,
+      exams: userType.exams
     };
 
     // Include jwtVersion in payload
@@ -210,7 +231,7 @@ async function login(req, res) {
         jwtVersion
       },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: '1d' }
     );
 
     // Log successful login
@@ -218,7 +239,7 @@ async function login(req, res) {
 
     // Respond with expected structure (including jwtVersion for client awareness)
     res.status(200).json({
-      message: "Login successful",
+      message: 'Login successful',
       token,
       permissions, // at root level
       userId: _id,
@@ -228,10 +249,10 @@ async function login(req, res) {
       jwtVersion
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
-      message: "Internal Server Error",
+      message: 'Internal Server Error',
       error: error.message,
     });
   }
@@ -245,21 +266,21 @@ async function getUserById(req, res) {
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({ 
         success: false,
-        error: "Invalid id",
-        message: "Invalid user ID format"
+        error: 'Invalid id',
+        message: 'Invalid user ID format'
       });
     }
 
     const user = await User.findById(id).populate({
-      path: "user_type",
-      model: "User_type",
+      path: 'user_type',
+      model: 'User_type',
     });
 
     if (!user) {
       return res.status(404).json({ 
         success: false,
-        error: "User not found",
-        message: "User not found"
+        error: 'User not found',
+        message: 'User not found'
       });
     }
 
@@ -269,10 +290,10 @@ async function getUserById(req, res) {
       message: 'User retrieved successfully'
     });
   } catch (error) {
-    console.error('Error fetching user by ID:', error);
+    logger.error('Error fetching user by ID:', error);
     res.status(500).json({ 
       success: false,
-      error: "Internal Server Error",
+      error: 'Internal Server Error',
       message: error.message 
     });
   }
@@ -288,8 +309,8 @@ async function editUser(req, res) {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
-        error: "User not found"
+        message: 'User not found',
+        error: 'User not found'
       });
     }
 
@@ -299,7 +320,7 @@ async function editUser(req, res) {
       return res.status(400).json({
         success: false,
         message: `User type not found with ID: ${user_type}`,
-        error: "User type not found"
+        error: 'User type not found'
       });
     }
 
@@ -309,8 +330,8 @@ async function editUser(req, res) {
       if (existingUser) {
         return res.status(409).json({
           success: false,
-          message: "Email already exists",
-          error: "Email already exists"
+          message: 'Email already exists',
+          error: 'Email already exists'
         });
       }
     }
@@ -324,20 +345,20 @@ async function editUser(req, res) {
 
     // Populate the user_type for the response
     const populatedUser = await User.findById(updatedUser._id).populate({
-      path: "user_type",
-      model: "User_type",
+      path: 'user_type',
+      model: 'User_type',
     });
 
     res.status(200).json({
       success: true,
-      message: "User updated successfully",
+      message: 'User updated successfully',
       data: populatedUser,
     });
   } catch (error) {
-    console.error("Error updating user:", error);
+    logger.error('Error updating user:', error);
     res.status(500).json({
       success: false,
-      message: "Error updating user",
+      message: 'Error updating user',
       error: error.message,
     });
   }
@@ -351,8 +372,8 @@ async function disableUser(req, res) {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
-        error: "User not found"
+        message: 'User not found',
+        error: 'User not found'
       });
     }
 
@@ -361,17 +382,17 @@ async function disableUser(req, res) {
 
     res.status(200).json({
       success: true,
-      message: "User disabled successfully",
+      message: 'User disabled successfully',
       data: {
         userId: user._id,
         status: user.status
       }
     });
   } catch (error) {
-    console.error("Error disabling user:", error);
+    logger.error('Error disabling user:', error);
     res.status(500).json({
       success: false,
-      message: "Error disabling user",
+      message: 'Error disabling user',
       error: error.message,
     });
   }
@@ -386,8 +407,8 @@ async function updatePassword(req, res) {
     if (!password || !confirmPassword) {
       return res.status(400).json({
         success: false,
-        message: "Password and Confirm Password are required",
-        error: "Missing required fields"
+        message: 'Password and Confirm Password are required',
+        error: 'Missing required fields'
       });
     }
 
@@ -395,8 +416,8 @@ async function updatePassword(req, res) {
     if (password !== confirmPassword) {
       return res.status(400).json({
         success: false,
-        message: "Passwords do not match",
-        error: "Password mismatch"
+        message: 'Passwords do not match',
+        error: 'Password mismatch'
       });
     }
 
@@ -405,8 +426,8 @@ async function updatePassword(req, res) {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
-        error: "User not found"
+        message: 'User not found',
+        error: 'User not found'
       });
     }
 
@@ -419,17 +440,17 @@ async function updatePassword(req, res) {
 
     res.status(200).json({
       success: true,
-      message: "User password updated successfully",
+      message: 'User password updated successfully',
       data: {
         userId: user._id,
-        message: "Password updated successfully"
+        message: 'Password updated successfully'
       }
     });
   } catch (error) {
-    console.error("Error updating password:", error);
+    logger.error('Error updating password:', error);
     res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: 'Internal server error',
       error: error.message,
     });
   }
@@ -443,8 +464,8 @@ async function enableUser(req, res) {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
-        error: "User not found"
+        message: 'User not found',
+        error: 'User not found'
       });
     }
 
@@ -453,17 +474,17 @@ async function enableUser(req, res) {
 
     res.status(200).json({
       success: true,
-      message: "User enabled successfully",
+      message: 'User enabled successfully',
       data: {
         userId: user._id,
         status: user.status
       }
     });
   } catch (error) {
-    console.error("Error enabling user:", error);
+    logger.error('Error enabling user:', error);
     res.status(500).json({
       success: false,
-      message: "Error enabling user",
+      message: 'Error enabling user',
       error: error.message,
     });
   }

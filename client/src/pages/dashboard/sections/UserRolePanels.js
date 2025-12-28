@@ -1,6 +1,5 @@
 import React from 'react';
 import { Grid, Typography, Card, CardContent } from '@mui/material';
-import { getUserRoleDisplayName } from '../../../utils/userTypeUtils';
 
 const UserRolePanels = ({ role, data }) => {
   // data structure depends on role
@@ -8,7 +7,9 @@ const UserRolePanels = ({ role, data }) => {
   if (role === 'system_administrator') {
     return (
       <Grid item xs={4}>
-        <Typography variant="h5" gutterBottom>System Administrator Panel</Typography>
+        <Typography variant="h5" gutterBottom>
+          System Administrator Panel
+        </Typography>
         <Card>
           <CardContent>
             <Typography>Total Users: {data.totalUsers}</Typography>
@@ -24,7 +25,9 @@ const UserRolePanels = ({ role, data }) => {
   if (role === 'academic_administrator') {
     return (
       <Grid item xs={12}>
-        <Typography variant="h5" gutterBottom>Academic Administrator Panel</Typography>
+        <Typography variant="h5" gutterBottom>
+          Academic Administrator Panel
+        </Typography>
         <Card>
           <CardContent>
             <Typography>Total Students: {data.totalStudents}</Typography>
@@ -40,7 +43,9 @@ const UserRolePanels = ({ role, data }) => {
   if (role === 'finance_admin') {
     return (
       <Grid item xs={12}>
-        <Typography variant="h5" gutterBottom>Finance Administrator Panel</Typography>
+        <Typography variant="h5" gutterBottom>
+          Finance Administrator Panel
+        </Typography>
         <Card>
           <CardContent>
             <Typography>Pending Payments: {data.pendingPayments}</Typography>
@@ -56,7 +61,9 @@ const UserRolePanels = ({ role, data }) => {
   if (role === 'accountant') {
     return (
       <Grid item xs={12}>
-        <Typography variant="h5" gutterBottom>Accountant Panel</Typography>
+        <Typography variant="h5" gutterBottom>
+          Accountant Panel
+        </Typography>
         <Card>
           <CardContent>
             <Typography>Pending Payments: {data.pendingPayments}</Typography>
@@ -73,7 +80,9 @@ const UserRolePanels = ({ role, data }) => {
   if (role === 'admin') {
     return (
       <Grid item xs={4}>
-        <Typography variant="h5" gutterBottom>Admin Panel</Typography>
+        <Typography variant="h5" gutterBottom>
+          Admin Panel
+        </Typography>
         <Card>
           <CardContent>
             <Typography>Total Users: {data.totalUsers}</Typography>
@@ -87,7 +96,9 @@ const UserRolePanels = ({ role, data }) => {
   if (role === 'counselor') {
     return (
       <Grid item xs={12}>
-        <Typography variant="h5" gutterBottom>Counselor Panel</Typography>
+        <Typography variant="h5" gutterBottom>
+          Counselor Panel
+        </Typography>
         <Card>
           <CardContent>
             <Typography>Assigned Leads: {data.assignedLeads}</Typography>
@@ -101,7 +112,9 @@ const UserRolePanels = ({ role, data }) => {
   if (role === 'finance') {
     return (
       <Grid item xs={12}>
-        <Typography variant="h5" gutterBottom>Finance Officer Panel</Typography>
+        <Typography variant="h5" gutterBottom>
+          Finance Officer Panel
+        </Typography>
         <Card>
           <CardContent>
             <Typography>Pending Payments: {data.pendingPayments}</Typography>

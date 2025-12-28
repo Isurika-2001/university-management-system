@@ -87,7 +87,7 @@ const AuthLogin = () => {
           setSubmitting(true);
           try {
             const res = await login(values);
-            console.log("LOGIN RESULT: ", res);
+            console.log('LOGIN RESULT: ', res);
 
             if (!res.success) {
               if (scriptedRef.current) {

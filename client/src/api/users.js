@@ -55,4 +55,4 @@ export const usersAPI = {
   enable: async (id) => {
     return api.put(`${apiRoutes.userRoute}enable/${id}`);
   }
-}; 
+};

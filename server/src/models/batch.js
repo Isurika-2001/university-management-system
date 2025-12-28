@@ -1,10 +1,10 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 // Define the schema for the Intake (Batch) model
 const batchSchema = new mongoose.Schema({
   courseId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Course",
+    ref: 'Course',
     required: true,
   },
   name: {
@@ -27,7 +27,7 @@ const batchSchema = new mongoose.Schema({
 });
 
 // Create the Batch model using the schema
-const Batch = mongoose.model("Batch", batchSchema);
+const Batch = mongoose.model('Batch', batchSchema);
 
 // Export the Batch model
 module.exports = Batch;

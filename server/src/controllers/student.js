@@ -1,63 +1,17 @@
 // studentController.js
 
 const Student = require('../models/student');
-const Counter = require('../models/counter');
 const Enrollment = require('../models/enrollment');
+const ClassroomStudent = require('../models/classroom_student');
 const RequiredDocument = require('../models/required_document');
 const ActivityLogger = require('../utils/activityLogger');
 const { getRequestInfo } = require('../middleware/requestInfo');
-const multer = require('multer');
 const xlsx = require('xlsx');
+const logger = require('../utils/logger');
 
 // utility calling
 const { getNextSequenceValue, getAndFormatCourseEnrollmentNumber } = require('../utilities/counter'); 
 const { generateCSV, generateExcel, studentExportHeaders } = require('../utils/exportUtils');
-
-// Function to check if student has all required fields completed
-function checkStudentCompletion(student) {
-  // Check basic required fields (Step 1 - Required)
-  const basicFields = [
-    student.firstName,
-    student.lastName,
-    student.dob,
-    student.nic,
-    student.address,
-    student.mobile,
-    student.email
-  ];
-
-  // Check if any basic field is missing
-  if (basicFields.some(field => !field)) {
-    return false;
-  }
-
-  // Check if student has at least one enrollment (Step 2 - Required)
-  // This is handled by the enrollment creation, so we assume it exists if student is created
-
-  // Step 3: Academic Details (Required for completion)
-  if (!student.highestAcademicQualification) {
-    return false;
-  }
-
-  // Step 4: Required Documents (Required for completion)
-  // Check if all required documents are provided
-  if (!student.requiredDocuments || student.requiredDocuments.length === 0) {
-    return false;
-  }
-
-  // We need to check against the actual required documents that have isRequired=true
-  // This will be handled in the detailed status check function
-
-  // Step 5: Emergency Contact (Required for completion)
-  if (!student.emergencyContact || 
-      !student.emergencyContact.name || 
-      !student.emergencyContact.relationship || 
-      !student.emergencyContact.phone) {
-    return false;
-  }
-
-  return true;
-}
 
 // Function to get detailed completion status
 async function getStudentCompletionStatus(student) {
@@ -207,7 +161,7 @@ async function getAllStudents(req, res) {
       data: students,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
@@ -246,6 +200,7 @@ async function getStudentById(req, res) {
       completionStatus,
     });
   } catch (error) {
+    logger.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
@@ -320,7 +275,8 @@ async function createStudent(req, res) {
           enrollment.batchId,
           student.registration_no,
           courseSequenceValue,
-          enrollmentPaymentSchema
+          enrollmentPaymentSchema,
+          enrollment.classroomId
         );
       }
 
@@ -421,7 +377,8 @@ async function createStudent(req, res) {
         enrollment.batchId,
         sequenceValue,
         courseSequenceValue,
-        enrollmentPaymentSchema
+        enrollmentPaymentSchema,
+        enrollment.classroomId
       );
     }
 
@@ -456,7 +413,7 @@ async function createStudent(req, res) {
       },
     });
   } catch (error) {
-    console.error(error); // Log for debugging
+    logger.error(error); // Log for debugging
 
     res.status(500).json({
       success: false,
@@ -550,7 +507,8 @@ async function updateStudent(req, res) {
               enrollment.batchId,
               student.registration_no, // Use existing student registration number
               courseSequenceValue,
-              enrollmentPaymentSchema
+              enrollmentPaymentSchema,
+              enrollment.classroomId
             );
           }
         }
@@ -605,7 +563,7 @@ async function updateStudent(req, res) {
       },
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
       message: 'Error updating student',
@@ -618,7 +576,7 @@ async function AddCourseRegistration(req, res) {
   const studentId = req.params.id;
   const { courseId, batchId } = req.body;
 
-  console.log('AddCourseRegistration called with:', { studentId, courseId, batchId });
+  logger.info('AddCourseRegistration called with:', { studentId, courseId, batchId });
 
   try {
     // Check if the student is already registered for this course and batch
@@ -645,7 +603,8 @@ async function AddCourseRegistration(req, res) {
       });
     }
 
-    await courseRegistration(studentId, courseId, batchId, student.registration_no, courseSequenceValue);
+    const { classroomId } = req.body;
+    await courseRegistration(studentId, courseId, batchId, student.registration_no, courseSequenceValue, undefined, classroomId);
 
     // Check completion status after adding the new enrollment
     const completionStatus = await getStudentCompletionStatus(student);
@@ -685,7 +644,7 @@ async function AddCourseRegistration(req, res) {
       },
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
       message: 'Error registering student for course',
@@ -715,7 +674,7 @@ async function deleteCourseRegistration(req, res) {
       },
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
       message: 'Error deleting enrollment',
@@ -744,11 +703,11 @@ async function exportStudents(req, res) {
     const { search = '', sortBy = 'registration_no', sortOrder = 'asc', format = 'csv' } = req.query;
     const requestInfo = getRequestInfo(req);
 
-    console.log('--- Export Students Request ---');
-    console.log('Received Query Params:', { search, sortBy, sortOrder, format });
-    console.log('Request URL:', req.url);
-    console.log('Request method:', req.method);
-    console.log('User:', req.user ? req.user._id : 'No user');
+    logger.info('--- Export Students Request ---');
+    logger.info('Received Query Params:', { search, sortBy, sortOrder, format });
+    logger.info('Request URL:', req.url);
+    logger.info('Request method:', req.method);
+    logger.info('User:', req.user ? req.user._id : 'No user');
 
     let filter = {};
 
@@ -768,7 +727,7 @@ async function exportStudents(req, res) {
       };
     }
 
-    console.log('MongoDB Filter:', filter);
+    logger.info('MongoDB Filter:', filter);
 
     // Build sort object
     const sortDirection = sortOrder === 'desc' ? -1 : 1;
@@ -800,8 +759,8 @@ async function exportStudents(req, res) {
       students = await Student.find(filter).sort(sortObject);
     }
 
-    console.log('Students fetched from DB:', students.length);
-    console.log('First student sample:', students[0] ? {
+    logger.info('Students fetched from DB:', students.length);
+    logger.info('First student sample:', students[0] ? {
       registration_no: students[0].registration_no,
       firstName: students[0].firstName,
       lastName: students[0].lastName,
@@ -831,52 +790,51 @@ async function exportStudents(req, res) {
       providedDocumentsCount: student.requiredDocuments ? student.requiredDocuments.filter(doc => doc.isProvided).length : 0
     }));
 
-    console.log('Final export data count:', exportData.length);
+    logger.info('Final export data count:', exportData.length);
 
     // Log the export activity
     try {
       await ActivityLogger.logStudentExport(req.user, exportData.length, requestInfo.ipAddress, requestInfo.userAgent);
     } catch (logError) {
-      console.error('Error logging export activity:', logError);
+      logger.error('Error logging export activity:', logError);
       // Continue with export even if logging fails
     }
 
-    console.log('Export format requested:', format);
-    console.log('Export data count:', exportData.length);
+    logger.info('Export format requested:', format);
+    logger.info('Export data count:', exportData.length);
     
     // Handle different export formats
     if (format.toLowerCase() === 'excel') {
       try {
-        console.log('Generating Excel file...');
+        logger.info('Generating Excel file...');
         const excelBuffer = await generateExcel(exportData, studentExportHeaders, 'Students Export');
-        console.log('Excel buffer size:', excelBuffer.length);
+        logger.info('Excel buffer size:', excelBuffer.length);
         
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename=students_export.xlsx');
         res.send(excelBuffer);
-        console.log('Excel file sent successfully');
+        logger.info('Excel file sent successfully');
       } catch (excelError) {
-        console.error('Error generating Excel:', excelError);
+        logger.error('Error generating Excel:', excelError);
         res.status(500).json({ error: `Failed to generate Excel file: ${  excelError.message}` });
       }
     } else {
       // Default CSV format
       try {
-        console.log('Generating CSV file...');
+        logger.info('Generating CSV file...');
         const csvContent = generateCSV(exportData, studentExportHeaders);
-        console.log('CSV content length:', csvContent.length);
+        logger.info('CSV content length:', csvContent.length);
         
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', 'attachment; filename=students_export.csv');
         res.send(csvContent);
-        console.log('CSV file sent successfully');
+        logger.info('CSV file sent successfully');
       } catch (csvError) {
-        console.error('Error generating CSV:', csvError);
+        logger.error('Error generating CSV:', csvError);
         res.status(500).json({ error: `Failed to generate CSV file: ${  csvError.message}` });
-      }
-    }
+      }    }
   } catch (error) {
-    console.error('Error in exportStudents:', error);
+    logger.error('Error in exportStudents:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
@@ -887,9 +845,10 @@ async function courseRegistration(
   batchId,
   sequenceValue,
   courseSequenceValue,
-  paymentSchema
+  paymentSchema,
+  classroomId // optional: if provided, will create ClassroomStudent linking enrollment to classroom
 ) {
-  console.log('courseRegistration called with:', { studentId, courseId, batchId, sequenceValue, courseSequenceValue });
+  logger.info('courseRegistration called with:', { studentId, courseId, batchId, sequenceValue, courseSequenceValue });
   
   const enrollment = new Enrollment({
     studentId,
@@ -901,9 +860,23 @@ async function courseRegistration(
     ...(paymentSchema ? { paymentSchema } : {})
   });
 
-  console.log('Creating enrollment with data:', enrollment);
+  logger.info('Creating enrollment with data:', enrollment);
   await enrollment.save();
-  console.log('Enrollment saved successfully');
+  logger.info('Enrollment saved successfully');
+  // If a classroomId was provided, create a ClassroomStudent entry linking the student/enrollment to the classroom
+  if (classroomId) {
+    try {
+      const ClassroomStudent = require('../models/classroom_student');
+      const existing = await ClassroomStudent.findOne({ classroomId, enrollmentId: enrollment._id });
+      if (!existing) {
+        await ClassroomStudent.create({ classroomId, enrollmentId: enrollment._id, studentId });
+        logger.info('ClassroomStudent created for enrollment', enrollment._id.toString());
+      }
+    } catch (err) {
+      logger.error('Error creating ClassroomStudent for enrollment', enrollment._id.toString(), err);
+      // Do not throw — classroom assignment failure should not block enrollment creation
+    }
+  }
 }
 
 // Excel Import Function
@@ -918,7 +891,7 @@ async function importStudentsFromExcel(req, res) {
       });
     }
 
-    console.log('Processing Excel file:', req.file.originalname);
+    logger.info('Processing Excel file:', req.file.originalname);
 
     // Read the Excel file
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
@@ -939,8 +912,8 @@ async function importStudentsFromExcel(req, res) {
     const headers = data[0];
     const rows = data.slice(1);
 
-    console.log('Headers found:', headers);
-    console.log('Number of data rows:', rows.length);
+    logger.info('Headers found:', headers);
+    logger.info('Number of data rows:', rows.length);
 
     // Validate required headers
     const requiredHeaders = [
@@ -991,8 +964,8 @@ async function importStudentsFromExcel(req, res) {
         };
 
         // Log the row's course and batch info for debugging
-        console.log(`Row ${rowNumber} courseCode:`, studentData.courseCode);
-        console.log(`Row ${rowNumber} batchName:`, studentData.batchName);
+        logger.info(`Row ${rowNumber} courseCode:`, studentData.courseCode);
+        logger.info(`Row ${rowNumber} batchName:`, studentData.batchName);
 
         // Validate required fields
         const requiredFields = ['firstName', 'lastName', 'dob', 'nic', 'address', 'mobile', 'email'];
@@ -1019,7 +992,7 @@ async function importStudentsFromExcel(req, res) {
         if (studentData.courseCode) {
           const Course = require('../models/course');
           course = await Course.findOne({ code: studentData.courseCode });
-          console.log(`Row ${rowNumber} found course:`, course ? course.name : null);
+          logger.info(`Row ${rowNumber} found course:`, course ? course.name : null);
           if (!course) {
             results.failed++;
             results.errors.push(`Row ${rowNumber}: Course with code "${studentData.courseCode}" not found`);
@@ -1032,17 +1005,17 @@ async function importStudentsFromExcel(req, res) {
               name: { $regex: new RegExp(studentData.batchName, 'i') },
               courseId: course._id
             });
-            console.log(`Row ${rowNumber} found batch:`, batch ? batch.name : null);
+            logger.info(`Row ${rowNumber} found batch:`, batch ? batch.name : null);
             if (!batch) {
               results.failed++;
               results.errors.push(`Row ${rowNumber}: Batch "${studentData.batchName}" not found for course "${course.name}" (Code: ${studentData.courseCode})`);
               continue;
             }
           } else {
-            console.log(`Row ${rowNumber} - course was found, but no batchName supplied`);
+            logger.info(`Row ${rowNumber} - course was found, but no batchName supplied`);
           }
         } else {
-          console.log(`Row ${rowNumber} - no courseCode supplied`);
+          logger.info(`Row ${rowNumber} - no courseCode supplied`);
         }
 
         // Create student
@@ -1078,7 +1051,7 @@ async function importStudentsFromExcel(req, res) {
 
         // Create enrollment (only if course and batch are provided)
         if (course && batch) {
-          console.log(`Row ${rowNumber} - Creating enrollment for student, course: ${course.name}, batch: ${batch.name}`);
+          logger.info(`Row ${rowNumber} - Creating enrollment for student, course: ${course.name}, batch: ${batch.name}`);
           const courseSequenceValue = await getAndFormatCourseEnrollmentNumber(course.code, batch.name);
           await courseRegistration(
             newStudent._id,
@@ -1088,7 +1061,7 @@ async function importStudentsFromExcel(req, res) {
             courseSequenceValue
           );
         } else {
-          console.log(`Row ${rowNumber} - Enrollment NOT created. Course:`, course ? course.name : null, ', Batch:', batch ? batch.name : null);
+          logger.info(`Row ${rowNumber} - Enrollment NOT created. Course:`, course ? course.name : null, ', Batch:', batch ? batch.name : null);
         }
 
         // Log the student creation
@@ -1097,13 +1070,13 @@ async function importStudentsFromExcel(req, res) {
         results.successful++;
 
       } catch (error) {
-        console.error(`Error processing row ${rowNumber}:`, error);
+        logger.error(`Error processing row ${rowNumber}:`, error);
         results.failed++;
         results.errors.push(`Row ${rowNumber}: ${error.message}`);
       }
     }
 
-    console.log('Import results:', results);
+    logger.info('Import results:', results);
 
     res.status(200).json({
       success: true,
@@ -1112,12 +1085,72 @@ async function importStudentsFromExcel(req, res) {
     });
 
   } catch (error) {
-    console.error('Error in importStudentsFromExcel:', error);
+    logger.error('Error in importStudentsFromExcel:', error);
     res.status(500).json({
       success: false,
       message: 'Error processing Excel file',
       error: error.message
     });
+  }
+}
+
+// Get classroom assignment history for an enrollment
+async function getEnrollmentClassroomHistory(req, res) {
+  try {
+    const enrollmentId = req.params.id;
+    if (!enrollmentId) {
+      return res.status(400).json({ success: false, message: 'Missing enrollment id' });
+    }
+
+    const history = await ClassroomStudent.find({ enrollmentId })
+      .populate({
+        path: 'classroomId',
+        populate: [
+          { path: 'courseId', select: 'name code' },
+          { path: 'batchId', select: 'name' },
+          { path: 'moduleId', select: 'name' }
+        ]
+      })
+      .populate({ path: 'studentId', select: 'firstName lastName' })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.status(200).json({ success: true, data: history });
+  } catch (error) {
+    logger.error('Error fetching enrollment classroom history:', error);
+    res.status(500).json({ success: false, message: 'Error fetching classroom history', error: error.message });
+  }
+}
+
+async function updateStudentStatus(req, res) {
+  const { studentId } = req.params;
+  const { status } = req.body;
+  const requestInfo = getRequestInfo(req);
+
+  try {
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+
+    logger.info(`Attempting to update student ${studentId} status from ${student.status} to ${status}`); // BEFORE SAVE
+    const oldStatus = student.status;
+    student.status = status;
+    await student.save();
+    logger.info(`Student ${studentId} status successfully updated to ${student.status}`); // AFTER SAVE
+
+    await ActivityLogger.logActivity(
+      req.user,
+      'UPDATE',
+      'Student',
+      `Updated student ${student.registration_no} status from ${oldStatus} to ${status}`,
+      requestInfo
+    );
+
+    res.status(200).json({ success: true, message: 'Student status updated successfully', data: student });
+  } catch (error) {
+    logger.error('Error updating student status:', error);
+    res.status(500).json({ success: false, message: 'Error updating student status', error: error.message });
   }
 }
 
@@ -1131,4 +1164,6 @@ module.exports = {
   exportStudents,
   importStudentsFromExcel,
   getStudentCompletionStatus,
+  getEnrollmentClassroomHistory,
+  updateStudentStatus,
 };

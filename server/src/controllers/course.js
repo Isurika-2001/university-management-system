@@ -1,6 +1,7 @@
 // Import any necessary dependencies
-const Course = require("../models/course");
-const Counter = require("../models/counter");
+const Course = require('../models/course');
+const Counter = require('../models/counter');
+const logger = require('../utils/logger');
 
 // Function to get all courses
 async function getAllCourses(req, res) {
@@ -8,14 +9,15 @@ async function getAllCourses(req, res) {
     const courses = await Course.find();
     res.status(200).json(courses);
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    logger.error('Error in getAllCourses:', error);
+    res.status(500).json({ success: false, message: 'Error fetching courses', error: error.message });
   }
 }
 
 async function createCourse(req, res) {
-  const { 
-    name, 
-    code, 
+  const {
+    name,
+    code,
     description,
     // New fields
     prerequisites,
@@ -23,6 +25,7 @@ async function createCourse(req, res) {
     courseDuration,
     weekdayBatch,
     weekendBatch,
+    pathway
   } = req.body;
 
   try {
@@ -35,21 +38,26 @@ async function createCourse(req, res) {
     if (isDuplicate) {
       return res.status(403).json({
         success: false,
-        message: "Course name is already taken",
+        message: 'Course name is already taken',
       });
     }
 
     if (isDuplicateCode) {
       return res.status(403).json({
         success: false,
-        message: "Course code is already taken",
+        message: 'Course code is already taken',
       });
+    }
+
+    if (!pathway) {
+      return res.status(400).json({ success: false, message: 'Pathway is required' });
     }
 
     const course = new Course({ 
       name, 
       code, 
       description,
+      pathway,
       // New fields
       prerequisites,
       courseCredits,
@@ -69,20 +77,20 @@ async function createCourse(req, res) {
       );
     } catch (counterErr) {
       // Log and proceed; course creation succeeded even if counter upsert failed
-      console.error("Error ensuring course counter:", counterErr);
+      logger.error('Error ensuring course counter:', counterErr);
     }
 
     res.status(201).json({
       success: true,
-      message: "Course created successfully",
+      message: 'Course created successfully',
       data: newCourse,
     });
   } catch (error) {
-    console.error(error); // log for debugging
+    logger.error(error); // log for debugging
 
     res.status(500).json({
       success: false,
-      message: "Error creating course",
+      message: 'Error creating course',
       error: error.message, // optional detailed error
     });
   }
@@ -108,7 +116,7 @@ async function editCourse(req, res) {
     if (!existingCourse) {
       return res.status(404).json({
         success: false,
-        message: "Course not found",
+        message: 'Course not found',
       });
     }
 
@@ -118,7 +126,7 @@ async function editCourse(req, res) {
       if (nameTaken) {
         return res.status(403).json({
           success: false,
-          message: "Course name is already taken",
+          message: 'Course name is already taken',
         });
       }
     }
@@ -129,7 +137,7 @@ async function editCourse(req, res) {
       if (codeTaken) {
         return res.status(403).json({
           success: false,
-          message: "Course code is already taken",
+          message: 'Course code is already taken',
         });
       }
     }
@@ -137,6 +145,8 @@ async function editCourse(req, res) {
     existingCourse.name = name || existingCourse.name;
     existingCourse.code = code || existingCourse.code;
     existingCourse.description = description || existingCourse.description;
+    // update pathway if provided
+    if (req.body.pathway !== undefined) existingCourse.pathway = req.body.pathway;
     // Update new fields
     existingCourse.prerequisites = prerequisites || existingCourse.prerequisites;
     existingCourse.courseCredits = courseCredits || existingCourse.courseCredits;
@@ -148,14 +158,14 @@ async function editCourse(req, res) {
 
     res.status(200).json({
       success: true,
-      message: "Course updated successfully",
+      message: 'Course updated successfully',
       data: updatedCourse,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
-      message: "Error updating course",
+      message: 'Error updating course',
       error: error.message,
     });
   }
@@ -170,7 +180,7 @@ async function deleteCourse(req, res) {
     if (!course) {
       return res.status(404).json({
         success: false,
-        message: "Course not found",
+        message: 'Course not found',
       });
     }
 
@@ -178,13 +188,13 @@ async function deleteCourse(req, res) {
 
     res.status(200).json({
       success: true,
-      message: "Course deleted successfully",
+      message: 'Course deleted successfully',
     });
   } catch (error) {
-    console.error("Error deleting course:", error);
+    logger.error('Error deleting course:', error);
     res.status(500).json({
       success: false,
-      message: "Error deleting course",
+      message: 'Error deleting course',
       error: error.message,
     });
   }
@@ -199,20 +209,20 @@ async function getCourseById(req, res) {
     if (!course) {
       return res.status(404).json({
         success: false,
-        message: "Course not found",
+        message: 'Course not found',
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Course retrieved successfully",
+      message: 'Course retrieved successfully',
       data: course,
     });
   } catch (error) {
-    console.error("Error retrieving course:", error);
+    logger.error('Error retrieving course:', error);
     res.status(500).json({
       success: false,
-      message: "Error retrieving course",
+      message: 'Error retrieving course',
       error: error.message,
     });
   }
@@ -220,15 +230,13 @@ async function getCourseById(req, res) {
 
 // seperate function to check if the name is already taken
 async function checkDuplicateCourse(name) {
-  const course = await Course.findOne
-  ({ name });
+  const course = await Course.findOne({ name });
   return course ? true : false;
 }
 
 // seperate function to check if the name is already taken
 async function checkDuplicateCourseCode(code) {
-  const course = await Course.findOne
-  ({ code });
+  const course = await Course.findOne({ code });
   return course ? true : false;
 }
 

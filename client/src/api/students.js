@@ -21,6 +21,11 @@ export const studentsAPI = {
     return api.put(`${apiRoutes.studentRoute}${id}`, studentData);
   },
 
+  // Update student status
+  updateStatus: async (studentId, status) => {
+    return api.patch(`${apiRoutes.studentRoute}${studentId}/status`, { status });
+  },
+
   // Delete student
   delete: async (id) => {
     return api.delete(`${apiRoutes.studentRoute}${id}`);
@@ -34,5 +39,10 @@ export const studentsAPI = {
   // Search students
   search: async (searchTerm, params = {}) => {
     return api.get(apiRoutes.studentRoute, { search: searchTerm, ...params });
+  },
+
+  // Get enrollment classroom history
+  getEnrollmentClassroomHistory: async (enrollmentId) => {
+    return api.get(`${apiRoutes.studentRoute}enrollment/${enrollmentId}/history`);
   }
-}; 
+};

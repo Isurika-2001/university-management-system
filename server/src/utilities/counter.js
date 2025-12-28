@@ -1,4 +1,4 @@
-const Counter = require("../models/counter");
+const Counter = require('../models/counter');
 
 async function getNextSequenceValue(sequenceName) {
   const counter = await Counter.findOneAndUpdate(
@@ -7,12 +7,12 @@ async function getNextSequenceValue(sequenceName) {
     { new: true, upsert: true }
   );
 
-  let prefix = "";
+  let prefix = '';
 
-  if (sequenceName === "unique_id_sequence") {
-    prefix = "ST_REG";
-  } else if (sequenceName === "course_id_sequence") {
-    prefix = "CS_REG";
+  if (sequenceName === 'unique_id_sequence') {
+    prefix = 'ST_REG';
+  } else if (sequenceName === 'course_id_sequence') {
+    prefix = 'CS_REG';
   }
 
   return `${prefix}${counter.sequence_value}`;
@@ -25,7 +25,7 @@ async function getNextSequenceValue(sequenceName) {
  */
 async function getAndFormatCourseEnrollmentNumber(courseCode, batchName) {
   if (!courseCode || !batchName) {
-    throw new Error("courseCode and batchName are required to generate enrollment number");
+    throw new Error('courseCode and batchName are required to generate enrollment number');
   }
 
   const counter = await Counter.findOneAndUpdate(

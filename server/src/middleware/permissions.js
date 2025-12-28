@@ -18,8 +18,20 @@ const checkPermission = (resource, action) => {
         });
       }
 
+      // Map actions to permission characters
+      const permissionMap = {
+        create: 'C',
+        read: 'R',
+        update: 'U',
+        delete: 'D',
+        import: 'C',
+        export: 'R'
+      };
+
+      const requiredPermission = permissionMap[action];
+
       // Check if user has the required action permission
-      if (!resourcePermissions.includes(action)) {
+      if (!requiredPermission || !resourcePermissions.includes(requiredPermission)) {
         return res.status(403).json({
           success: false,
           message: `Access denied: Insufficient permissions for ${action} on ${resource}`
@@ -29,7 +41,7 @@ const checkPermission = (resource, action) => {
       // Permission granted, continue to next middleware
       next();
     } catch (error) {
-      console.error('Permission check error:', error);
+      // console.error('Permission check error:', error);
       return res.status(500).json({
         success: false,
         message: 'Internal server error during permission check'

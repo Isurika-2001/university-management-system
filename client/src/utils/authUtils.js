@@ -4,11 +4,11 @@ import { useAuthContext } from '../context/useAuthContext';
 export const handleLogout = () => {
   // Remove user from localStorage
   localStorage.removeItem('user');
-  
+
   // Clear any other stored data
   localStorage.removeItem('token');
   sessionStorage.clear();
-  
+
   // Redirect to login page
   window.location.href = '/';
 };
@@ -20,7 +20,7 @@ export const useAuthHandler = () => {
   const handleUnauthorized = () => {
     // Clear auth context
     dispatch({ type: 'LOGOUT' });
-    
+
     // Call centralized logout
     handleLogout();
   };
@@ -44,4 +44,4 @@ export const getCurrentUser = () => {
 export const getAuthToken = () => {
   const user = getCurrentUser();
   return user?.token || null;
-}; 
+};

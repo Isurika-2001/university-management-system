@@ -1,6 +1,5 @@
-const mongoose = require("mongoose");
-
-// Import the required modules
+const mongoose = require('mongoose');
+const { PATHWAYS } = require('../config/pathways');
 
 // Define the course schema
 const courseSchema = new mongoose.Schema({
@@ -18,10 +17,16 @@ const courseSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  // Pathway (required) -> stored as numeric id from PATHWAYS
+  pathway: {
+    type: Number,
+    required: true,
+    enum: [PATHWAYS.HD, PATHWAYS.DIP, PATHWAYS.FOUNDATION, PATHWAYS.TOPUP]
+  },
   // New fields
   prerequisites: {
     type: String,
-    default: "None",
+    default: 'None',
   },
   courseCredits: {
     type: Number,
@@ -51,7 +56,7 @@ const courseSchema = new mongoose.Schema({
 });
 
 // Create the course model
-const Course = mongoose.model("Course", courseSchema);
+const Course = mongoose.model('Course', courseSchema);
 
 // Export the course model
 module.exports = Course;

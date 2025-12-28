@@ -1,34 +1,40 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
 
-const authenticate = require("../middleware/authMiddleware");
+const authenticate = require('../middleware/authMiddleware');
 
-const studentRoutes = require("./student");
-const courseRoutes = require("./course");
-const batchRoutes = require("./batch");
-const enrollmentRoutes = require("./enrollment");
-const requiredDocumentRoutes = require("./requiredDocument");
-const userTypeRoutes = require("./user_type");
-const userRoutes = require("./user");
-const authRoutes = require("./auth");
-const bulkUploadRoutes = require("./bulk_upload");
-const statsRoute = require("./stats");
-const activityLogRoutes = require("./activity_log");
+const studentRoutes = require('./student');
+const courseRoutes = require('./course');
+const batchRoutes = require('./batch');
+const enrollmentRoutes = require('./enrollment');
+const requiredDocumentRoutes = require('./requiredDocument');
+const moduleRoutes = require('./module');
+const classroomRoutes = require('./classroom');
+const examRoutes = require('./exam');
+const userTypeRoutes = require('./user_type');
+const userRoutes = require('./user');
+const authRoutes = require('./auth');
+const bulkUploadRoutes = require('./bulk_upload');
+const statsRoute = require('./stats');
+const activityLogRoutes = require('./activity_log');
 
 // Public auth routes
-router.use("/auth", authRoutes);
+router.use('/auth', authRoutes);
 
 // Protected routes
 router.use(authenticate);
-router.use("/student", studentRoutes);
-router.use("/course", courseRoutes);
-router.use("/batch", batchRoutes);
-router.use("/enrollment", enrollmentRoutes);
-router.use("/required-document", requiredDocumentRoutes);
-router.use("/user-type", userTypeRoutes);
-router.use("/user", userRoutes);
-router.use("/bulk-upload", bulkUploadRoutes);
-router.use("/stats", statsRoute);
-router.use("/activity-logs", activityLogRoutes);
+router.use('/student', studentRoutes);
+router.use('/course', courseRoutes);
+router.use('/batch', batchRoutes);
+router.use('/enrollment', enrollmentRoutes);
+router.use('/required-document', requiredDocumentRoutes);
+router.use('/user-type', userTypeRoutes);
+router.use('/user', userRoutes);
+router.use('/module', moduleRoutes);
+router.use('/classroom', classroomRoutes);
+router.use('/exam', examRoutes);
+router.use('/bulk-upload', bulkUploadRoutes);
+router.use('/stats', statsRoute);
+router.use('/activity-logs', activityLogRoutes);
 
 module.exports = router;

@@ -93,7 +93,7 @@ const MonthlyBarChart = ({ onTotalChange }) => {
     }
 
     if (user?.token) fetchRegistrations();
-  }, [user?.token, secondary]);
+  }, [user?.token, secondary, onTotalChange]);
 
   return (
     <div id="chart">

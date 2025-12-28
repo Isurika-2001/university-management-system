@@ -30,4 +30,4 @@ export const authAPI = {
   updateProfile: async (profileData) => {
     return api.put(apiRoutes.authRoute + 'profile', profileData);
   }
-}; 
+};

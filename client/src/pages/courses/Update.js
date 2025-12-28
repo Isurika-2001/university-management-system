@@ -11,7 +11,9 @@ import {
   Select,
   MenuItem,
   FormControlLabel,
-  Checkbox
+  Checkbox,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
@@ -21,6 +23,7 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
 import { useParams } from 'react-router-dom';
+import { PATHWAY_LIST } from 'constants/pathways';
 
 const UpdateCourseForm = () => {
   const [loading, setLoading] = useState([]);
@@ -65,6 +68,7 @@ const UpdateCourseForm = () => {
     prerequisites: Yup.string().required('Prerequisites are required'),
     courseCredits: Yup.number().min(1, 'Course credits must be at least 1').required('Course credits are required'),
     courseDuration: Yup.string().required('Course duration is required'),
+    pathway: Yup.number().required('Pathway is required'),
     weekdayBatch: Yup.boolean(),
     weekendBatch: Yup.boolean()
   });
@@ -81,7 +85,7 @@ const UpdateCourseForm = () => {
         });
         const data = await res.json();
         if (res.ok && data?.data) {
-          const { name, code, description, prerequisites, courseCredits, courseDuration, weekdayBatch, weekendBatch } = data.data;
+          const { name, code, description, prerequisites, courseCredits, courseDuration, pathway, weekdayBatch, weekendBatch } = data.data;
           setInitialValues({
             name,
             code,
@@ -89,6 +93,7 @@ const UpdateCourseForm = () => {
             prerequisites,
             courseCredits,
             courseDuration,
+            pathway: pathway || '',
             weekdayBatch,
             weekendBatch
           });
@@ -238,6 +243,28 @@ const UpdateCourseForm = () => {
                       }}
                       sx={{ mb: 3 }}
                     />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Field name="pathway">
+                      {({ field, form }) => (
+                        <FormControl fullWidth error={form.touched.pathway && !!form.errors.pathway} sx={{ mb: 3 }}>
+                          <InputLabel>Pathway</InputLabel>
+                          <Select {...field} label="Pathway" displayEmpty>
+                            <MenuItem value="" disabled>
+                              Select Pathway
+                            </MenuItem>
+                            {PATHWAY_LIST.map((p) => (
+                              <MenuItem key={p.id} value={p.id}>
+                                {p.label}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {form.touched.pathway && form.errors.pathway && (
+                            <Box sx={{ color: '#d32f2f', fontSize: '0.75rem', mt: 0.5 }}>{form.errors.pathway}</Box>
+                          )}
+                        </FormControl>
+                      )}
+                    </Field>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Field

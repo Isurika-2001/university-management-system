@@ -49,7 +49,17 @@ const initialValues = {
   homeContact: '',
   email: '',
   // Step 2
-  enrollments: [],
+  enrollments: [
+    {
+      pathway: '',
+      courseId: '',
+      batchId: '',
+      classroomId: '',
+      courseName: '',
+      batchName: '',
+      classroomName: ''
+    }
+  ],
   // Step 3
   paymentSchema: {},
   // Step 4
@@ -87,8 +97,10 @@ const validationSchema = Yup.object().shape({
   enrollments: Yup.array()
     .of(
       Yup.object().shape({
+        pathway: Yup.string().required('Pathway is required'),
         courseId: Yup.string().required('Course is required'),
-        batchId: Yup.string().required('Batch is required')
+        batchId: Yup.string().required('Batch is required'),
+        classroomId: Yup.string().required('Classroom is required')
       })
     )
     .min(1, 'At least one course enrollment is required'),
@@ -117,7 +129,6 @@ const AddStudent = () => {
   const [batchOptions, setBatchOptions] = useState([]);
   const [requiredDocuments, setRequiredDocuments] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState('');
   const [batchOptionsMap, setBatchOptionsMap] = useState({});
   const { user } = useAuthContext();
 
@@ -159,22 +170,24 @@ const AddStudent = () => {
         return !!(values.firstName && values.lastName && values.dob && values.nic && values.address && values.mobile && values.email);
 
       case 1: // Course Details
-        return !!(values.enrollments && values.enrollments.length > 0 && values.enrollments.every((enr) => enr.courseId && enr.batchId));
+        return !!(
+          values.enrollments &&
+          values.enrollments.length > 0 &&
+          values.enrollments.every((enr) => enr.pathway && enr.courseId && enr.batchId && enr.classroomId)
+        );
 
       case 2: {
         // Payment Schema
-        // Check if at least one course has a complete payment schema
-        const selectedCourses = values.selectedCourses || [];
-        console.log('Payment Schema - selectedCourses:', selectedCourses);
+        // Support both legacy `selectedCourses` and new single-enrollment pattern using `enrollments[0]`
+        const enrollmentCourseId = values.enrollments?.[0]?.courseId;
+        const selectedCourses = values.selectedCourses || (enrollmentCourseId ? [enrollmentCourseId] : []);
         if (selectedCourses.length === 0) return false;
 
         const paymentSchemas = values.paymentSchema || {};
-        console.log('Payment Schema - paymentSchemas:', paymentSchemas);
 
         // Check if any course has a complete payment schema
         const result = selectedCourses.some((courseId) => {
           const schema = paymentSchemas[courseId] || {};
-          console.log(`Payment Schema - checking course ${courseId}:`, schema);
           const requiredFields = ['courseFee', 'downPayment', 'numberOfInstallments', 'installmentStartDate', 'paymentFrequency'];
 
           // Check all required fields are filled
@@ -188,11 +201,9 @@ const AddStudent = () => {
             !schema.isDiscountApplicable ||
             (schema.discountValue && schema.discountValue !== '' && schema.discountType && schema.discountType !== '');
 
-          const isComplete = allFieldsFilled && discountValid;
-          console.log(`Payment Schema - course ${courseId} complete:`, isComplete, { allFieldsFilled, discountValid });
-          return isComplete;
+          return allFieldsFilled && discountValid;
         });
-        console.log('Payment Schema - overall result:', result);
+
         return result;
       }
 
@@ -239,6 +250,11 @@ const AddStudent = () => {
     }
     console.log('Step completion status:', newStatus);
     setStepCompletionStatus(newStatus);
+  };
+
+  // Allow child steps to mark a single step completed immediately
+  const setStepCompleted = (index, value) => {
+    setStepCompletionStatus((prev) => ({ ...prev, [index]: !!value }));
   };
 
   // Custom StepIcon component to show completion status
@@ -356,11 +372,6 @@ const AddStudent = () => {
     fetchRequiredDocs();
   }, [fetchCourses, fetchRequiredDocs]);
 
-  useEffect(() => {
-    if (selectedCourse) fetchBatches(selectedCourse);
-    else setBatchOptions([]);
-  }, [selectedCourse, fetchBatches]);
-
   // Update step completion status when required documents change
   useEffect(() => {
     // This will be called when requiredDocuments change
@@ -422,6 +433,11 @@ const AddStudent = () => {
   };
 
   const handleBack = () => setActiveStep((s) => s - 1);
+
+  // Reset nextDisabled when active step changes (e.g., when going back)
+  useEffect(() => {
+    setNextDisabled(false);
+  }, [activeStep]);
 
   const handleSubmitForm = async (values) => {
     try {
@@ -524,8 +540,6 @@ const AddStudent = () => {
             courseOptions={courseOptions}
             batchOptions={batchOptions}
             batchOptionsMap={batchOptionsMap}
-            selectedCourse={selectedCourse}
-            setSelectedCourse={setSelectedCourse}
             fetchBatches={fetchBatches}
             setNextDisabled={setNextDisabled}
             updateStepCompletion={updateStepCompletion}
@@ -538,6 +552,7 @@ const AddStudent = () => {
             formBag={formBag}
             setNextDisabled={setNextDisabled}
             updateStepCompletion={updateStepCompletion}
+            setStepCompleted={setStepCompleted}
           />
         );
       case 3:

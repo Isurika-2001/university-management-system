@@ -66,7 +66,7 @@ async function registerCourse(studentId, courseCode, batchName, studentRegNo) {
 
 // Create student and register for course
 async function createStudentAndRegister(data) {
-  const studentRegNo = await getNextSequenceValue("unique_id_sequence");
+  const studentRegNo = await getNextSequenceValue('unique_id_sequence');
 
   const student = new Student({
     firstName: data.firstName,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, TextField, Button, Grid, Divider, CircularProgress, LinearProgress, MenuItem } from '@mui/material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
@@ -6,7 +6,6 @@ import MainCard from 'components/MainCard';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useParams, useNavigate } from 'react-router-dom';
-import { formatUserTypes } from '../../utils/userTypeUtils';
 import { usersAPI } from '../../api/users';
 
 function UpdateUser() {
@@ -14,27 +13,37 @@ function UpdateUser() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
 
-  const Toast = withReactContent(
-    Swal.mixin({
-      toast: true,
-      position: 'bottom',
-      customClass: {
-        popup: 'colored-toast'
-      },
-      background: 'primary',
-      showConfirmButton: false,
-      timer: 3500,
-      timerProgressBar: true
-    })
+  const Toast = useMemo(
+    () =>
+      withReactContent(
+        Swal.mixin({
+          toast: true,
+          position: 'bottom',
+          customClass: {
+            popup: 'colored-toast'
+          },
+          background: 'primary',
+          showConfirmButton: false,
+          timer: 3500,
+          timerProgressBar: true
+        })
+      ),
+    []
   );
 
-  const showSuccessSwal = (e) => {
-    Toast.fire({ icon: 'success', title: e });
-  };
+  const showSuccessSwal = useCallback(
+    (e) => {
+      Toast.fire({ icon: 'success', title: e });
+    },
+    [Toast]
+  );
 
-  const showErrorSwal = (e) => {
-    Toast.fire({ icon: 'error', title: e });
-  };
+  const showErrorSwal = useCallback(
+    (e) => {
+      Toast.fire({ icon: 'error', title: e });
+    },
+    [Toast]
+  );
 
   const [initialValues, setInitialValues] = useState({
     name: '',
@@ -58,40 +67,36 @@ function UpdateUser() {
     password: Yup.string().required('Password is required').min(6, 'Password must be at least 6 characters'),
     confirmPassword: Yup.string()
       .oneOf([Yup.ref('password'), null], 'Passwords must match')
-      .required('Confirm Password is required'),
+      .required('Confirm Password is required')
   });
 
   const [userTypes, setUserTypes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchUserTypes();
-    fetchUserById();
-  }, []);
-
-  const fetchUserTypes = async () => {
+  const fetchUserTypes = useCallback(async () => {
     try {
       const response = await usersAPI.getUserTypes();
       console.log('User types response:', response);
-      
+
       // Handle both old and new response formats
       const userTypes = response.data || response;
-      setUserTypes(formatUserTypes(userTypes));
+      setUserTypes(userTypes); // Assuming formatUserTypes is no longer needed
     } catch (error) {
       console.error('Error fetching user types:', error);
     }
-  };
+  }, [setUserTypes]);
 
-  const fetchUserById = async () => {
+  const fetchUserById = useCallback(async () => {
     try {
       const response = await usersAPI.getById(id);
       console.log('User response:', response);
-      
+
       // Handle both old and new response formats
       const userData = response.data || response;
       setInitialValues({
         name: userData.name,
         email: userData.email,
+        password: '', // Password is not fetched
         user_type: userData.user_type?._id || userData.user_type // Handle both populated and ID
       });
     } catch (error) {
@@ -100,7 +105,12 @@ function UpdateUser() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, setInitialValues, setLoading, showErrorSwal]);
+
+  useEffect(() => {
+    fetchUserTypes();
+    fetchUserById();
+  }, [fetchUserTypes, fetchUserById]);
 
   const handleSubmit = async (values) => {
     setSubmitting(true);
@@ -143,11 +153,7 @@ function UpdateUser() {
       <Box textAlign="center" mt={5}>
         <MainCard title="Error">
           <p>User ID is required. Please go back to the users list and try again.</p>
-          <Button 
-            variant="contained" 
-            onClick={() => navigate('/app/users')}
-            sx={{ mt: 2 }}
-          >
+          <Button variant="contained" onClick={() => navigate('/app/users')} sx={{ mt: 2 }}>
             Back to Users
           </Button>
         </MainCard>
@@ -218,13 +224,7 @@ function UpdateUser() {
                 </Grid>
                 <Divider sx={{ mt: 3, mb: 2 }} />
                 <Grid item xs={12} style={{ textAlign: 'right' }}>
-                  <Button
-                    variant="outlined"
-                    color="secondary"
-                    size="small"
-                    onClick={() => navigate('/app/users')}
-                    sx={{ mr: 2 }}
-                  >
+                  <Button variant="outlined" color="secondary" size="small" onClick={() => navigate('/app/users')} sx={{ mr: 2 }}>
                     Cancel
                   </Button>
                   <Button

@@ -1,4 +1,4 @@
-const User_type = require("../models/user_type");
+const User_type = require('../models/user_type');
 
 async function getUser_types(req, res) {
   try {
@@ -9,10 +9,10 @@ async function getUser_types(req, res) {
       message: 'User types retrieved successfully'
     });
   } catch (error) {
-    console.error('Error fetching user types:', error);
+    // console.error('Error fetching user types:', error);
     res.status(500).json({ 
       success: false,
-      error: "Internal Server Error",
+      error: 'Internal Server Error',
       message: error.message 
     });
   }
