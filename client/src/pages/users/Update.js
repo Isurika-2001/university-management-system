@@ -13,19 +13,23 @@ function UpdateUser() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
 
-  const Toast = useMemo(() => withReactContent(
-    Swal.mixin({
-      toast: true,
-      position: 'bottom',
-      customClass: {
-        popup: 'colored-toast'
-      },
-      background: 'primary',
-      showConfirmButton: false,
-      timer: 3500,
-      timerProgressBar: true
-    })
-  ), []);
+  const Toast = useMemo(
+    () =>
+      withReactContent(
+        Swal.mixin({
+          toast: true,
+          position: 'bottom',
+          customClass: {
+            popup: 'colored-toast'
+          },
+          background: 'primary',
+          showConfirmButton: false,
+          timer: 3500,
+          timerProgressBar: true
+        })
+      ),
+    []
+  );
 
   const showSuccessSwal = useCallback(
     (e) => {

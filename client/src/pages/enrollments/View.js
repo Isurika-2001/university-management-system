@@ -273,7 +273,6 @@ const EnrollmentsView = () => {
     }
   };
 
-
   // --- useEffect Hooks ---
   useEffect(() => {
     const handler = setTimeout(() => {

@@ -44,5 +44,5 @@ export const studentsAPI = {
   // Get enrollment classroom history
   getEnrollmentClassroomHistory: async (enrollmentId) => {
     return api.get(`${apiRoutes.studentRoute}enrollment/${enrollmentId}/history`);
-  },
+  }
 };

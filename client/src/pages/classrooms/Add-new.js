@@ -51,7 +51,7 @@ const AddForm = () => {
 
   const generateClassroomName = (course, batch, month) => {
     if (!course || !batch || !month) return '';
-    return `${course.code}-${batch.code}-${month}`;
+    return `${course.code}-${batch.name}-${month}`;
   };
 
   const handleCourseChange = async (courseId, setFieldValue) => {

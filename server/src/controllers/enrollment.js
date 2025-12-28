@@ -536,12 +536,12 @@ async function addBatchTransfer(req, res) {
 
     // --- Update the enrollment itself with the new batch ---
     const updateData = {
-      batchId: batchId,
+      batchId,
       $push: {
         batchTransfers: {
           batch: batchId,
           date: new Date(),
-          reason: reason,
+          reason,
           classroomId: newClassroomId // Also store the classroom to which it was transferred
         }
       }

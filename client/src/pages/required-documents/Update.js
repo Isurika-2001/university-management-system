@@ -21,8 +21,6 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { requiredDocumentsAPI } from '../../api/requiredDocuments';
 
-
-
 const UpdateRequiredDocument = () => {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);

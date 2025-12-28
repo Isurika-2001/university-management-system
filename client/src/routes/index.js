@@ -167,9 +167,7 @@ export default function ThemeRoutes() {
           />
           <Route
             path="update/:id"
-            element={
-              permissions?.student?.includes('U') ? <UpdateRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />
-            }
+            element={permissions?.student?.includes('U') ? <UpdateRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
 

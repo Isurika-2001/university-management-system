@@ -43,7 +43,6 @@ const UpdateForm = () => {
   const [selectedEnrollmentForClassroom, setSelectedEnrollmentForClassroom] = useState(null);
   const [eligibleClassrooms, setEligibleClassrooms] = useState([]);
   const [selectedClassroomForAdd, setSelectedClassroomForAdd] = useState('');
-  
 
   const { id } = useParams();
 
@@ -75,8 +74,6 @@ const UpdateForm = () => {
     });
   };
 
-  
-
   useEffect(() => {
     if (selectedPathway) {
       const filtered = allCourseOptions.filter((course) => course.pathway === selectedPathway);
@@ -85,8 +82,6 @@ const UpdateForm = () => {
       setCourseOptions(allCourseOptions);
     }
   }, [selectedPathway, allCourseOptions]);
-
-  
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -199,30 +194,30 @@ const UpdateForm = () => {
     [setClassroomOptions]
   );
 
-    useEffect(() => {
-      fetchData();
-      fetchCourses();
-      fetchEnrollments();
-    }, [id, fetchData, fetchCourses, fetchEnrollments]);
+  useEffect(() => {
+    fetchData();
+    fetchCourses();
+    fetchEnrollments();
+  }, [id, fetchData, fetchCourses, fetchEnrollments]);
 
-    useEffect(() => {
-      fetchIntakes(selectedCourse);
-    }, [selectedCourse, fetchIntakes]);
+  useEffect(() => {
+    fetchIntakes(selectedCourse);
+  }, [selectedCourse, fetchIntakes]);
 
-    useEffect(() => {
-      if (selectedCourse && selectedIntake) {
-        fetchClassrooms(selectedCourse, selectedIntake);
-      }
-    }, [selectedCourse, selectedIntake, fetchClassrooms]);
+  useEffect(() => {
+    if (selectedCourse && selectedIntake) {
+      fetchClassrooms(selectedCourse, selectedIntake);
+    }
+  }, [selectedCourse, selectedIntake, fetchClassrooms]);
 
-    // Fetch classrooms for transfer dialog
-    useEffect(() => {
-      if (selectedCourse && transferData.batchId) {
-        fetchClassrooms(selectedCourse, transferData.batchId);
-      } else {
-        setClassroomOptions([]);
-      }
-    }, [selectedCourse, transferData.batchId, fetchClassrooms, setClassroomOptions]);
+  // Fetch classrooms for transfer dialog
+  useEffect(() => {
+    if (selectedCourse && transferData.batchId) {
+      fetchClassrooms(selectedCourse, transferData.batchId);
+    } else {
+      setClassroomOptions([]);
+    }
+  }, [selectedCourse, transferData.batchId, fetchClassrooms, setClassroomOptions]);
 
   const handleSubmit = async (values) => {
     try {
@@ -285,7 +280,8 @@ const UpdateForm = () => {
       console.log('Submitting transfer data:', transferData);
       console.log('Selected enrollment:', selectedEnrollment);
 
-      if (!transferData.batchId || !transferData.reason || !transferData.classroomId) { // Added classroomId validation
+      if (!transferData.batchId || !transferData.reason || !transferData.classroomId) {
+        // Added classroomId validation
         showErrorSwal('Please select a new intake, classroom and provide a transfer reason'); // Updated message
         return;
       }
@@ -348,8 +344,6 @@ const UpdateForm = () => {
       setSubmitting(false);
     }
   };
-
-  
 
   const initialValues = {
     pathway: '',
@@ -459,7 +453,7 @@ const UpdateForm = () => {
                                   Add Classroom
                                 </Button>
                               )}
-                              
+
                               <Button
                                 variant="outlined"
                                 color="secondary"

@@ -283,65 +283,61 @@ const Detail = () => {
                       <Chip label={getStatusLabel(student.status)} color={getStatusColor(student.status)} size="small" />
                     </TableCell>
                     <TableCell>
-                      {student.status === STATUSES.TRANSFERRED ? (
-                        <Chip label="Not Eligible" color="error" variant="outlined" size="small" />
-                      ) : (
-                        <>
-                          {student.status !== STATUSES.HOLD && student.status !== STATUSES.PASS && student.status !== STATUSES.FAIL && (
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={() => handleHoldStatus(student._id)}
-                              color="warning"
-                              sx={{ mr: 1 }}
-                              disabled={isHolding}
-                            >
-                              Hold
-                            </Button>
-                          )}
-                          {student.status === STATUSES.HOLD && (
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={() => handleContinueStatus(student._id)}
-                              color="success"
-                              sx={{ mr: 1 }}
-                              disabled={isHolding}
-                            >
-                              Continue
-                            </Button>
-                          )}
-                          {isEligibleForTransfer(student.status) ? (
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={<UserAddOutlined />}
-                              onClick={() => handleAddToNew(student)}
-                              color="primary"
-                              sx={{ mr: 1 }}
-                            >
-                              Add to New
-                            </Button>
-                          ) : (
-                            <Chip label="Not Eligible" color="error" variant="outlined" size="small" sx={{ mr: 1 }} />
-                          )}
+                      {student.status !== STATUSES.HOLD &&
+                        student.status !== STATUSES.PASS &&
+                        student.status !== STATUSES.FAIL &&
+                        student.status !== STATUSES.TRANSFERRED && (
                           <Button
                             variant="outlined"
                             size="small"
-                            startIcon={<DeleteOutlined />}
-                            onClick={() =>
-                              handleRemoveFromClassroom(
-                                student._id,
-                                `${student.studentId?.firstName || ''} ${student.studentId?.lastName || ''}`.trim()
-                              )
-                            }
-                            color="error"
-                            disabled={isRemoving}
+                            onClick={() => handleHoldStatus(student._id)}
+                            color="warning"
+                            sx={{ mr: 1 }}
+                            disabled={isHolding}
                           >
-                            Remove
+                            Hold
                           </Button>
-                        </>
+                        )}
+                      {student.status === STATUSES.HOLD && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handleContinueStatus(student._id)}
+                          color="success"
+                          sx={{ mr: 1 }}
+                          disabled={isHolding}
+                        >
+                          Continue
+                        </Button>
                       )}
+                      {isEligibleForTransfer(student.status) ? (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<UserAddOutlined />}
+                          onClick={() => handleAddToNew(student)}
+                          color="primary"
+                          sx={{ mr: 1 }}
+                        >
+                          Add to New
+                        </Button>
+                      ) : // nothing
+                      null}
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<DeleteOutlined />}
+                        onClick={() =>
+                          handleRemoveFromClassroom(
+                            student._id,
+                            `${student.studentId?.firstName || ''} ${student.studentId?.lastName || ''}`.trim()
+                          )
+                        }
+                        color="error"
+                        disabled={isRemoving}
+                      >
+                        Remove
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
