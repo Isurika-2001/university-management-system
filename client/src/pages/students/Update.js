@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button, CircularProgress, Typography, Box, Stepper, Step, StepLabel } from '@mui/material';
 import {
   UserOutlined,
-  BookOutlined,
   PhoneOutlined,
   FileTextOutlined,
   ReadOutlined,
@@ -22,20 +21,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 
 // Step components
 import StepPersonalDetails from './steps/StepPersonalDetails';
-import StepCourseDetails from './steps/StepCourseDetails';
 import StepPaymentSchema from './steps/StepPaymentSchema';
 import StepAcademicDetails from './steps/StepAcademicDetails';
 import StepRequiredDocuments from './steps/StepRequiredDocuments';
 import StepEmergencyContact from './steps/StepEmergencyContact';
 
-const steps = [
-  'Personal Details',
-  'Course Details',
-  'Payment Schema',
-  'Academic Details (Optional)',
-  'Required Documents',
-  'Emergency Contact (Optional)'
-];
+const steps = ['Personal Details', 'Payment Schema', 'Academic Details (Optional)', 'Required Documents', 'Emergency Contact (Optional)'];
 
 const academicQualificationOptions = ['O-Level', 'A-Level', 'Diploma', "Bachelor's Degree", "Master's Degree", 'PhD', 'Other'];
 
@@ -55,15 +46,6 @@ const validationSchema = Yup.object().shape({
     .required('Contact No is required'),
   homeContact: Yup.string().matches(/^\+?\d{10,12}$/, 'Contact No should be 10 to 12 digits with an optional leading + sign'),
   email: Yup.string().email('Invalid email format').required('Email is required'),
-
-  enrollments: Yup.array()
-    .of(
-      Yup.object().shape({
-        courseId: Yup.string().required('Course is required'),
-        batchId: Yup.string().required('Batch is required')
-      })
-    )
-    .min(1, 'At least one course enrollment is required'),
 
   paymentSchema: Yup.object().optional(),
 
@@ -87,13 +69,9 @@ const UpdateStudent = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
-  const [courseOptions, setCourseOptions] = useState([]);
-  const [batchOptions, setBatchOptions] = useState([]);
   const [requiredDocuments, setRequiredDocuments] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [selectedCourse, setSelectedCourse] = useState('');
-  const [batchOptionsMap, setBatchOptionsMap] = useState({});
   const [studentData, setStudentData] = useState(null);
   const { user } = useAuthContext();
 
@@ -103,11 +81,10 @@ const UpdateStudent = () => {
   // Track completion status for each step
   const [stepCompletionStatus, setStepCompletionStatus] = useState({
     0: false, // Personal Details - required
-    1: false, // Course Details - required
-    2: false, // Payment Schema - required
-    3: false, // Academic Details - optional
-    4: false, // Required Documents - optional
-    5: false // Emergency Contact - optional
+    1: false, // Payment Schema - required
+    2: false, // Academic Details - optional
+    3: false, // Required Documents - optional
+    4: false // Emergency Contact - optional
   });
 
   // Reset nextDisabled when active step changes
@@ -115,21 +92,25 @@ const UpdateStudent = () => {
     setNextDisabled(false);
   }, [activeStep]);
 
-  const Toast = withReactContent(
-    Swal.mixin({
-      toast: true,
-      position: 'bottom',
-      customClass: { popup: 'colored-toast' },
-      background: 'primary',
-      showConfirmButton: false,
-      timer: 3500,
-      timerProgressBar: true,
-      allowHtml: true
-    })
+  const Toast = useMemo(
+    () =>
+      withReactContent(
+        Swal.mixin({
+          toast: true,
+          position: 'bottom',
+          customClass: { popup: 'colored-toast' },
+          background: 'primary',
+          showConfirmButton: false,
+          timer: 3500,
+          timerProgressBar: true,
+          allowHtml: true
+        })
+      ),
+    []
   );
 
-  const showSuccessSwal = (e) => Toast.fire({ icon: 'success', title: e });
-  const showErrorSwal = (e) => Toast.fire({ icon: 'error', title: e });
+  const showSuccessSwal = useCallback((e) => Toast.fire({ icon: 'success', title: e }), [Toast]);
+  const showErrorSwal = useCallback((e) => Toast.fire({ icon: 'error', title: e }), [Toast]);
 
   // Function to prepare initial values from student data
   const prepareInitialValues = useCallback(() => {
@@ -157,14 +138,15 @@ const UpdateStudent = () => {
     });
     console.log('Payment schema:', paymentSchema);
 
-    // Prepare enrollments array with correct IDs and names
-    const enrollmentArray = studentEnrollments.map((enrollment) => ({
-      courseId: enrollment.courseId._id || enrollment.courseId,
-      batchId: enrollment.batchId._id || enrollment.batchId,
-      courseName: enrollment.courseId?.name || enrollment.course?.name || '',
-      batchName: enrollment.batchId?.name || enrollment.batch?.name || ''
-    }));
-    console.log('Enrollment array:', enrollmentArray);
+    // Prepare course info for the payment schema step
+    const selectedCourses = studentEnrollments.map((enr) => enr.courseId?._id || enr.courseId).filter(Boolean);
+    const courseInfoById = {};
+    studentEnrollments.forEach((enr) => {
+      if (enr.courseId) {
+        const id = enr.courseId._id || enr.courseId;
+        courseInfoById[id] = { name: enr.courseId.name };
+      }
+    });
 
     const initialValues = {
       // Step 1 - Personal Details
@@ -181,12 +163,10 @@ const UpdateStudent = () => {
       homeContact: studentData.homeContact || '',
       email: studentData.email || '',
 
-      // Step 2 - Course Details
-      enrollments: enrollmentArray,
-      selectedCourses: enrollmentArray.map((enr) => enr.courseId),
-
       // Step 3 - Payment Schema
       paymentSchema: paymentSchema,
+      selectedCourses: selectedCourses,
+      courseInfoById: courseInfoById,
 
       // Step 4 - Academic Details
       highestAcademicQualification: studentData.highestAcademicQualification || '',
@@ -216,21 +196,19 @@ const UpdateStudent = () => {
         case 0: // Personal Details
           return !!(values.firstName && values.lastName && values.dob && values.nic && values.address && values.mobile && values.email);
 
-        case 1: // Course Details
-          return !!(values.enrollments && values.enrollments.length > 0 && values.enrollments.every((enr) => enr.courseId && enr.batchId));
-
-        case 2: {
+        case 1: {
           // Payment Schema
-          // Check if at least one course has a complete payment schema
-          const selectedCourses = values.selectedCourses || [];
+          // Check if all courses have a complete payment schema
+          const studentEnrollments = studentData.enrollments || [];
+          const selectedCourses = studentEnrollments.map((enr) => enr.courseId._id || enr.courseId);
           console.log('Update - Payment Schema - selectedCourses:', selectedCourses);
           if (selectedCourses.length === 0) return false;
 
           const paymentSchemas = values.paymentSchema || {};
           console.log('Update - Payment Schema - paymentSchemas:', paymentSchemas);
 
-          // Check if any course has a complete payment schema
-          const result = selectedCourses.some((courseId) => {
+          // Check if all courses have a complete payment schema
+          const result = selectedCourses.every((courseId) => {
             const schema = paymentSchemas[courseId] || {};
             console.log(`Update - Payment Schema - checking course ${courseId}:`, schema);
             const requiredFields = ['courseFee', 'downPayment', 'numberOfInstallments', 'installmentStartDate', 'paymentFrequency'];
@@ -254,11 +232,11 @@ const UpdateStudent = () => {
           return result;
         }
 
-        case 3: // Academic Details (Optional)
+        case 2: // Academic Details (Optional)
           // Only completed if highestAcademicQualification is selected (description alone doesn't count)
           return !!(values.highestAcademicQualification && values.highestAcademicQualification.trim());
 
-        case 4: {
+        case 3: {
           // Required Documents (Optional)
           // Only completed if all required documents are selected
           const required = requiredDocuments.filter((doc) => doc.isRequired);
@@ -276,7 +254,7 @@ const UpdateStudent = () => {
           return result;
         }
 
-        case 5: // Emergency Contact (Optional)
+        case 4: // Emergency Contact (Optional)
           // Only completed if all required fields are provided
           return !!(
             values.emergencyContact &&
@@ -292,7 +270,7 @@ const UpdateStudent = () => {
           return false;
       }
     },
-    [requiredDocuments]
+    [requiredDocuments, studentData]
   );
 
   // Function to update step completion status
@@ -379,55 +357,20 @@ const UpdateStudent = () => {
       const data = await response.json();
       if (!response.ok) {
         showErrorSwal('Failed to fetch student data');
-        showSuccessSwal('Student updated successfully');
-        navigate('/app/students');
+        setStudentData(null); // Explicitly set to null if not found
+        // No need to navigate here, the !studentData check will handle displaying "Student not found"
         return;
       }
       setStudentData(data);
     } catch (err) {
       console.error('Error fetching student:', err);
       showErrorSwal('Error fetching student data');
-      navigate('/students');
+      setStudentData(null); // Explicitly set to null on error
+      // No need to navigate here, the !studentData check will handle displaying "Student not found"
     } finally {
       setLoading(false);
     }
-  }, [id, user.token, navigate]);
-
-  const fetchCourses = useCallback(async () => {
-    try {
-      const response = await fetch(apiRoutes.courseRoute, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` }
-      });
-      const data = await response.json();
-      if (!response.ok) return;
-      setCourseOptions(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Error fetching courses:', err);
-    }
-  }, [user.token]);
-
-  const fetchBatches = useCallback(
-    async (courseId) => {
-      if (!courseId) {
-        setBatchOptions([]);
-        return;
-      }
-      try {
-        const response = await fetch(apiRoutes.batchRoute + `course/${courseId}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` }
-        });
-        const data = await response.json();
-        if (!response.ok) return;
-        setBatchOptions(data);
-        setBatchOptionsMap((prev) => ({ ...prev, [courseId]: data }));
-      } catch (err) {
-        console.error('Error fetching batches:', err);
-      }
-    },
-    [user.token]
-  );
+  }, [id, user.token, showErrorSwal]); // navigate is not needed here as we are not navigating away
 
   const fetchRequiredDocs = useCallback(async () => {
     try {
@@ -441,14 +384,16 @@ const UpdateStudent = () => {
     } catch (err) {
       console.error('Error fetching required documents:', err);
       setRequiredDocuments([]);
+      showErrorSwal('Error fetching required documents');
     }
-  }, [user.token]);
+  }, [user.token, setRequiredDocuments, showErrorSwal]);
 
   useEffect(() => {
-    fetchStudent();
-    fetchCourses();
-    fetchRequiredDocs();
-  }, [fetchStudent, fetchCourses, fetchRequiredDocs]);
+    if (user?.token) {
+      fetchStudent();
+      fetchRequiredDocs();
+    }
+  }, [fetchStudent, fetchRequiredDocs, user?.token]);
 
   // Update step completion when student data is loaded
   useEffect(() => {
@@ -458,38 +403,11 @@ const UpdateStudent = () => {
       const initialValues = prepareInitialValues();
       console.log('Prepared initial values:', initialValues);
       updateStepCompletion(initialValues);
-
-      // Get enrollments from studentData
-      const studentEnrollments = studentData.enrollments || [];
-      console.log('Student enrollments:', studentEnrollments);
-
-      // Load batch options for existing enrollments
-      studentEnrollments.forEach((enrollment) => {
-        const courseId = enrollment.courseId._id || enrollment.courseId;
-        if (courseId && !batchOptionsMap[courseId]) {
-          console.log('Fetching batches for course:', courseId);
-          fetchBatches(courseId);
-        }
-      });
-
-      // Set selectedCourse to the first enrollment's course if not already set
-      if (studentEnrollments.length > 0 && !selectedCourse) {
-        const firstCourseId = studentEnrollments[0].courseId._id || studentEnrollments[0].courseId;
-        setSelectedCourse(firstCourseId);
-      }
     }
-  }, [studentData, requiredDocuments, batchOptionsMap, fetchBatches, selectedCourse, prepareInitialValues, updateStepCompletion]);
+  }, [studentData, requiredDocuments, prepareInitialValues, updateStepCompletion]);
 
-  useEffect(() => {
-    if (selectedCourse) fetchBatches(selectedCourse);
-    else setBatchOptions([]);
-  }, [selectedCourse, fetchBatches]);
-
-  // Update step completion status when required documents change
-  useEffect(() => {
-    // This will be called when requiredDocuments change
-    // The actual completion check will be done in individual step components
-  }, [requiredDocuments]);
+  // Prepare initial form values (useMemo must be called unconditionally)
+  const initialValues = useMemo(() => prepareInitialValues(), [prepareInitialValues]);
 
   const handleNext = async (values, { setTouched, setFieldError }) => {
     // Validate only the current step fields
@@ -527,31 +445,14 @@ const UpdateStudent = () => {
     }
 
     if (activeStep === 1) {
-      // Course Details - validate enrollments
-      if (!values.enrollments || values.enrollments.length === 0) {
-        stepErrors.enrollments = 'At least one course enrollment is required';
-      } else {
-        values.enrollments.forEach((enr, idx) => {
-          if (!enr.courseId) {
-            stepErrors[`enrollments.${idx}.courseId`] = 'Course is required';
-          }
-          if (!enr.batchId) {
-            stepErrors[`enrollments.${idx}.batchId`] = 'Intake is required';
-          }
-        });
-      }
-    }
-
-    if (activeStep === 2) {
       // Payment Schema - validate payment schema for selected courses
-      const selectedCourses = values.selectedCourses || [];
+      const studentEnrollments = studentData.enrollments || [];
+      const selectedCourses = studentEnrollments.map((enr) => enr.courseId._id || enr.courseId);
       if (selectedCourses.length === 0) {
         stepErrors.paymentSchema = 'Please select at least one course';
       } else {
         const paymentSchemas = values.paymentSchema || {};
-        let hasValidPaymentSchema = false;
-
-        selectedCourses.forEach((courseId) => {
+        const hasValidPaymentSchema = selectedCourses.every((courseId) => {
           const schema = paymentSchemas[courseId] || {};
           const requiredFields = ['courseFee', 'downPayment', 'numberOfInstallments', 'installmentStartDate', 'paymentFrequency'];
           const allFieldsFilled = requiredFields.every((field) => {
@@ -561,10 +462,7 @@ const UpdateStudent = () => {
           const discountValid =
             !schema.isDiscountApplicable ||
             (schema.discountValue && schema.discountValue !== '' && schema.discountType && schema.discountType !== '');
-
-          if (allFieldsFilled && discountValid) {
-            hasValidPaymentSchema = true;
-          }
+          return allFieldsFilled && discountValid;
         });
 
         if (!hasValidPaymentSchema) {
@@ -573,15 +471,15 @@ const UpdateStudent = () => {
       }
     }
 
-    if (activeStep === 3) {
+    if (activeStep === 2) {
       // Academic Details - optional, no validation needed
     }
 
-    if (activeStep === 4) {
+    if (activeStep === 3) {
       // Required Documents - optional, no validation needed
     }
 
-    if (activeStep === 5) {
+    if (activeStep === 4) {
       // Emergency Contact - validate format if provided
       if (values.emergencyContact) {
         // Validate phone format if provided
@@ -649,18 +547,14 @@ const UpdateStudent = () => {
         stepErrors.push({ step: 0, errors: personalErrors });
       }
 
-      // Step 1 - Course Details
-      if (!values.enrollments || values.enrollments.length === 0) {
-        stepErrors.push({ step: 1, errors: ['enrollments'] });
-      }
-
-      // Step 2 - Payment Schema
-      const selectedCourses = values.selectedCourses || [];
+      // Step 1 - Payment Schema
+      const studentEnrollments = studentData.enrollments || [];
+      const selectedCourses = studentEnrollments.map((enr) => enr.courseId._id || enr.courseId);
       if (selectedCourses.length === 0) {
-        stepErrors.push({ step: 2, errors: ['paymentSchema'] });
+        stepErrors.push({ step: 1, errors: ['paymentSchema'] });
       } else {
         const paymentSchemas = values.paymentSchema || {};
-        const hasValidPaymentSchema = selectedCourses.some((courseId) => {
+        const hasValidPaymentSchema = selectedCourses.every((courseId) => {
           const schema = paymentSchemas[courseId] || {};
           const requiredFields = ['courseFee', 'downPayment', 'numberOfInstallments', 'installmentStartDate', 'paymentFrequency'];
           const allFieldsFilled = requiredFields.every((field) => {
@@ -673,7 +567,7 @@ const UpdateStudent = () => {
           return allFieldsFilled && discountValid;
         });
         if (!hasValidPaymentSchema) {
-          stepErrors.push({ step: 2, errors: ['paymentSchema'] });
+          stepErrors.push({ step: 1, errors: ['paymentSchema'] });
         }
       }
 
@@ -688,8 +582,6 @@ const UpdateStudent = () => {
             setFieldError(field, 'This field is required');
           });
         } else if (firstErrorStep === 1) {
-          setFieldError('enrollments', 'At least one course enrollment is required');
-        } else if (firstErrorStep === 2) {
           setFieldError('paymentSchema', 'Payment schema is incomplete');
         }
 
@@ -698,13 +590,13 @@ const UpdateStudent = () => {
         return;
       }
 
-      if (!values.enrollments || values.enrollments.length === 0) {
+      if (!studentData.enrollments || studentData.enrollments.length === 0) {
         showErrorSwal('At least one course enrollment is required');
         setSubmitting(false);
         return;
       }
 
-      const studentData = {
+      const studentPayload = {
         firstName: values.firstName,
         lastName: values.lastName,
         dob: values.dob,
@@ -713,8 +605,6 @@ const UpdateStudent = () => {
         mobile: values.mobile,
         homeContact: values.homeContact,
         email: values.email,
-        // Send all enrollments and payment schemas
-        enrollments: values.enrollments,
         paymentSchema: values.paymentSchema || {},
         ...(values.highestAcademicQualification?.trim() && { highestAcademicQualification: values.highestAcademicQualification }),
         ...(values.qualificationDescription?.trim() && { qualificationDescription: values.qualificationDescription }),
@@ -733,7 +623,7 @@ const UpdateStudent = () => {
       const studentResponse = await fetch(`${apiRoutes.studentRoute}${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
-        body: JSON.stringify(studentData)
+        body: JSON.stringify(studentPayload)
       });
       const studentResponseData = await studentResponse.json();
 
@@ -779,29 +669,13 @@ const UpdateStudent = () => {
   };
 
   const renderStep = (step, formBag) => {
-    const commonStepIcons = [UserOutlined, BookOutlined, ReadOutlined, ReadOutlined, FileTextOutlined, PhoneOutlined];
+    const commonStepIcons = [UserOutlined, ReadOutlined, ReadOutlined, FileTextOutlined, PhoneOutlined];
     const IconCmp = commonStepIcons[step] || UserOutlined;
 
     switch (step) {
       case 0:
         return <StepPersonalDetails IconCmp={IconCmp} formBag={formBag} updateStepCompletion={updateStepCompletion} />;
       case 1:
-        return (
-          <StepCourseDetails
-            IconCmp={IconCmp}
-            formBag={formBag}
-            courseOptions={courseOptions}
-            batchOptions={batchOptions}
-            batchOptionsMap={batchOptionsMap}
-            selectedCourse={selectedCourse}
-            setSelectedCourse={setSelectedCourse}
-            fetchBatches={fetchBatches}
-            setNextDisabled={setNextDisabled}
-            updateStepCompletion={updateStepCompletion}
-            isUpdateMode={true}
-          />
-        );
-      case 2:
         return (
           <StepPaymentSchema
             IconCmp={IconCmp}
@@ -810,7 +684,7 @@ const UpdateStudent = () => {
             updateStepCompletion={updateStepCompletion}
           />
         );
-      case 3:
+      case 2:
         return (
           <StepAcademicDetails
             IconCmp={IconCmp}
@@ -819,7 +693,7 @@ const UpdateStudent = () => {
             updateStepCompletion={updateStepCompletion}
           />
         );
-      case 4:
+      case 3:
         return (
           <StepRequiredDocuments
             IconCmp={IconCmp}
@@ -828,7 +702,7 @@ const UpdateStudent = () => {
             updateStepCompletion={updateStepCompletion}
           />
         );
-      case 5:
+      case 4:
         return <StepEmergencyContact IconCmp={IconCmp} formBag={formBag} updateStepCompletion={updateStepCompletion} />;
       default:
         return null;
@@ -860,8 +734,6 @@ const UpdateStudent = () => {
       </MainCard>
     );
   }
-
-  const initialValues = prepareInitialValues();
 
   return (
     <MainCard title="Update Student Registration">

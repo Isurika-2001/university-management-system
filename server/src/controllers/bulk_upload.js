@@ -3,8 +3,8 @@ const {
   createStudentAndRegister,
   registerExistingStudent
 } = require('../utilities/bulk_upload_helper');
-const ActivityLogger = require("../utils/activityLogger");
-const { getRequestInfo } = require("../middleware/requestInfo");
+const ActivityLogger = require('../utils/activityLogger');
+const { getRequestInfo } = require('../middleware/requestInfo');
 
 async function bulkUploadStudents(req, res) {
   const studentsData = req.body.data; // Array of student objects from parsed Excel
@@ -74,7 +74,7 @@ async function bulkUploadStudents(req, res) {
         }
       }
     } catch (error) {
-      console.error('Bulk upload error:', error.message);
+      // console.error('Bulk upload error:', error.message);
       results.failed.push({
         type: 'error',
         entry,
@@ -98,7 +98,7 @@ async function bulkUploadStudents(req, res) {
   );
 
   res.status(200).json({
-    message: "Bulk upload processed",
+    message: 'Bulk upload processed',
     summary: {
       total: studentsData.length,
       success: results.success.length,

@@ -14,9 +14,14 @@ const SamplePage = Loadable(lazy(() => import('pages/extra-pages/SamplePage')));
 const Students = Loadable(lazy(() => import('pages/students/View')));
 const Batches = Loadable(lazy(() => import('pages/batches/View')));
 const Courses = Loadable(lazy(() => import('pages/courses/View')));
+const Modules = Loadable(lazy(() => import('pages/modules/View')));
 const Enrollments = Loadable(lazy(() => import('pages/enrollments/View')));
+const Classrooms = Loadable(lazy(() => import('pages/classrooms/View')));
+const ClassroomDetail = Loadable(lazy(() => import('pages/classrooms/Detail')));
 const Users = Loadable(lazy(() => import('pages/users/View')));
 const RequiredDocuments = Loadable(lazy(() => import('pages/required-documents/View')));
+const Exams = Loadable(lazy(() => import('pages/exams/View')));
+const ExamDetail = Loadable(lazy(() => import('pages/exams/Detail')));
 
 // add new pages
 const AddStudentForm = Loadable(lazy(() => import('pages/students/Add-new')));
@@ -26,6 +31,7 @@ const AddEnrollmentForm = Loadable(lazy(() => import('pages/enrollments/Add-new'
 const AddRequiredDocumentForm = Loadable(lazy(() => import('pages/required-documents/Add-new')));
 // const AddCourseRegistrationForm = Loadable(lazy(() => import('pages/course-registrations/Add-new')));
 const AddUserForm = Loadable(lazy(() => import('pages/users/Add-new')));
+const AddClassroom = Loadable(lazy(() => import('pages/classrooms/Add-new')));
 
 // update pages
 const UpdateStudentForm = Loadable(lazy(() => import('pages/students/Update')));
@@ -102,6 +108,33 @@ export default function ThemeRoutes() {
           />
         </Route>
 
+        {/* Modules section */}
+        <Route path="modules" element={<Outlet />}>
+          <Route index element={permissions?.modules?.includes('R') ? <Modules /> : <Navigate to="/app/access-denied" replace />} />
+        </Route>
+
+        {/* Classrooms section */}
+        <Route path="classrooms" element={<Outlet />}>
+          <Route index element={permissions?.classrooms?.includes('R') ? <Classrooms /> : <Navigate to="/app/access-denied" replace />} />
+          <Route
+            path="add"
+            element={permissions?.classrooms?.includes('C') ? <AddClassroom /> : <Navigate to="/app/access-denied" replace />}
+          />
+          <Route
+            path="detail/:id"
+            element={permissions?.classrooms?.includes('R') ? <ClassroomDetail /> : <Navigate to="/app/access-denied" replace />}
+          />
+        </Route>
+
+        {/* Exams section */}
+        <Route path="exams" element={<Outlet />}>
+          <Route index element={permissions?.exams?.includes('R') ? <Exams /> : <Navigate to="/app/access-denied" replace />} />
+          <Route
+            path=":classroomId"
+            element={permissions?.exams?.includes('R') ? <ExamDetail /> : <Navigate to="/app/access-denied" replace />}
+          />
+        </Route>
+
         {/* Batch section */}
         <Route path="intakes" element={<Outlet />}>
           <Route index element={permissions?.batch?.includes('R') ? <Batches /> : <Navigate to="/app/access-denied" replace />} />
@@ -126,19 +159,15 @@ export default function ThemeRoutes() {
         <Route path="required-documents" element={<Outlet />}>
           <Route
             index
-            element={permissions?.requiredDocument?.includes('R') ? <RequiredDocuments /> : <Navigate to="/app/access-denied" replace />}
+            element={permissions?.student?.includes('R') ? <RequiredDocuments /> : <Navigate to="/app/access-denied" replace />}
           />
           <Route
             path="add"
-            element={
-              permissions?.requiredDocument?.includes('C') ? <AddRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />
-            }
+            element={permissions?.student?.includes('C') ? <AddRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />}
           />
           <Route
             path="update/:id"
-            element={
-              permissions?.requiredDocument?.includes('U') ? <UpdateRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />
-            }
+            element={permissions?.student?.includes('U') ? <UpdateRequiredDocumentForm /> : <Navigate to="/app/access-denied" replace />}
           />
         </Route>
 

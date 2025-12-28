@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   TableContainer,
@@ -77,12 +77,7 @@ const RequiredDocumentsView = () => {
     };
   }, [searchTerm]);
 
-  // Fetch data whenever page, rowsPerPage, debouncedSearchTerm, sortBy, or sortOrder changes
-  useEffect(() => {
-    fetchData();
-  }, [page, rowsPerPage, debouncedSearchTerm, sortBy, sortOrder]);
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -104,7 +99,12 @@ const RequiredDocumentsView = () => {
       console.error('Error fetching data:', error.message);
       setLoading(false);
     }
-  }
+  }, [page, rowsPerPage, debouncedSearchTerm, sortBy, sortOrder, setData, setTotalCount, setLoading]);
+
+  // Fetch data whenever page, rowsPerPage, debouncedSearchTerm, sortBy, or sortOrder changes
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);

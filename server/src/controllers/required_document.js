@@ -1,5 +1,6 @@
-const RequiredDocument = require("../models/required_document");
-const ActivityLogger = require("../utils/activityLogger");
+const RequiredDocument = require('../models/required_document');
+const ActivityLogger = require('../utils/activityLogger');
+const logger = require('../utils/logger');
 
 // Get all required documents
 const getAllRequiredDocuments = async (req, res) => {
@@ -7,8 +8,8 @@ const getAllRequiredDocuments = async (req, res) => {
     const documents = await RequiredDocument.find().sort({ createdAt: -1 });
     res.json(documents);
   } catch (error) {
-    console.error("Error fetching required documents:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logger.error('Error fetching required documents:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -17,12 +18,12 @@ const getRequiredDocumentById = async (req, res) => {
   try {
     const document = await RequiredDocument.findById(req.params.id);
     if (!document) {
-      return res.status(404).json({ message: "Required document not found" });
+      return res.status(404).json({ message: 'Required document not found' });
     }
     res.json(document);
   } catch (error) {
-    console.error("Error fetching required document:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logger.error('Error fetching required document:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -32,12 +33,12 @@ const createRequiredDocument = async (req, res) => {
     const { name, description, type, isRequired } = req.body;
 
     if (!name || !description || !type) {
-      return res.status(400).json({ message: "Name, description, and type are required" });
+      return res.status(400).json({ message: 'Name, description, and type are required' });
     }
 
     const existingDocument = await RequiredDocument.findOne({ name });
     if (existingDocument) {
-      return res.status(400).json({ message: "Document with this name already exists" });
+      return res.status(400).json({ message: 'Document with this name already exists' });
     }
 
     const newDocument = new RequiredDocument({
@@ -52,16 +53,16 @@ const createRequiredDocument = async (req, res) => {
     // Log activity
     await ActivityLogger.logActivity({
       user: req.user,
-      action: "CREATE",
-      description: "Created new required document",
-      resourceType: "RequiredDocument",
+      action: 'CREATE',
+      description: 'Created new required document',
+      resourceType: 'RequiredDocument',
       resourceId: savedDocument._id
     });
 
     res.status(201).json(savedDocument);
   } catch (error) {
-    console.error("Error creating required document:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logger.error('Error creating required document:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -71,7 +72,7 @@ const updateRequiredDocument = async (req, res) => {
     const { name, description, type, isRequired } = req.body;
 
     if (!name || !description || !type) {
-      return res.status(400).json({ message: "Name, description, and type are required" });
+      return res.status(400).json({ message: 'Name, description, and type are required' });
     }
 
     const existingDocument = await RequiredDocument.findOne({ 
@@ -79,7 +80,7 @@ const updateRequiredDocument = async (req, res) => {
       _id: { $ne: req.params.id } 
     });
     if (existingDocument) {
-      return res.status(400).json({ message: "Document with this name already exists" });
+      return res.status(400).json({ message: 'Document with this name already exists' });
     }
 
     const updatedDocument = await RequiredDocument.findByIdAndUpdate(
@@ -94,22 +95,22 @@ const updateRequiredDocument = async (req, res) => {
     );
 
     if (!updatedDocument) {
-      return res.status(404).json({ message: "Required document not found" });
+      return res.status(404).json({ message: 'Required document not found' });
     }
 
     // Log activity
     await ActivityLogger.logActivity({
       user: req.user,
-      action: "UPDATE",
-      description: "Updated required document",
-      resourceType: "RequiredDocument",
+      action: 'UPDATE',
+      description: 'Updated required document',
+      resourceType: 'RequiredDocument',
       resourceId: updatedDocument._id
     });
 
     res.json(updatedDocument);
   } catch (error) {
-    console.error("Error updating required document:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logger.error('Error updating required document:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -119,22 +120,22 @@ const deleteRequiredDocument = async (req, res) => {
     const deletedDocument = await RequiredDocument.findByIdAndDelete(req.params.id);
     
     if (!deletedDocument) {
-      return res.status(404).json({ message: "Required document not found" });
+      return res.status(404).json({ message: 'Required document not found' });
     }
 
     // Log activity
     await ActivityLogger.logActivity({
       user: req.user,
-      action: "DELETE",
-      description: "Deleted required document",
-      resourceType: "RequiredDocument",
+      action: 'DELETE',
+      description: 'Deleted required document',
+      resourceType: 'RequiredDocument',
       resourceId: deletedDocument._id
     });
 
-    res.json({ message: "Required document deleted successfully" });
+    res.json({ message: 'Required document deleted successfully' });
   } catch (error) {
-    console.error("Error deleting required document:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logger.error('Error deleting required document:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 

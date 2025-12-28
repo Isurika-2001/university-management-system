@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const studentSchema = new mongoose.Schema({
   firstName: String,
@@ -20,7 +20,7 @@ const studentSchema = new mongoose.Schema({
   // Student status
   status: {
     type: String,
-    enum: ['pending', 'completed', 'incomplete'],
+    enum: ['pending', 'completed', 'incomplete', 'hold'],
     default: 'pending'
   },
   // Step 1: Registration data
@@ -41,7 +41,7 @@ const studentSchema = new mongoose.Schema({
   requiredDocuments: [{
     documentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "RequiredDocument",
+      ref: 'RequiredDocument',
     },
     isProvided: {
       type: Boolean,
@@ -74,6 +74,6 @@ studentSchema.index({ nic: 1 });
 studentSchema.index({ registration_no: 1 });
 studentSchema.index({ email: 1 });
 
-const Student = mongoose.model("Student", studentSchema);
+const Student = mongoose.model('Student', studentSchema);
 
 module.exports = Student;

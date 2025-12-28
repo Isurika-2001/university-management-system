@@ -23,6 +23,8 @@ import { useAuthContext } from 'context/useAuthContext';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { coursesAPI } from '../../api/courses';
+import { apiRoutes } from '../../config';
+import { CircularProgress } from '@mui/material';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -33,6 +35,7 @@ const View = () => {
   const [order, setOrder] = useState('asc');
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false); // New state for delete loading
   const navigate = useNavigate();
   const { user } = useAuthContext();
 
@@ -171,6 +174,7 @@ const View = () => {
 
     if (result.isConfirmed) {
       try {
+        setIsDeleting(true); // Set loading true
         const response = await fetch(`${apiRoutes.courseRoute}${id}`, {
           method: 'DELETE',
           headers: {
@@ -190,6 +194,8 @@ const View = () => {
       } catch (error) {
         console.error(error);
         showErrorSwal('Something went wrong');
+      } finally {
+        setIsDeleting(false); // Set loading false
       }
     }
   };
@@ -311,7 +317,13 @@ const View = () => {
                     >
                       Edit
                     </Button>
-                    <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={() => handleDelete(course._id)}>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      startIcon={isDeleting ? <CircularProgress size={16} color="inherit" /> : <DeleteOutlined />}
+                      onClick={() => handleDelete(course._id)}
+                      disabled={isDeleting}
+                    >
                       Delete
                     </Button>
                   </TableCell>

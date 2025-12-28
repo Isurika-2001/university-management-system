@@ -45,7 +45,7 @@ const NavItem = ({ item, level }) => {
     // eslint-disable-next-line
   }, [pathname]);
 
-  const textColor = 'text.primary';
+  const textColor = level >= 2 ? 'text.secondary' : 'text.primary';
   const iconSelectedColor = 'primary.main';
 
   return (
@@ -56,7 +56,7 @@ const NavItem = ({ item, level }) => {
       selected={isSelected}
       sx={{
         zIndex: 1201,
-        pl: drawerOpen ? `${level * 28}px` : 1.5,
+        pl: drawerOpen ? `${level * 28 + (level >= 2 ? 16 : 0)}px` : 1.5,
         py: !drawerOpen && level === 1 ? 1.25 : 1,
         ...(drawerOpen && {
           '&:hover': {
@@ -115,7 +115,10 @@ const NavItem = ({ item, level }) => {
       {(drawerOpen || (!drawerOpen && level !== 1)) && (
         <ListItemText
           primary={
-            <Typography variant="h6" sx={{ color: isSelected ? iconSelectedColor : textColor }}>
+            <Typography
+              variant={level >= 2 ? 'body2' : 'body1'}
+              sx={{ color: isSelected ? iconSelectedColor : '#636363', fontWeight: 200 }}
+            >
               {item.title}
             </Typography>
           }

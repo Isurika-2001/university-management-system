@@ -63,10 +63,8 @@ const AddRequiredDocument = () => {
       .required('Description is required')
       .min(10, 'Description must be at least 10 characters')
       .max(500, 'Description must be less than 500 characters'),
-    type: Yup.string()
-      .required('Document type is required'),
-    isRequired: Yup.boolean()
-      .required('Required status is required')
+    type: Yup.string().required('Document type is required'),
+    isRequired: Yup.boolean().required('Required status is required')
   });
 
   const formik = useFormik({
@@ -81,12 +79,12 @@ const AddRequiredDocument = () => {
       setSubmitting(true);
       setError('');
 
-                          try {
+      try {
         await requiredDocumentsAPI.create(values);
 
-         showSuccessSwal('Required document created successfully!');
-         navigate('/app/required-documents');
-       } catch (err) {
+        showSuccessSwal('Required document created successfully!');
+        navigate('/app/required-documents');
+      } catch (err) {
         console.error('Error creating required document:', err);
         setError(err.message || 'Network error. Please try again.');
         showErrorSwal(err.message || 'Network error. Please try again.');
@@ -145,9 +143,7 @@ const AddRequiredDocument = () => {
                   <MenuItem value="medical">Medical</MenuItem>
                   <MenuItem value="other">Other</MenuItem>
                 </Select>
-                {formik.touched.type && formik.errors.type && (
-                  <FormHelperText>{formik.errors.type}</FormHelperText>
-                )}
+                {formik.touched.type && formik.errors.type && <FormHelperText>{formik.errors.type}</FormHelperText>}
               </FormControl>
             </Grid>
 
@@ -184,21 +180,13 @@ const AddRequiredDocument = () => {
                   <MenuItem value={true}>Required</MenuItem>
                   <MenuItem value={false}>Optional</MenuItem>
                 </Select>
-                {formik.touched.isRequired && formik.errors.isRequired && (
-                  <FormHelperText>{formik.errors.isRequired}</FormHelperText>
-                )}
+                {formik.touched.isRequired && formik.errors.isRequired && <FormHelperText>{formik.errors.isRequired}</FormHelperText>}
               </FormControl>
             </Grid>
 
-
-
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                <Button
-                  variant="outlined"
-                  onClick={handleCancel}
-                  disabled={submitting}
-                >
+                <Button variant="outlined" onClick={handleCancel} disabled={submitting}>
                   Cancel
                 </Button>
                 <Button

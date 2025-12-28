@@ -1,21 +1,24 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const morgan = require("morgan");
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const morgan = require('morgan');
+const compression = require('compression');
 
 // Configuration and utilities
-const config = require("./src/config");
-const logger = require("./src/utils/logger");
-const connectToDatabase = require("./database");
+const config = require('./src/config');
+const logger = require('./src/utils/logger');
+const connectToDatabase = require('./database');
 
 // Middleware
-const errorHandler = require("./src/middleware/errorHandler");
-const securityMiddleware = require("./src/middleware/security");
+const errorHandler = require('./src/middleware/errorHandler');
+const securityMiddleware = require('./src/middleware/security');
 
 // Routes
 const routes = require('./src/routes/index');
 
 const app = express();
+
+app.use(compression());
 
 // CORS configuration (must come before rate limiting)
 app.use(cors({
@@ -40,40 +43,40 @@ app.use(morgan('combined', {
 }));
 
 // Health check route
-app.get("/health", (req, res) => {
+app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
-    message: "University Management System API is running",
+    message: 'University Management System API is running',
     timestamp: new Date().toISOString(),
     environment: config.nodeEnv
   });
 });
 
 // API documentation route
-app.get("/", (req, res) => {
+app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: "Welcome to University Management System API",
+    message: 'Welcome to University Management System API',
     version: config.version,
     endpoints: {
-      auth: "/api/auth",
-      users: "/api/users",
-      students: "/api/students",
-      courses: "/api/courses",
-      batches: "/api/batches",
-      stats: "/api/stats"
+      auth: '/api/auth',
+      users: '/api/users',
+      students: '/api/students',
+      courses: '/api/courses',
+      batches: '/api/batches',
+      stats: '/api/stats'
     }
   });
 });
 
 // API routes
-app.use("/api", routes);
+app.use('/api', routes);
 
 // 404 handler
-app.use("*", (req, res) => {
+app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
-    error: "Route not found"
+    error: 'Route not found'
   });
 });
 

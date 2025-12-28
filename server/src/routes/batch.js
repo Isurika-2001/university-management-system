@@ -1,19 +1,21 @@
 // intakeRoutes.js (formerly batchRoutes)
 
-const express = require("express");
-const { getAllBatches, createBatch, getBatchesByCourseId, deleteBatch, getBatchById, updateBatch } = require("../controllers/batch");
+const express = require('express');
+const { getAllBatches, createBatch, getBatchesByCourseId, deleteBatch, getBatchById, updateBatch } = require('../controllers/batch');
+const authenticate = require('../middleware/authMiddleware');
+const { checkPermission } = require('../middleware/permissions');
 
 // middleware calling
-const { checkStudentsAssignedToBatch } = require("../middleware/studentMiddleware");
+const { checkStudentsAssignedToBatch } = require('../middleware/studentMiddleware');
 
 const router = express.Router();
 
-router.get("/", getAllBatches);
-router.post("/", createBatch);
-router.get("/:id", getBatchById);
-router.put("/:id", checkStudentsAssignedToBatch, updateBatch);
-router.delete("/:id", checkStudentsAssignedToBatch, deleteBatch);
-router.get('/course/:courseId', getBatchesByCourseId);
+router.get('/', authenticate, checkPermission('batch', 'read'), getAllBatches);
+router.post('/', authenticate, checkPermission('batch', 'create'), createBatch);
+router.get('/:id', authenticate, checkPermission('batch', 'read'), getBatchById);
+router.put('/:id', authenticate, checkPermission('batch', 'update'), checkStudentsAssignedToBatch, updateBatch);
+router.delete('/:id', authenticate, checkPermission('batch', 'delete'), checkStudentsAssignedToBatch, deleteBatch);
+router.get('/course/:courseId', authenticate, checkPermission('batch', 'read'), getBatchesByCourseId);
 
 // Define other routes
 

@@ -1,6 +1,6 @@
-const mongoose = require("mongoose");
-const config = require("./src/config");
-const logger = require("./src/utils/logger");
+const mongoose = require('mongoose');
+const config = require('./src/config');
+const logger = require('./src/utils/logger');
 
 async function connectToDatabase() {
   try {
@@ -16,7 +16,7 @@ async function connectToDatabase() {
       socketTimeoutMS: 45000,
     });
     
-    logger.info("Connected to MongoDB successfully");
+    logger.info('Connected to MongoDB successfully');
 
     // Handle connection events
     mongoose.connection.on('error', (err) => {
@@ -35,7 +35,7 @@ async function connectToDatabase() {
     });
 
   } catch (error) {
-    logger.error("MongoDB connection error:", error.message);
+    logger.error('MongoDB connection error:', error.message);
     process.exit(1);
   }
 }

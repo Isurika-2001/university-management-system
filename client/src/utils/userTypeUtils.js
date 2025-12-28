@@ -5,14 +5,14 @@
 
 // Mapping of database names to display names
 const USER_TYPE_DISPLAY_NAMES = {
-  'system_administrator': 'System Administrator',
-  'academic_administrator': 'Academic Administrator',
-  'finance_admin': 'Finance Administrator',
-  'accountant': 'Accountant',
-  'sup_admin': 'Super Admin',
-  'admin': 'Admin',
-  'counselor': 'Counselor',
-  'student': 'Student',
+  system_administrator: 'System Administrator',
+  academic_administrator: 'Academic Administrator',
+  finance_admin: 'Finance Administrator',
+  accountant: 'Accountant',
+  sup_admin: 'Super Admin',
+  admin: 'Admin',
+  counselor: 'Counselor',
+  student: 'Student'
   // Add more mappings as needed
 };
 
@@ -23,7 +23,7 @@ const USER_TYPE_DISPLAY_NAMES = {
  */
 export const formatUserTypeName = (userTypeName) => {
   if (!userTypeName) return '';
-  
+
   const normalizedName = userTypeName.toLowerCase().trim();
   return USER_TYPE_DISPLAY_NAMES[normalizedName] || userTypeName;
 };
@@ -35,8 +35,8 @@ export const formatUserTypeName = (userTypeName) => {
  */
 export const formatUserTypes = (userTypes) => {
   if (!Array.isArray(userTypes)) return [];
-  
-  return userTypes.map(userType => ({
+
+  return userTypes.map((userType) => ({
     ...userType,
     displayName: formatUserTypeName(userType.name)
   }));
@@ -49,7 +49,7 @@ export const formatUserTypes = (userTypes) => {
  */
 export const formatUserType = (userType) => {
   if (!userType) return null;
-  
+
   return {
     ...userType,
     displayName: formatUserTypeName(userType.name)
@@ -81,12 +81,29 @@ export const getDisplayName = (userTypeName) => {
  * @returns {boolean} - Whether user has permission
  */
 export const hasPermission = (user, resource, action) => {
-  if (!user || !user.permissions || !user.permissions[resource]) {
-    return false;
+  if (!user) return false;
+
+  // Try common locations for permissions
+  let permissions = undefined;
+  if (user.permissions && user.permissions[resource] !== undefined) permissions = user.permissions[resource];
+  else if (user.userType && user.userType[resource] !== undefined) permissions = user.userType[resource];
+  else if (user.user_type && user.user_type[resource] !== undefined) permissions = user.user_type[resource];
+
+  if (permissions === undefined || permissions === null) return false;
+
+  // If it's an array
+  if (Array.isArray(permissions)) return permissions.includes(action);
+
+  // If it's a string like 'CRUD'
+  if (typeof permissions === 'string') return permissions.includes(action);
+
+  // If it's an object, try to extract string-ish values and check
+  if (typeof permissions === 'object') {
+    const joined = Object.values(permissions).filter(Boolean).join('');
+    return joined.includes(action);
   }
-  
-  const permissions = user.permissions[resource];
-  return permissions.includes(action);
+
+  return false;
 };
 
 /**
@@ -107,4 +124,4 @@ export default {
   getDisplayName,
   hasPermission,
   getUserRoleDisplayName
-}; 
+};

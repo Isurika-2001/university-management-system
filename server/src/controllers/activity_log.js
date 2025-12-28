@@ -53,7 +53,7 @@ async function getActivityLogs(req, res) {
       }
     });
   } catch (error) {
-    console.error('Error fetching activity logs:', error);
+    // console.error('Error fetching activity logs:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching activity logs',
@@ -82,7 +82,7 @@ async function getActivityLogById(req, res) {
       data: log
     });
   } catch (error) {
-    console.error('Error fetching activity log:', error);
+    // console.error('Error fetching activity log:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching activity log',
@@ -178,7 +178,7 @@ async function getActivityStats(req, res) {
       }
     });
   } catch (error) {
-    console.error('Error fetching activity stats:', error);
+    // console.error('Error fetching activity stats:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching activity stats',

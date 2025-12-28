@@ -1,4 +1,5 @@
 const ActivityLog = require('../models/activity_log');
+const logger = require('./logger');
 
 class ActivityLogger {
   static async logActivity({
@@ -30,11 +31,11 @@ class ActivityLogger {
       await logEntry.save();
       
       // Also log to console for debugging
-      console.log(`[ACTIVITY LOG] ${action}: ${description} - User: ${user.email || user._id} - Status: ${status}`);
+      logger.info(`[ACTIVITY LOG] ${action}: ${description} - User: ${user.email || user._id} - Status: ${status}`);
       
       return logEntry;
     } catch (error) {
-      console.error('Error logging activity:', error);
+      logger.error('Error logging activity:', error);
       // Don't throw error to avoid breaking the main functionality
     }
   }
@@ -91,7 +92,7 @@ class ActivityLogger {
       resourceId: student._id,
       details: {
         studentId: student.studentId,
-        changes: changes
+        changes
       },
       ipAddress,
       userAgent
@@ -103,7 +104,7 @@ class ActivityLogger {
     return this.logActivity({
       user,
       action: 'ENROLLMENT_CREATE',
-      description: description,
+      description,
       resourceType: 'ENROLLMENT',
       resourceId: enrollmentId
     });
@@ -113,7 +114,7 @@ class ActivityLogger {
     return this.logActivity({
       user,
       action: 'ENROLLMENT_UPDATE',
-      description: description,
+      description,
       resourceType: 'ENROLLMENT',
       resourceId: enrollmentId
     });
@@ -123,7 +124,7 @@ class ActivityLogger {
     return this.logActivity({
       user,
       action: 'ENROLLMENT_DELETE',
-      description: description,
+      description,
       resourceType: 'ENROLLMENT',
       resourceId: enrollmentId
     });
@@ -178,7 +179,7 @@ class ActivityLogger {
       resourceType: 'STUDENT',
       details: {
         importCount: count,
-        filename: filename
+        filename
       },
       ipAddress,
       userAgent,
@@ -195,7 +196,7 @@ class ActivityLogger {
       resourceType: 'BULK_UPLOAD',
       details: {
         uploadCount: count,
-        filename: filename
+        filename
       },
       ipAddress,
       userAgent,
@@ -230,7 +231,7 @@ class ActivityLogger {
       resourceId: registration._id,
       details: {
         studentId: registration.studentId,
-        changes: changes
+        changes
       },
       ipAddress,
       userAgent
@@ -277,7 +278,7 @@ class ActivityLogger {
       resourceId: updatedUser._id,
       details: {
         email: updatedUser.email,
-        changes: changes
+        changes
       },
       ipAddress,
       userAgent

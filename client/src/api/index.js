@@ -15,7 +15,7 @@ const handleUnauthorized = () => {
 // Base API request function with error handling
 const apiRequest = async (url, options = {}) => {
   const token = getAuthToken();
-  
+
   const defaultHeaders = {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -29,19 +29,19 @@ const apiRequest = async (url, options = {}) => {
 
   try {
     const response = await fetch(url, config);
-    
+
     // Handle unauthorized responses
     if (response.status === 401) {
       handleUnauthorized();
       throw new Error('Unauthorized access. Please login again.');
     }
-    
+
     // Handle other error responses
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
-    
+
     return response;
   } catch (error) {
     if (error.message.includes('Unauthorized')) {
@@ -56,12 +56,12 @@ export const api = {
   // GET request
   get: async (endpoint, params = {}) => {
     const url = new URL(endpoint);
-    Object.keys(params).forEach(key => {
+    Object.keys(params).forEach((key) => {
       if (params[key] !== undefined && params[key] !== null) {
         url.searchParams.append(key, params[key]);
       }
     });
-    
+
     const response = await apiRequest(url.toString());
     return response.json();
   },
@@ -102,4 +102,4 @@ export const api = {
   }
 };
 
-export { apiRoutes }; 
+export { apiRoutes };

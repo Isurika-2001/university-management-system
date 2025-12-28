@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -43,19 +43,25 @@ const UpdateRequiredDocument = () => {
     })
   );
 
-  const showSuccessSwal = (message) => {
-    Toast.fire({
-      icon: 'success',
-      title: message
-    });
-  };
+  const showSuccessSwal = useCallback(
+    (message) => {
+      Toast.fire({
+        icon: 'success',
+        title: message
+      });
+    },
+    [Toast]
+  );
 
-  const showErrorSwal = (message) => {
-    Toast.fire({
-      icon: 'error',
-      title: message
-    });
-  };
+  const showErrorSwal = useCallback(
+    (message) => {
+      Toast.fire({
+        icon: 'error',
+        title: message
+      });
+    },
+    [Toast]
+  );
 
   // Validation schema
   const validationSchema = Yup.object({
@@ -98,7 +104,7 @@ const UpdateRequiredDocument = () => {
     };
 
     fetchDocument();
-  }, [documentId]);
+  }, [documentId, showErrorSwal]);
 
   const formik = useFormik({
     initialValues: {

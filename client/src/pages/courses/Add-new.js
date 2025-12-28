@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import { TextField, Button, Grid, Divider, CircularProgress, Select, MenuItem, FormControlLabel, Checkbox } from '@mui/material';
+import {
+  TextField,
+  Button,
+  Grid,
+  Divider,
+  CircularProgress,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Checkbox,
+  FormControl,
+  InputLabel
+} from '@mui/material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
@@ -7,6 +19,7 @@ import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
+import { PATHWAY_LIST } from 'constants/pathways';
 
 const AddForm = () => {
   const [submitting, setSubmitting] = useState(false);
@@ -45,9 +58,10 @@ const AddForm = () => {
     name: '',
     code: '',
     description: '',
+    pathway: '',
     prerequisites: 'None',
     courseCredits: 3,
-    courseDuration: '1 year',
+    courseDuration: '12 months',
     weekdayBatch: false,
     weekendBatch: false
   };
@@ -58,6 +72,7 @@ const AddForm = () => {
       .required('Course code is required')
       .matches(/^[a-zA-Z0-9_]+$/, 'Course code can only contain letters, numbers, and underscores'),
     description: Yup.string().required('Description is required'),
+    pathway: Yup.number().required('Pathway is required'),
     prerequisites: Yup.string().required('Prerequisites are required'),
     courseCredits: Yup.number().min(1, 'Course credits must be at least 1').required('Course credits are required'),
     courseDuration: Yup.string().required('Course duration is required'),
@@ -137,10 +152,27 @@ const AddForm = () => {
                     error={touched.code && !!errors.code}
                     helperText={<ErrorMessage name="code" />}
                     InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
+                      sx: { px: 2, py: 1 }
                     }}
-                    sx={{ mb: 3 }} // Margin bottom added
+                    sx={{ mb: 3 }}
                   />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field InputProps={{ sx: { px: 2, py: 1 } }} name="pathway">
+                    {({ field, form }) => (
+                      <FormControl fullWidth error={form.touched.pathway && !!form.errors.pathway} sx={{ mb: 3 }}>
+                        <InputLabel>Pathway</InputLabel>
+                        <Select sx={{ mb: 3, minHeight: '3.5rem' }} {...field} label="Pathway">
+                          <MenuItem value="">Select Pathway</MenuItem>
+                          {PATHWAY_LIST.map((p) => (
+                            <MenuItem key={p.id} value={p.id}>
+                              {p.label}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
+                  </Field>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Field
@@ -153,9 +185,9 @@ const AddForm = () => {
                     error={touched.description && !!errors.description}
                     helperText={<ErrorMessage name="description" />}
                     InputProps={{
-                      sx: { px: 2, py: 1 } // Padding added
+                      sx: { px: 2, py: 1 }
                     }}
-                    sx={{ mb: 3 }} // Margin bottom added
+                    sx={{ mb: 3 }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>

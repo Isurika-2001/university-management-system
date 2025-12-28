@@ -1,18 +1,18 @@
-const Student = require("../models/student");
-const Enrollment = require("../models/enrollment");
-const Batch = require("../models/batch");
-const Course = require("../models/course");
-const User = require("../models/user");
+const Student = require('../models/student');
+const Enrollment = require('../models/enrollment');
+const Batch = require('../models/batch');
+const Course = require('../models/course');
+const logger = require('../utils/logger');
 
 // get no of enrollments, courses, batches, today's enrollments
 async function getEnrollmentSummaryStats(req, res) {
   try {
     const totalRegistrations = await Student.countDocuments();
 
-    const distinctCourses = await Enrollment.distinct("courseId");
+    const distinctCourses = await Enrollment.distinct('courseId');
     const totalRunningCourses = distinctCourses.length;
 
-    const distinctBatches = await Enrollment.distinct("batchId");
+    const distinctBatches = await Enrollment.distinct('batchId');
     const totalRunningBatches = distinctBatches.length;
 
     // get total courses
@@ -43,10 +43,10 @@ async function getEnrollmentSummaryStats(req, res) {
       }
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
-      message: "Error fetching enrollment summary stats",
+      message: 'Error fetching enrollment summary stats',
       error: error.message
     });
   }
@@ -62,8 +62,8 @@ async function getUpcomingBatchDates(req, res) {
         { registrationDeadline: { $gte: new Date() } }
       ]
     })
-    .populate('courseId', 'name') // populate courseId field but only get 'name' field of course
-    .sort({ startDate: 1, orientationDate: 1 });
+      .populate('courseId', 'name') // populate courseId field but only get 'name' field of course
+      .sort({ startDate: 1, orientationDate: 1 });
 
     const upcomingBatches = batches.map(batch => ({
       name: batch.name,
@@ -78,10 +78,10 @@ async function getUpcomingBatchDates(req, res) {
       data: upcomingBatches
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
-      message: "Error fetching upcoming batch dates",
+      message: 'Error fetching upcoming batch dates',
       error: error.message
     });
   }
@@ -92,26 +92,26 @@ async function getCourseEnrollments(req, res) {
     const enrollments = await Enrollment.aggregate([
       {
         $group: {
-          _id: "$courseId",
+          _id: '$courseId',
           count: { $sum: 1 }
         }
       },
       {
         $lookup: {
-          from: "courses",
-          localField: "_id",
-          foreignField: "_id",
-          as: "courseDetails"
+          from: 'courses',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'courseDetails'
         }
       },
       {
-        $unwind: "$courseDetails"
+        $unwind: '$courseDetails'
       },
       {
         $project: {
-          courseId: "$_id",
-          courseName: "$courseDetails.code",
-          registrations: "$count"
+          courseId: '$_id',
+          courseName: '$courseDetails.code',
+          registrations: '$count'
         }
       }
     ]);
@@ -119,7 +119,7 @@ async function getCourseEnrollments(req, res) {
     // Calculate total number of enrollments
     const totalEnrollments = enrollments.reduce((sum, item) => sum + item.registrations, 0);
 
-    console.log('Enrollment stats:', {
+    logger.info('Enrollment stats:', {
       totalEnrollments,
       totalRunningCourses: enrollments.length,
       courseEnrollments: enrollments
@@ -134,10 +134,10 @@ async function getCourseEnrollments(req, res) {
       }
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
-      message: "Error fetching course registrations",
+      message: 'Error fetching course registrations',
       error: error.message
     });
   }
@@ -167,7 +167,7 @@ async function getEnrollmentNumbers(req, res) {
     const percentageOverAnnual =
       annualEnrollment > 0
         ? ((monthlyEnrollment / annualEnrollment) * 100).toFixed(2)
-        : "0.00";
+        : '0.00';
 
     // Monthly enrollment trend from Jan to current month
     const enrollmentTrend = await Enrollment.aggregate([
@@ -178,12 +178,12 @@ async function getEnrollmentNumbers(req, res) {
       },
       {
         $group: {
-          _id: { month: { $month: "$enrollmentDate" } },
+          _id: { month: { $month: '$enrollmentDate' } },
           count: { $sum: 1 }
         }
       },
       {
-        $sort: { "_id.month": 1 }
+        $sort: { '_id.month': 1 }
       }
     ]);
 
@@ -207,10 +207,10 @@ async function getEnrollmentNumbers(req, res) {
       }
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
-      message: "Error fetching enrollment numbers",
+      message: 'Error fetching enrollment numbers',
       error: error.message
     });
   }
@@ -231,10 +231,10 @@ async function getRecentStudents(req, res) {
       data: recentStudents
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
-      message: "Error fetching recent students",
+      message: 'Error fetching recent students',
       error: error.message
     });
   }
@@ -247,27 +247,27 @@ async function getCourseDistribution(req, res) {
     const courseEnrollments = await Enrollment.aggregate([
       {
         $group: {
-          _id: "$courseId",
+          _id: '$courseId',
           count: { $sum: 1 }
         }
       },
       {
         $lookup: {
-          from: "courses",
-          localField: "_id",
-          foreignField: "_id",
-          as: "courseDetails"
+          from: 'courses',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'courseDetails'
         }
       },
       {
-        $unwind: "$courseDetails"
+        $unwind: '$courseDetails'
       },
       {
         $project: {
-          courseId: "$_id",
-          courseName: "$courseDetails.name",
-          courseCode: "$courseDetails.code",
-          registrations: "$count"
+          courseId: '$_id',
+          courseName: '$courseDetails.name',
+          courseCode: '$courseDetails.code',
+          registrations: '$count'
         }
       },
       {
@@ -302,10 +302,10 @@ async function getCourseDistribution(req, res) {
       }
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({
       success: false,
-      message: "Error fetching course distribution",
+      message: 'Error fetching course distribution',
       error: error.message
     });
   }

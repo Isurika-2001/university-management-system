@@ -23,10 +23,15 @@ import {
 // Import Ant Design icons via @ant-design/icons
 import { CaretDownOutlined, CaretUpOutlined, CheckCircleTwoTone } from '@ant-design/icons';
 
-const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled, updateStepCompletion }) => {
+const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled, updateStepCompletion, setStepCompleted }) => {
   const { values, errors, touched, setFieldValue } = formBag;
 
-  const selectedCourses = values.selectedCourses || [];
+  // Extract courseId from the single enrollment (new pattern)
+  const currentEnrollment = values.enrollments?.[0] || {};
+  const courseId = currentEnrollment.courseId || '';
+  
+  // For backward compatibility, also check selectedCourses (old pattern)
+  const selectedCourses = values.selectedCourses || (courseId ? [courseId] : []);
   const paymentSchemas = values.paymentSchema || {};
 
   // Track expansion state for each course
@@ -122,6 +127,9 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled, updateStepComple
 
     if (setNextDisabled) setNextDisabled(hasError);
 
+    // Let parent know this payment step is completed or not
+    if (setStepCompleted) setStepCompleted(2, !hasError);
+
     // Update completion status
     if (updateStepCompletion) {
       updateStepCompletion(values);
@@ -150,7 +158,7 @@ const StepPaymentSchema = ({ IconCmp, formBag, setNextDisabled, updateStepComple
         {selectedCourses.length === 0 && (
           <Box sx={{ my: 3 }}>
             <Typography color="error" variant="body1">
-              Please select at least one course in the Course Details step to configure payment schemas.
+              Please add an enrollment first, This student is not enrolled in any courses.
             </Typography>
           </Box>
         )}

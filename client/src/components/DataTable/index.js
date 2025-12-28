@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import {
   Table,
   TableContainer,
@@ -19,7 +20,7 @@ import {
 import MainCard from 'components/MainCard';
 
 const DataTable = ({
-  title = "Data Table",
+  title = 'Data Table',
   data = [],
   loading = false,
   totalCount = 0,
@@ -38,7 +39,7 @@ const DataTable = ({
   onRowClick,
   onSelectionChange,
   selected = [],
-  searchPlaceholder = "Search",
+  searchPlaceholder = 'Search',
   searchDebounceMs = 500,
   rowsPerPageOptions = [5, 10, 25],
   showSearch = true,
@@ -46,13 +47,13 @@ const DataTable = ({
   showActions = true,
   showPagination = true,
   showSelection = true,
-  emptyMessage = "No data available",
+  emptyMessage = 'No data available',
   searchValue = '',
   onSearchChange,
   filterValues = {},
   onFilterChange,
   exportFunction,
-  exportButtonText = "Export",
+  exportButtonText = 'Export',
   exportButtonIcon,
   customHeader,
   customFooter,
@@ -145,12 +146,7 @@ const DataTable = ({
   };
 
   return (
-    <MainCard 
-      title={
-        typeof title === 'string' ? title : title
-      } 
-      {...containerProps}
-    >
+    <MainCard title={typeof title === 'string' ? title : title} {...containerProps}>
       {/* Header Section */}
       {(showSearch || showFilters || showActions) && (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
@@ -167,46 +163,41 @@ const DataTable = ({
               />
             )}
 
-            {showFilters && filters.map((filter) => (
-              <TextField
-                key={filter.key}
-                label={filter.label}
-                variant="outlined"
-                select
-                value={filterValues[filter.key] || ''}
-                onChange={(e) => handleFilterChange(filter.key, e.target.value)}
-                sx={{ width: filter.width || 200 }}
-                {...filterFieldProps}
-              >
-                <MenuItem value="">{filter.allLabel || `All ${filter.label}`}</MenuItem>
-                {filter.options.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            ))}
+            {showFilters &&
+              filters.map((filter) => (
+                <TextField
+                  key={filter.key}
+                  label={filter.label}
+                  variant="outlined"
+                  select
+                  value={filterValues[filter.key] || ''}
+                  onChange={(e) => handleFilterChange(filter.key, e.target.value)}
+                  sx={{ width: filter.width || 200 }}
+                  {...filterFieldProps}
+                >
+                  <MenuItem value="">{filter.allLabel || `All ${filter.label}`}</MenuItem>
+                  {filter.options.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              ))}
           </Box>
 
           {/* Right side: Actions */}
           {showActions && (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
               {exportFunction && (
-                <Button
-                  variant="contained"
-                  color="success"
-                  onClick={exportFunction}
-                  startIcon={exportButtonIcon}
-                  {...actionButtonProps}
-                >
+                <Button variant="contained" color="success" onClick={exportFunction} startIcon={exportButtonIcon} {...actionButtonProps}>
                   {exportButtonText}
                 </Button>
               )}
               {actions.map((action, index) => (
                 <Button
                   key={index}
-                  variant={action.variant || "contained"}
-                  color={action.color || "primary"}
+                  variant={action.variant || 'contained'}
+                  color={action.color || 'primary'}
                   onClick={action.onClick}
                   startIcon={action.icon}
                   disabled={action.disabled}
@@ -254,9 +245,9 @@ const DataTable = ({
               ))}
             </TableRow>
           </TableHead>
-          
+
           {loading && <LinearProgress sx={{ width: '100%' }} />}
-          
+
           <TableBody>
             {data.length === 0 && !loading ? (
               <TableRow>
@@ -285,9 +276,7 @@ const DataTable = ({
                       </TableCell>
                     )}
                     {columns.map((column) => (
-                      <TableCell key={column.key}>
-                        {column.render ? column.render(row[column.key], row) : row[column.key]}
-                      </TableCell>
+                      <TableCell key={column.key}>{column.render ? column.render(row[column.key], row) : row[column.key]}</TableCell>
                     ))}
                   </TableRow>
                 );
@@ -316,4 +305,49 @@ const DataTable = ({
   );
 };
 
-export default DataTable; 
+DataTable.propTypes = {
+  title: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+  data: PropTypes.array,
+  loading: PropTypes.bool,
+  totalCount: PropTypes.number,
+  page: PropTypes.number,
+  rowsPerPage: PropTypes.number,
+  onPageChange: PropTypes.func,
+  onRowsPerPageChange: PropTypes.func,
+  onSearch: PropTypes.func,
+  onSort: PropTypes.func,
+  orderBy: PropTypes.string,
+  order: PropTypes.oneOf(['asc', 'desc']),
+  sortableColumns: PropTypes.array,
+  filters: PropTypes.array,
+  actions: PropTypes.array,
+  columns: PropTypes.array.isRequired,
+  onRowClick: PropTypes.func,
+  onSelectionChange: PropTypes.func,
+  selected: PropTypes.array,
+  searchPlaceholder: PropTypes.string,
+  searchDebounceMs: PropTypes.number,
+  rowsPerPageOptions: PropTypes.array,
+  showSearch: PropTypes.bool,
+  showFilters: PropTypes.bool,
+  showActions: PropTypes.bool,
+  showPagination: PropTypes.bool,
+  showSelection: PropTypes.bool,
+  emptyMessage: PropTypes.string,
+  searchValue: PropTypes.string,
+  onSearchChange: PropTypes.func,
+  filterValues: PropTypes.object,
+  onFilterChange: PropTypes.func,
+  exportFunction: PropTypes.func,
+  exportButtonText: PropTypes.string,
+  exportButtonIcon: PropTypes.node,
+  customHeader: PropTypes.node,
+  customFooter: PropTypes.node,
+  tableProps: PropTypes.object,
+  containerProps: PropTypes.object,
+  searchFieldProps: PropTypes.object,
+  filterFieldProps: PropTypes.object,
+  actionButtonProps: PropTypes.object
+};
+
+export default DataTable;

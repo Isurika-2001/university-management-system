@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Grid, LinearProgress, CircularProgress, Typography, TextField } from '@mui/material';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Button, Grid, LinearProgress, CircularProgress, Typography, TextField, Collapse, IconButton } from '@mui/material';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box } from '@mui/material';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { Formik, Form } from 'formik';
-import { FileAddOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons';
+import { FileAddOutlined, DeleteOutlined, SwapOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import * as Yup from 'yup';
 import MainCard from 'components/MainCard';
 import { useParams } from 'react-router-dom';
@@ -14,26 +14,35 @@ import { studentsAPI } from '../../api/students';
 import { enrollmentsAPI } from '../../api/enrollments';
 import { coursesAPI } from '../../api/courses';
 import { batchesAPI } from '../../api/batches';
+import { classroomAPI } from '../../api/classrooms';
+import ClassroomHistory from '../classrooms/ClassroomHistory';
+import { PATHWAY_LIST } from '../../constants/pathways';
 
 const UpdateForm = () => {
   const [data, setData] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]);
-  const [batchOptions, setBatchOptions] = useState([]);
+  const [allCourseOptions, setAllCourseOptions] = useState([]);
+  const [intakeOptions, setIntakeOptions] = useState([]);
+  const [classroomOptions, setClassroomOptions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const [open, setOpen] = useState(false);
+  const [selectedPathway, setSelectedPathway] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('');
-  const [selectedBatch, setSelectedBatch] = useState('');
-
-  // Transfer dialog state
+  const [selectedIntake, setSelectedIntake] = useState('');
   const [openTransferDialog, setOpenTransferDialog] = useState(false);
   const [selectedEnrollment, setSelectedEnrollment] = useState(null);
   const [transferData, setTransferData] = useState({
     batchId: '',
+    classroomId: '', // Added for new classroom selection
     reason: ''
   });
+  const [expandedEnrollment, setExpandedEnrollment] = useState(null);
+  const [openAddClassroomDialog, setOpenAddClassroomDialog] = useState(false);
+  const [selectedEnrollmentForClassroom, setSelectedEnrollmentForClassroom] = useState(null);
+  const [eligibleClassrooms, setEligibleClassrooms] = useState([]);
+  const [selectedClassroomForAdd, setSelectedClassroomForAdd] = useState('');
 
   const { id } = useParams();
 
@@ -66,16 +75,15 @@ const UpdateForm = () => {
   };
 
   useEffect(() => {
-    fetchData();
-    fetchCourses();
-    fetchEnrollments();
-  }, [location.search]);
+    if (selectedPathway) {
+      const filtered = allCourseOptions.filter((course) => course.pathway === selectedPathway);
+      setCourseOptions(filtered);
+    } else {
+      setCourseOptions(allCourseOptions);
+    }
+  }, [selectedPathway, allCourseOptions]);
 
-  useEffect(() => {
-    fetchBatches(selectedCourse);
-  }, [selectedCourse]);
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     console.log('Fetching student data for ID:', id);
 
@@ -96,9 +104,9 @@ const UpdateForm = () => {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id, setData, setLoading]);
 
-  async function fetchEnrollments() {
+  const fetchEnrollments = useCallback(async () => {
     console.log('Fetching enrollments for student ID:', id);
 
     if (!id) {
@@ -110,39 +118,106 @@ const UpdateForm = () => {
     try {
       setLoading(true);
       const response = await enrollmentsAPI.getByStudentId(id);
-      console.log('Enrollments response:', response);
-      setEnrollments(response.data || []);
+      let fetchedEnrollments = response.data || [];
+      console.log('Enrollments response:', fetchedEnrollments);
+
+      // For each enrollment, check its classroom history
+      const enrollmentsWithClassroomStatus = await Promise.all(
+        fetchedEnrollments.map(async (enrollment) => {
+          try {
+            const history = await studentsAPI.getEnrollmentClassroomHistory(enrollment._id);
+            // An enrollment has an assigned classroom if its history contains any record
+            // with a status that isn't 'removed' or 'inactive'.
+            // For simplicity, let's assume if there's any history, it has been assigned at some point.
+            // A more robust check might look for an 'active' status in the history.
+            const hasAssignedClassroom = history?.data?.length > 0;
+            return { ...enrollment, hasAssignedClassroom };
+          } catch (historyError) {
+            console.error(`Error fetching classroom history for enrollment ${enrollment._id}:`, historyError);
+            return { ...enrollment, hasAssignedClassroom: false }; // Default to false on error
+          }
+        })
+      );
+
+      setEnrollments(enrollmentsWithClassroomStatus);
     } catch (error) {
       console.error('Error fetching enrollments:', error);
       setEnrollments([]);
     } finally {
       setLoading(false);
     }
-  }
+  }, [id, setEnrollments, setLoading, studentsAPI]);
 
-  async function fetchCourses() {
+  const fetchCourses = useCallback(async () => {
     try {
       const response = await coursesAPI.getAll();
-      setCourseOptions(response.data || response || []);
+      setAllCourseOptions(response || []);
+      setCourseOptions(response || []);
     } catch (error) {
       console.error('Error fetching courses:', error);
       setCourseOptions([]);
+      setAllCourseOptions([]);
     }
-  }
+  }, [setAllCourseOptions, setCourseOptions]);
 
-  async function fetchBatches(courseId) {
-    if (!courseId) {
-      setBatchOptions([]);
-      return;
+  const fetchIntakes = useCallback(
+    async (courseId) => {
+      if (!courseId) {
+        setIntakeOptions([]);
+        return;
+      }
+      try {
+        const response = await batchesAPI.getByCourseId(courseId);
+        setIntakeOptions(response.data || response || []);
+      } catch (error) {
+        console.error('Error fetching intakes:', error);
+        setIntakeOptions([]);
+      }
+    },
+    [setIntakeOptions]
+  );
+
+  const fetchClassrooms = useCallback(
+    async (courseId, intakeId) => {
+      if (!courseId || !intakeId) {
+        setClassroomOptions([]);
+        return;
+      }
+      try {
+        const response = await classroomAPI.getByCourseAndBatch(courseId, intakeId);
+        setClassroomOptions(response || []);
+      } catch (error) {
+        console.error('Error fetching classrooms:', error);
+        setClassroomOptions([]);
+      }
+    },
+    [setClassroomOptions]
+  );
+
+  useEffect(() => {
+    fetchData();
+    fetchCourses();
+    fetchEnrollments();
+  }, [id, fetchData, fetchCourses, fetchEnrollments]);
+
+  useEffect(() => {
+    fetchIntakes(selectedCourse);
+  }, [selectedCourse, fetchIntakes]);
+
+  useEffect(() => {
+    if (selectedCourse && selectedIntake) {
+      fetchClassrooms(selectedCourse, selectedIntake);
     }
-    try {
-      const response = await batchesAPI.getByCourseId(courseId);
-      setBatchOptions(response.data || response || []);
-    } catch (error) {
-      console.error('Error fetching intakes:', error);
-      setBatchOptions([]);
+  }, [selectedCourse, selectedIntake, fetchClassrooms]);
+
+  // Fetch classrooms for transfer dialog
+  useEffect(() => {
+    if (selectedCourse && transferData.batchId) {
+      fetchClassrooms(selectedCourse, transferData.batchId);
+    } else {
+      setClassroomOptions([]);
     }
-  }
+  }, [selectedCourse, transferData.batchId, fetchClassrooms, setClassroomOptions]);
 
   const handleSubmit = async (values) => {
     try {
@@ -157,8 +232,9 @@ const UpdateForm = () => {
       const responseData = await enrollmentsAPI.createForStudent(id, values);
       showSuccessSwal(responseData.message || 'Enrollment added successfully');
       setOpen(false);
+      setSelectedPathway('');
       setSelectedCourse('');
-      setSelectedBatch('');
+      setSelectedIntake('');
       fetchEnrollments();
     } catch (error) {
       console.error('Enrollment creation error:', error);
@@ -187,13 +263,14 @@ const UpdateForm = () => {
     setSelectedEnrollment(enrollment);
     setTransferData({
       batchId: '',
+      classroomId: '', // Reset classroomId
       reason: ''
     });
     setOpenTransferDialog(true);
 
-    // Fetch batches for the enrollment's course
     if (enrollment.courseId) {
-      await fetchBatches(enrollment.courseId);
+      setSelectedCourse(enrollment.courseId._id || enrollment.courseId); // Set selectedCourse for reuse
+      await fetchIntakes(enrollment.courseId);
     }
   };
 
@@ -203,8 +280,9 @@ const UpdateForm = () => {
       console.log('Submitting transfer data:', transferData);
       console.log('Selected enrollment:', selectedEnrollment);
 
-      if (!transferData.batchId || !transferData.reason) {
-        showErrorSwal('Please select a new intake and provide a transfer reason');
+      if (!transferData.batchId || !transferData.reason || !transferData.classroomId) {
+        // Added classroomId validation
+        showErrorSwal('Please select a new intake, classroom and provide a transfer reason'); // Updated message
         return;
       }
 
@@ -226,15 +304,68 @@ const UpdateForm = () => {
     setTransferData({ batchId: '', reason: '' });
   };
 
+  const handleAddClassroom = async (enrollment) => {
+    setSelectedEnrollmentForClassroom(enrollment);
+    try {
+      const response = await classroomAPI.getEligibleClassrooms(enrollment._id);
+      setEligibleClassrooms(response.data || []);
+      setOpenAddClassroomDialog(true);
+    } catch (error) {
+      showErrorSwal('Failed to fetch eligible classrooms');
+      console.error('Error fetching eligible classrooms:', error);
+    }
+  };
+
+  const handleAddClassroomSubmit = async () => {
+    if (!selectedClassroomForAdd) {
+      showErrorSwal('Please select a classroom');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      await classroomAPI.addStudentToClassroom({
+        classroomId: selectedClassroomForAdd,
+        enrollmentId: selectedEnrollmentForClassroom._id,
+        studentId: data._id
+      });
+      showSuccessSwal('Student added to classroom successfully');
+      setOpenAddClassroomDialog(false);
+      setSelectedClassroomForAdd('');
+      // Refresh the classroom history by closing and opening the collapse
+      const enrollmentId = selectedEnrollmentForClassroom._id;
+      setExpandedEnrollment(null);
+      setTimeout(() => {
+        setExpandedEnrollment(enrollmentId);
+      }, 100);
+    } catch (error) {
+      showErrorSwal('Failed to add student to classroom');
+      console.error('Error adding student to classroom:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const initialValues = {
+    pathway: '',
     courseId: '',
-    batchId: ''
+    batchId: '',
+    classroomId: ''
   };
 
   const validationSchema = Yup.object().shape({
+    pathway: Yup.string().required('Pathway is required'),
     courseId: Yup.string().required('Course is required'),
-    batchId: Yup.string().required('Intake is required')
+    batchId: Yup.string().required('Intake is required'),
+    classroomId: Yup.string().required('Classroom is required')
   });
+
+  const handleToggleHistory = (enrollmentId) => {
+    if (expandedEnrollment === enrollmentId) {
+      setExpandedEnrollment(null);
+    } else {
+      setExpandedEnrollment(enrollmentId);
+    }
+  };
 
   if (loading) {
     return (
@@ -281,6 +412,7 @@ const UpdateForm = () => {
               <Table>
                 <TableHead>
                   <TableRow>
+                    <TableCell />
                     <TableCell>Course</TableCell>
                     <TableCell>Intake</TableCell>
                     <TableCell>Enrollment Date</TableCell>
@@ -290,41 +422,71 @@ const UpdateForm = () => {
                 <TableBody>
                   {enrollments.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} align="center">
+                      <TableCell colSpan={5} align="center">
                         No enrollments found for this student. Add a new enrollment to get started.
                       </TableCell>
                     </TableRow>
                   ) : (
                     enrollments.map((enrollment, index) => (
-                      <TableRow key={enrollment._id || index}>
-                        <TableCell>{enrollment.course?.name || 'N/A'}</TableCell>
-                        <TableCell>{enrollment.batch?.name || 'N/A'}</TableCell>
-                        <TableCell>{new Date(enrollment.enrollmentDate).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Button
-                              variant="outlined"
-                              color="secondary"
-                              size="small"
-                              onClick={() => handleTransfer(enrollment)}
-                              disabled={submitting}
-                              startIcon={<SwapOutlined />}
-                            >
-                              Transfer
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              size="small"
-                              onClick={() => handleDelete(enrollment._id)}
-                              disabled={submitting}
-                              startIcon={submitting ? <CircularProgress size={16} /> : <DeleteOutlined />}
-                            >
-                              Delete
-                            </Button>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
+                      <React.Fragment key={enrollment._id || index}>
+                        <TableRow>
+                          <TableCell>
+                            <IconButton aria-label="expand row" size="small" onClick={() => handleToggleHistory(enrollment._id)}>
+                              {expandedEnrollment === enrollment._id ? <UpOutlined /> : <DownOutlined />}
+                            </IconButton>
+                          </TableCell>
+                          <TableCell>{enrollment.course?.name || 'N/A'}</TableCell>
+                          <TableCell>{enrollment.batch?.name || 'N/A'}</TableCell>
+                          <TableCell>{new Date(enrollment.enrollmentDate).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              {/* Add Classroom button - show only if no classroom is assigned */}
+                              {!enrollment.hasAssignedClassroom && (
+                                <Button
+                                  variant="outlined"
+                                  color="primary"
+                                  size="small"
+                                  onClick={() => handleAddClassroom(enrollment)}
+                                  disabled={submitting}
+                                  startIcon={<FileAddOutlined />}
+                                >
+                                  Add Classroom
+                                </Button>
+                              )}
+
+                              <Button
+                                variant="outlined"
+                                color="secondary"
+                                size="small"
+                                onClick={() => handleTransfer(enrollment)}
+                                disabled={submitting}
+                                startIcon={<SwapOutlined />}
+                              >
+                                Transfer
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                size="small"
+                                onClick={() => handleDelete(enrollment._id)}
+                                disabled={submitting}
+                                startIcon={submitting ? <CircularProgress size={16} /> : <DeleteOutlined />}
+                              >
+                                Delete
+                              </Button>
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+                            <Collapse in={expandedEnrollment === enrollment._id} timeout="auto" unmountOnExit>
+                              <Box sx={{ margin: 1 }}>
+                                <ClassroomHistory enrollmentId={enrollment._id} />
+                              </Box>
+                            </Collapse>
+                          </TableCell>
+                        </TableRow>
+                      </React.Fragment>
                     ))
                   )}
                 </TableBody>
@@ -344,6 +506,31 @@ const UpdateForm = () => {
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     <FormControl fullWidth>
+                      <InputLabel>Pathway</InputLabel>
+                      <Select
+                        value={selectedPathway}
+                        onChange={(e) => {
+                          setSelectedPathway(e.target.value);
+                          setFieldValue('pathway', e.target.value);
+                          setFieldValue('courseId', '');
+                          setFieldValue('batchId', '');
+                          setFieldValue('classroomId', '');
+                        }}
+                        error={touched.pathway && !!errors.pathway}
+                      >
+                        {PATHWAY_LIST.map((pathway) => (
+                          <MenuItem key={pathway.id} value={pathway.id}>
+                            {pathway.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {touched.pathway && errors.pathway && (
+                        <div style={{ color: 'red', fontSize: '0.75rem', marginTop: '4px' }}>{errors.pathway}</div>
+                      )}
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControl fullWidth>
                       <InputLabel>Course</InputLabel>
                       <Select
                         value={selectedCourse}
@@ -351,8 +538,10 @@ const UpdateForm = () => {
                           setSelectedCourse(e.target.value);
                           setFieldValue('courseId', e.target.value);
                           setFieldValue('batchId', '');
+                          setFieldValue('classroomId', '');
                         }}
                         error={touched.courseId && !!errors.courseId}
+                        disabled={!selectedPathway}
                       >
                         {courseOptions.map((course) => (
                           <MenuItem key={course._id} value={course._id}>
@@ -369,22 +558,44 @@ const UpdateForm = () => {
                     <FormControl fullWidth>
                       <InputLabel>Intake</InputLabel>
                       <Select
-                        value={selectedBatch}
+                        value={selectedIntake}
                         onChange={(e) => {
-                          setSelectedBatch(e.target.value);
+                          setSelectedIntake(e.target.value);
                           setFieldValue('batchId', e.target.value);
+                          setFieldValue('classroomId', '');
                         }}
                         error={touched.batchId && !!errors.batchId}
                         disabled={!selectedCourse}
                       >
-                        {batchOptions.map((batch) => (
-                          <MenuItem key={batch._id} value={batch._id}>
-                            {batch.name}
+                        {intakeOptions.map((intake) => (
+                          <MenuItem key={intake._id} value={intake._id}>
+                            {intake.name}
                           </MenuItem>
                         ))}
                       </Select>
                       {touched.batchId && errors.batchId && (
                         <div style={{ color: 'red', fontSize: '0.75rem', marginTop: '4px' }}>{errors.batchId}</div>
+                      )}
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControl fullWidth>
+                      <InputLabel>Classroom</InputLabel>
+                      <Select
+                        onChange={(e) => {
+                          setFieldValue('classroomId', e.target.value);
+                        }}
+                        error={touched.classroomId && !!errors.classroomId}
+                        disabled={!selectedIntake}
+                      >
+                        {classroomOptions.map((classroom) => (
+                          <MenuItem key={classroom._id} value={classroom._id}>
+                            {classroom.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {touched.classroomId && errors.classroomId && (
+                        <div style={{ color: 'red', fontSize: '0.75rem', marginTop: '4px' }}>{errors.classroomId}</div>
                       )}
                     </FormControl>
                   </Grid>
@@ -426,11 +637,27 @@ const UpdateForm = () => {
               <Select
                 value={transferData.batchId}
                 label="New Intake"
-                onChange={(e) => setTransferData({ ...transferData, batchId: e.target.value })}
+                onChange={(e) => setTransferData({ ...transferData, batchId: e.target.value, classroomId: '' })} // Reset classroom on intake change
               >
-                {batchOptions.map((batch) => (
-                  <MenuItem key={batch._id} value={batch._id}>
-                    {batch.name}
+                {intakeOptions.map((intake) => (
+                  <MenuItem key={intake._id} value={intake._id}>
+                    {intake.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>New Classroom</InputLabel>
+              <Select
+                value={transferData.classroomId}
+                label="New Classroom"
+                onChange={(e) => setTransferData({ ...transferData, classroomId: e.target.value })}
+                disabled={!transferData.batchId} // Disable if no intake selected
+              >
+                {classroomOptions.map((classroom) => (
+                  <MenuItem key={classroom._id} value={classroom._id}>
+                    {classroom.name}
                   </MenuItem>
                 ))}
               </Select>
@@ -457,6 +684,46 @@ const UpdateForm = () => {
             endIcon={submitting ? <CircularProgress size={20} /> : null}
           >
             Transfer
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add Classroom Dialog */}
+      <Dialog open={openAddClassroomDialog} onClose={() => setOpenAddClassroomDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Student to Classroom</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            {eligibleClassrooms.length > 0 ? (
+              <FormControl fullWidth>
+                <InputLabel>Select Classroom</InputLabel>
+                <Select
+                  value={selectedClassroomForAdd}
+                  label="Select Classroom"
+                  onChange={(e) => setSelectedClassroomForAdd(e.target.value)}
+                >
+                  {eligibleClassrooms.map((cls) => (
+                    <MenuItem key={cls._id} value={cls._id}>
+                      {cls.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            ) : (
+              <Typography color="textSecondary" align="center">
+                No eligible classrooms found.
+              </Typography>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenAddClassroomDialog(false)}>Cancel</Button>
+          <Button
+            onClick={handleAddClassroomSubmit}
+            variant="contained"
+            disabled={submitting || !selectedClassroomForAdd}
+            endIcon={submitting ? <CircularProgress size={20} /> : null}
+          >
+            Add
           </Button>
         </DialogActions>
       </Dialog>

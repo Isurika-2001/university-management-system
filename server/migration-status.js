@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
+const logger = require('./src/utils/logger');
 
 const Student = require('./src/models/student');
 
@@ -55,11 +56,11 @@ async function migrateStudentStatus() {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log('Connected to MongoDB');
+    logger.info('Connected to MongoDB');
 
     // Get all students
     const students = await Student.find({});
-    console.log(`Found ${students.length} students to migrate`);
+    logger.info(`Found ${students.length} students to migrate`);
 
     let completedCount = 0;
     let incompleteCount = 0;
@@ -81,16 +82,16 @@ async function migrateStudentStatus() {
       }
     }
 
-    console.log('Migration completed successfully!');
-    console.log(`- Completed: ${completedCount}`);
-    console.log(`- Incomplete: ${incompleteCount}`);
-    console.log(`- Pending: ${pendingCount}`);
+    logger.info('Migration completed successfully!');
+    logger.info(`- Completed: ${completedCount}`);
+    logger.info(`- Incomplete: ${incompleteCount}`);
+    logger.info(`- Pending: ${pendingCount}`);
 
   } catch (error) {
-    console.error('Migration failed:', error);
+    logger.error('Migration failed:', error);
   } finally {
     await mongoose.disconnect();
-    console.log('Disconnected from MongoDB');
+    logger.info('Disconnected from MongoDB');
   }
 }
 

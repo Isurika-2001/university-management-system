@@ -1,19 +1,19 @@
-require("dotenv").config();
-const jwt = require("jsonwebtoken");
-const User = require("../models/user");
+require('dotenv').config();
+const jwt = require('jsonwebtoken');
+const User = require('../models/user');
 
 async function authenticate(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        message: "No token provided",
+        message: 'No token provided',
       });
     }
 
-    const token = authHeader.split(" ")[1];
+    const token = authHeader.split(' ')[1];
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -27,39 +27,42 @@ async function authenticate(req, res, next) {
       return res.status(401).json({
         success: false,
         message:
-          "Token version mismatch. Please login again after system update.",
-        code: "TOKEN_VERSION_MISMATCH",
+          'Token version mismatch. Please login again after system update.',
+        code: 'TOKEN_VERSION_MISMATCH',
         expectedVersion: currentVersion,
         tokenVersion: decoded.jwtVersion || null,
       });
     }
 
     // Fetch user from DB
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(decoded.userId).populate('user_type');
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "User not found",
+        message: 'User not found',
       });
     }
 
-    // Attach user
+    // Attach user and permissions
     req.user = user;
+    if (user.user_type) {
+      req.user.permissions = user.user_type;
+    }
 
     // Restrict blocked users
-    if (user.status === "blocked") {
+    if (user.status === 'blocked') {
       return res.status(403).json({
         success: false,
-        message: "User is blocked",
+        message: 'User is blocked',
       });
     }
 
     next();
   } catch (error) {
-    console.error("Authentication error:", error.message);
+    // console.error('Authentication error:', error.message);
     return res.status(401).json({
       success: false,
-      message: "Invalid or expired token",
+      message: 'Invalid or expired token',
       error: error.message,
     });
   }

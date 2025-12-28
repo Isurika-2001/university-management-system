@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const { checkPermission } = require('../middleware/permissions');
 const {
   getAllRequiredDocuments,
   getRequiredDocumentById,

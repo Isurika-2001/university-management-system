@@ -30,4 +30,4 @@ export const bulkUploadAPI = {
   downloadTemplate: async (type) => {
     return api.get(`${apiRoutes.bulkUploadRoute}template/${type}`);
   }
-}; 
+};

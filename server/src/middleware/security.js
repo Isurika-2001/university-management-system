@@ -41,23 +41,17 @@ const securityMiddleware = (app) => {
   } else {
     // In development, just log rate limiting info
     app.use('/api/auth', (req, res, next) => {
-      console.log(`[DEV] Auth request: ${req.method} ${req.path}`);
+      // console.log(`[DEV] Auth request: ${req.method} ${req.path}`);
       next();
     });
     
     app.use('/api', (req, res, next) => {
-      console.log(`[DEV] API request: ${req.method} ${req.path}`);
+      // console.log(`[DEV] API request: ${req.method} ${req.path}`);
       next();
     });
   }
   
-  // Additional security headers
-  app.use((req, res, next) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    next();
-  });
+
 };
 
 module.exports = securityMiddleware; 
