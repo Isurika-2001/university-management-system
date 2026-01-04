@@ -85,8 +85,9 @@ async function createUser(req, res) {
       });
     }
 
-    // Hash the password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash the password before saving (use config value for consistency)
+    const config = require('../config');
+    const hashedPassword = await bcrypt.hash(password, config.bcryptRounds);
 
     // Assign the user_type _id and hashed password to the user before saving
     const user = new User({
@@ -122,12 +123,12 @@ async function createUser(req, res) {
       data: responseData,
     });
   } catch (error) {
-    logger.error(error); // log for debugging
+    logger.error('Error creating user:', error);
 
     res.status(500).json({
       success: false,
       message: 'Error creating user',
-      error: error.message,
+      ...(process.env.NODE_ENV === 'development' && { error: error.message })
     });
   }
 }
@@ -147,6 +148,32 @@ async function createUser(req, res) {
 async function login(req, res) {
   try {
     const { email, password } = req.body;
+    
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+    
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+    
+    // Limit password length to prevent DoS
+    if (password.length > 128) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password is too long'
+      });
+    }
+    
     const requestInfo = getRequestInfo(req);
 
     // Find user by email and populate user_type
@@ -258,11 +285,11 @@ async function login(req, res) {
       jwtVersion
     });
   } catch (error) {
-    logger.error(error);
+    logger.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal Server Error',
-      error: error.message,
+      ...(process.env.NODE_ENV === 'development' && { error: error.message })
     });
   }
 }
@@ -430,6 +457,17 @@ async function updatePassword(req, res) {
       });
     }
 
+    // Validate password strength
+    const { validatePasswordStrength } = require('../utils/passwordValidation');
+    const passwordValidation = validatePasswordStrength(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: passwordValidation.message,
+        error: 'Weak password'
+      });
+    }
+
     // Check if user exists
     const user = await User.findById(id);
     if (!user) {
@@ -440,8 +478,9 @@ async function updatePassword(req, res) {
       });
     }
 
-    // Hash the password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash the password before saving (use config value for consistency)
+    const config = require('../config');
+    const hashedPassword = await bcrypt.hash(password, config.bcryptRounds);
 
     // Update password
     user.password = hashedPassword;

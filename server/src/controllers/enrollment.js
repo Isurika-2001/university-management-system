@@ -32,7 +32,16 @@ async function getAllEnrollments(req, res) {
       matchStage.batchId = new mongoose.Types.ObjectId(batchId);
     }
 
-    const searchRegex = search.trim() !== '' ? new RegExp(search, 'i') : null;
+    // Use safe regex creation to prevent RegExp injection
+    const { createSafeRegex } = require('../utils/regexUtils');
+    const searchRegex = search.trim() !== '' ? createSafeRegex(search) : null;
+    
+    if (search.trim() !== '' && !searchRegex) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid search term'
+      });
+    }
 
     const aggregationPipeline = [
       { $match: matchStage },
@@ -615,7 +624,16 @@ async function exportEnrollments(req, res) {
       matchStage.batchId = new mongoose.Types.ObjectId(batchId);
     }
 
-    const searchRegex = search.trim() !== '' ? new RegExp(search, 'i') : null;
+    // Use safe regex creation to prevent RegExp injection
+    const { createSafeRegex } = require('../utils/regexUtils');
+    const searchRegex = search.trim() !== '' ? createSafeRegex(search) : null;
+    
+    if (search.trim() !== '' && !searchRegex) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid search term'
+      });
+    }
 
     const aggregationPipeline = [
       { $match: matchStage },

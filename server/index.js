@@ -25,23 +25,45 @@ app.use(compression());
 // Note: For cookies to work, origin must be specific (not '*') and credentials must be true
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = Array.isArray(config.corsOrigin) 
-      ? config.corsOrigin 
-      : [config.corsOrigin];
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || config.nodeEnv === 'development') {
-      callback(null, true);
+    // In production, be strict about origins
+    if (config.nodeEnv === 'production') {
+      // Allow requests with no origin (like mobile apps or curl requests) only if explicitly configured
+      if (!origin) {
+        // In production, reject requests without origin for security
+        return callback(new Error('CORS: Origin header required'));
+      }
+      
+      const allowedOrigins = Array.isArray(config.corsOrigin) 
+        ? config.corsOrigin 
+        : config.corsOrigin.split(',').map(o => o.trim());
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS: Blocked request from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // In development, be more lenient but still log
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = Array.isArray(config.corsOrigin) 
+        ? config.corsOrigin 
+        : [config.corsOrigin];
+      
+      if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS: Allowing development request from: ${origin}`);
+        callback(null, true); // Allow in dev but log
+      }
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type'],
   credentials: true, // Required for cookies
-  exposedHeaders: ['Content-Type']
+  exposedHeaders: ['Content-Type'],
+  maxAge: 86400 // 24 hours
 };
 
 app.use(cors(corsOptions));
@@ -49,12 +71,17 @@ app.use(cors(corsOptions));
 // Cookie parser middleware (must come before routes)
 app.use(cookieParser());
 
+// Input sanitization middleware (before body parsing)
+const sanitizeInput = require('./src/middleware/inputSanitizer');
+app.use(sanitizeInput);
+
 // Security middleware (after CORS)
 securityMiddleware(app);
 
-// Body parsing middleware
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing middleware with reasonable limits
+// 5MB is sufficient for most use cases and prevents DoS attacks
+app.use(bodyParser.json({ limit: '5mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '5mb' }));
 
 // Logging middleware
 app.use(morgan('combined', {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Table,
   TableContainer,
@@ -30,16 +30,20 @@ const View = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const Toast = withReactContent(
-    Swal.mixin({
-      toast: true,
-      position: 'bottom',
-      customClass: { popup: 'colored-toast' },
-      background: 'primary',
-      showConfirmButton: false,
-      timer: 3500,
-      timerProgressBar: true
-    })
+  const Toast = useMemo(
+    () =>
+      withReactContent(
+        Swal.mixin({
+          toast: true,
+          position: 'bottom',
+          customClass: { popup: 'colored-toast' },
+          background: 'primary',
+          showConfirmButton: false,
+          timer: 3500,
+          timerProgressBar: true
+        })
+      ),
+    []
   );
 
   const showSuccessSwal = useCallback(
@@ -69,7 +73,7 @@ const View = () => {
       showErrorSwal('Error fetching classrooms');
       setLoading(false);
     }
-  }, [setData, setFilteredData, setLoading, showErrorSwal]);
+  }, [showErrorSwal]);
 
   useEffect(() => {
     fetchData();
