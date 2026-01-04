@@ -50,8 +50,9 @@ const ReportAreaChart = ({ onStatsChange }) => {
       try {
         const res = await fetch(apiRoutes.statRoute + 'enrollmentTrends', {
           headers: {
-            Authorization: `Bearer ${user.token}`
-          }
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include' // Cookies are sent automatically
         });
         const json = await res.json();
 
@@ -98,10 +99,10 @@ const ReportAreaChart = ({ onStatsChange }) => {
       }
     };
 
-    if (user?.token) {
+    if (user) {
       fetchData();
     }
-  }, [theme, secondary, line, user?.token, onStatsChange]);
+  }, [theme, secondary, line, user, onStatsChange]);
 
   return <ReactApexChart options={options} series={series} type="line" height={365} />;
 };

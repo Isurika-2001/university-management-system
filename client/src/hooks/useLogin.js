@@ -14,10 +14,8 @@ export const useLogin = () => {
     try {
       const json = await authAPI.login(values);
 
-      // Save the user to local storage
-      localStorage.setItem('user', JSON.stringify(json));
-
-      // Update the auth context
+      // Token is now stored in HttpOnly cookie automatically
+      // Update the auth context with user data (without token)
       dispatch({ type: 'LOGIN', payload: json });
 
       setIsLoading(false);

@@ -1,12 +1,18 @@
 import { useAuthContext } from '../context/useAuthContext';
+import { authAPI } from '../api/auth';
 
 // Centralized logout function
-export const handleLogout = () => {
-  // Remove user from localStorage
-  localStorage.removeItem('user');
+export const handleLogout = async () => {
+  try {
+    // Call logout API to clear the cookie on server
+    await authAPI.logout();
+  } catch (error) {
+    // Even if API call fails, continue with client-side cleanup
+    console.error('Logout API error:', error);
+  }
 
-  // Clear any other stored data
-  localStorage.removeItem('token');
+  // Clear any client-side storage (if any remains)
+  localStorage.clear();
   sessionStorage.clear();
 
   // Redirect to login page
@@ -17,31 +23,23 @@ export const handleLogout = () => {
 export const useAuthHandler = () => {
   const { dispatch } = useAuthContext();
 
-  const handleUnauthorized = () => {
+  const handleUnauthorized = async () => {
     // Clear auth context
     dispatch({ type: 'LOGOUT' });
 
     // Call centralized logout
-    handleLogout();
+    await handleLogout();
   };
 
   return { handleUnauthorized };
 };
 
-// Check if user is authenticated
-export const isAuthenticated = () => {
-  const user = localStorage.getItem('user');
-  return user !== null;
+// Check if user is authenticated (based on context, not localStorage)
+export const isAuthenticated = (user) => {
+  return user !== null && user !== undefined;
 };
 
-// Get current user
-export const getCurrentUser = () => {
-  const user = localStorage.getItem('user');
-  return user ? JSON.parse(user) : null;
-};
-
-// Get auth token
-export const getAuthToken = () => {
-  const user = getCurrentUser();
-  return user?.token || null;
+// Get current user (from context, not localStorage)
+export const getCurrentUser = (user) => {
+  return user || null;
 };

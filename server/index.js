@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const morgan = require('morgan');
 const compression = require('compression');
+const cookieParser = require('cookie-parser');
 
 // Configuration and utilities
 const config = require('./src/config');
@@ -21,12 +22,32 @@ const app = express();
 app.use(compression());
 
 // CORS configuration (must come before rate limiting)
-app.use(cors({
-  origin: config.corsOrigin,
+// Note: For cookies to work, origin must be specific (not '*') and credentials must be true
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = Array.isArray(config.corsOrigin) 
+      ? config.corsOrigin 
+      : [config.corsOrigin];
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || config.nodeEnv === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+  allowedHeaders: ['Content-Type'],
+  credentials: true, // Required for cookies
+  exposedHeaders: ['Content-Type']
+};
+
+app.use(cors(corsOptions));
+
+// Cookie parser middleware (must come before routes)
+app.use(cookieParser());
 
 // Security middleware (after CORS)
 securityMiddleware(app);

@@ -130,7 +130,7 @@ const AddStudent = () => {
   const [requiredDocuments, setRequiredDocuments] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [batchOptionsMap, setBatchOptionsMap] = useState({});
-  const { user } = useAuthContext();
+  useAuthContext();
 
   // --- Added based on error: setNextDisabled is not defined ---
   // By default, next button is enabled
@@ -320,7 +320,8 @@ const AddStudent = () => {
     try {
       const response = await fetch(apiRoutes.courseRoute, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` }
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include' // Cookies are sent automatically
       });
       const data = await response.json();
       if (!response.ok) return;
@@ -328,7 +329,7 @@ const AddStudent = () => {
     } catch (err) {
       console.error('Error fetching courses:', err);
     }
-  }, [user.token]);
+  }, []);
 
   const fetchBatches = useCallback(
     async (courseId) => {
@@ -339,7 +340,8 @@ const AddStudent = () => {
       try {
         const response = await fetch(apiRoutes.batchRoute + `course/${courseId}`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` }
+          headers: { 'Content-Type': 'application/json' },
+        credentials: 'include' // Cookies are sent automatically
         });
         const data = await response.json();
         if (!response.ok) return;
@@ -349,14 +351,15 @@ const AddStudent = () => {
         console.error('Error fetching batches:', err);
       }
     },
-    [user.token]
+    []
   );
 
   const fetchRequiredDocs = useCallback(async () => {
     try {
       const response = await fetch(apiRoutes.requiredDocumentRoute, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` }
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include' // Cookies are sent automatically
       });
       const data = await response.json();
       const documents = data?.data || data;
@@ -365,7 +368,7 @@ const AddStudent = () => {
       console.error('Error fetching required documents:', err);
       setRequiredDocuments([]);
     }
-  }, [user.token]);
+  }, []);
 
   useEffect(() => {
     fetchCourses();
@@ -476,7 +479,8 @@ const AddStudent = () => {
 
       const studentResponse = await fetch(apiRoutes.studentRoute, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Cookies are sent automatically,
         body: JSON.stringify(studentData)
       });
       const studentResponseData = await studentResponse.json();

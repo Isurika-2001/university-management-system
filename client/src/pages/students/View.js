@@ -48,7 +48,7 @@ const View = () => {
   const [sortOrder, setSortOrder] = useState('asc');
 
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -192,8 +192,9 @@ const View = () => {
       const response = await fetch(`${apiRoutes.studentRoute}export?${params.toString()}`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       console.log('Response status:', response.status);
@@ -237,8 +238,9 @@ const View = () => {
       const response = await fetch(`${apiRoutes.studentRoute}export?${params.toString()}`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       console.log('Response status:', response.status);
@@ -290,8 +292,9 @@ const View = () => {
         const response = await fetch(`${apiRoutes.studentRoute}import`, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${user.token}`
+            // Don't set Content-Type for FormData, browser will set it with boundary
           },
+          credentials: 'include', // Cookies are sent automatically
           body: formData
         });
 

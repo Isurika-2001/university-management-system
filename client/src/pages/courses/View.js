@@ -37,7 +37,7 @@ const View = () => {
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false); // New state for delete loading
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -178,8 +178,9 @@ const View = () => {
         const response = await fetch(`${apiRoutes.courseRoute}${id}`, {
           method: 'DELETE',
           headers: {
-            Authorization: `Bearer ${user.token}`
-          }
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include' // Cookies are sent automatically
         });
 
         const data = await response.json();

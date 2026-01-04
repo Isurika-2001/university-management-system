@@ -97,9 +97,9 @@ const EnrollmentsView = () => {
       const response = await fetch(`${apiRoutes.enrollmentRoute}?${queryString}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       if (!response.ok) {
@@ -124,7 +124,6 @@ const EnrollmentsView = () => {
     sortOrder,
     courseFilter,
     batchFilter,
-    user.token,
     setData,
     setTotalCount,
     setLoading
@@ -135,9 +134,9 @@ const EnrollmentsView = () => {
       const response = await fetch(apiRoutes.courseRoute, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       if (!response.ok) {
@@ -149,7 +148,7 @@ const EnrollmentsView = () => {
     } catch (error) {
       console.error('Error fetching courses:', error);
     }
-  }, [user.token, setCourses]);
+  }, [setCourses]);
 
   const fetchBatches = useCallback(
     async (courseId) => {
@@ -157,9 +156,9 @@ const EnrollmentsView = () => {
         const response = await fetch(`${apiRoutes.batchRoute}course/${courseId}`, {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`
-          }
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include' // Cookies are sent automatically
         });
 
         if (!response.ok) {
@@ -172,7 +171,7 @@ const EnrollmentsView = () => {
         console.error('Error fetching batches:', error);
       }
     },
-    [user.token, setBatches]
+    [setBatches]
   );
 
   const handleDeleteEnrollment = async (id) => {
@@ -215,9 +214,9 @@ const EnrollmentsView = () => {
       const response = await fetch(`${apiRoutes.enrollmentRoute}export?${params.toString()}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       if (!response.ok) throw new Error('Error exporting enrollments');
@@ -251,9 +250,9 @@ const EnrollmentsView = () => {
       const response = await fetch(`${apiRoutes.enrollmentRoute}export?${params.toString()}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       if (!response.ok) throw new Error('Error exporting enrollments');
@@ -285,10 +284,10 @@ const EnrollmentsView = () => {
   }, [searchTerm]);
 
   useEffect(() => {
-    if (user?.token) {
+    if (user) {
       fetchCourses();
     }
-  }, [fetchCourses, user?.token]);
+  }, [fetchCourses, user]);
 
   useEffect(() => {
     if (courseFilter) {
@@ -300,10 +299,10 @@ const EnrollmentsView = () => {
   }, [courseFilter, fetchBatches, setBatches, setBatchFilter]);
 
   useEffect(() => {
-    if (user?.token) {
+    if (user) {
       fetchData();
     }
-  }, [fetchData, user?.token]);
+  }, [fetchData, user]);
 
   // --- Other Handler Functions (regular) ---
   const handleSearch = (event) => {

@@ -31,7 +31,7 @@ const UpdateCourseForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [initialValues, setInitialValues] = useState(null);
   const [, setTotalRows] = useState(0);
-  const { user } = useAuthContext();
+  useAuthContext();
   const { id: courseId } = useParams();
 
   const Toast = withReactContent(
@@ -80,8 +80,9 @@ const UpdateCourseForm = () => {
       try {
         const res = await fetch(`${apiRoutes.courseRoute}${courseId}`, {
           headers: {
-            Authorization: `Bearer ${user.token}`
-          }
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include' // Cookies are sent automatically
         });
         const data = await res.json();
         if (res.ok && data?.data) {
@@ -107,7 +108,7 @@ const UpdateCourseForm = () => {
     };
 
     if (courseId) fetchCourse();
-  }, [courseId, user.token, showErrorSwal]);
+  }, [courseId, showErrorSwal]);
 
   const fetchBatchData = useCallback(async () => {
     setLoading(true);
@@ -118,8 +119,9 @@ const UpdateCourseForm = () => {
 
       const response = await fetch(`${apiRoutes.batchRoute}?${params.toString()}`, {
         headers: {
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       if (!response.ok) throw new Error('Failed to fetch batches');
@@ -133,7 +135,7 @@ const UpdateCourseForm = () => {
     } finally {
       setLoading(false);
     }
-  }, [courseId, user.token]);
+  }, [courseId]);
 
   useEffect(() => {
     fetchBatchData();
@@ -145,9 +147,9 @@ const UpdateCourseForm = () => {
       const response = await fetch(`${apiRoutes.courseRoute}${courseId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include', // Cookies are sent automatically
         body: JSON.stringify(values)
       });
 
@@ -183,7 +185,6 @@ const UpdateCourseForm = () => {
         const response = await fetch(`${apiRoutes.batchRoute}${id}`, {
           method: 'DELETE',
           headers: {
-            Authorization: `Bearer ${user.token}`
           }
         });
 

@@ -4,16 +4,15 @@ const User = require('../models/user');
 
 async function authenticate(req, res, next) {
   try {
-    const authHeader = req.headers.authorization;
+    // Get token from HttpOnly cookie only (most secure approach)
+    const token = req.cookies?.token;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'No token provided',
+        message: 'No token provided. Please login again.',
       });
     }
-
-    const token = authHeader.split(' ')[1];
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);

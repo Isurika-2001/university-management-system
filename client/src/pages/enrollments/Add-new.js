@@ -37,7 +37,7 @@ const AddEnrollment = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [searchingStudents, setSearchingStudents] = useState(false);
-  const { user } = useAuthContext();
+  useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -116,9 +116,9 @@ const AddEnrollment = () => {
       const response = await fetch(apiRoutes.studentRoute, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       const data = await response.json();
@@ -135,7 +135,7 @@ const AddEnrollment = () => {
       console.error('Error fetching students:', error);
       return [];
     }
-  }, [user.token, setStudentOptions]);
+  }, [setStudentOptions]);
 
   // Search students with debounced search
   const searchStudents = useCallback(
@@ -146,7 +146,6 @@ const AddEnrollment = () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`
           }
         });
 
@@ -167,7 +166,7 @@ const AddEnrollment = () => {
         setSearchingStudents(false);
       }
     },
-    [user.token, setSearchingStudents, setStudentOptions]
+    [setSearchingStudents, setStudentOptions]
   );
 
   // Fetch course options
@@ -182,7 +181,6 @@ const AddEnrollment = () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`
           }
         });
 
@@ -201,7 +199,7 @@ const AddEnrollment = () => {
         return [];
       }
     },
-    [user.token, setCourseOptions]
+    [setCourseOptions]
   );
 
   // Fetch batch options
@@ -217,7 +215,6 @@ const AddEnrollment = () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`
           }
         });
 
@@ -237,7 +234,7 @@ const AddEnrollment = () => {
         return [];
       }
     },
-    [user.token, setBatchOptions]
+    [setBatchOptions]
   );
 
   // Fetch classroom options
@@ -253,7 +250,6 @@ const AddEnrollment = () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`
           }
         });
 
@@ -273,7 +269,7 @@ const AddEnrollment = () => {
         return [];
       }
     },
-    [user.token, setClassroomOptions]
+    [setClassroomOptions]
   );
 
   const initialValues = {
@@ -302,9 +298,9 @@ const AddEnrollment = () => {
       const response = await fetch(apiRoutes.enrollmentRoute, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include', // Cookies are sent automatically,
         body: JSON.stringify(values)
       });
 
