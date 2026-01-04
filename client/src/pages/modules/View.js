@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import MainCard from 'components/MainCard';
 import { PATHWAY_LIST } from 'constants/pathways';
 import { modulesAPI } from '../../api/modules';
@@ -36,16 +36,20 @@ const View = () => {
   const [tempModules, setTempModules] = useState([]);
   const [isSavingModules, setIsSavingModules] = useState(false); // New state for saving modules loading
 
-  const Toast = withReactContent(
-    Swal.mixin({
-      toast: true,
-      position: 'bottom',
-      customClass: { popup: 'colored-toast' },
-      background: 'primary',
-      showConfirmButton: false,
-      timer: 3500,
-      timerProgressBar: true
-    })
+  const Toast = useMemo(
+    () =>
+      withReactContent(
+        Swal.mixin({
+          toast: true,
+          position: 'bottom',
+          customClass: { popup: 'colored-toast' },
+          background: 'primary',
+          showConfirmButton: false,
+          timer: 3500,
+          timerProgressBar: true
+        })
+      ),
+    []
   );
 
   const showSuccessSwal = useCallback(
@@ -83,7 +87,7 @@ const View = () => {
       console.error(error);
       showErrorSwal('Error loading modules');
     }
-  }, [setData, showErrorSwal]);
+  }, [showErrorSwal]);
 
   useEffect(() => {
     fetchData();
