@@ -62,7 +62,16 @@ export default function ExamsView() {
     try {
       setLoading(true);
 
-      const [examsResp, classroomsResp] = await Promise.all([examAPI.listAll(), classroomAPI.getAll()]);
+      const [examsResp, classroomsResp] = await Promise.all([
+        examAPI.listAll({
+          page,
+          limit: rowsPerPage,
+          sortBy,
+          sortOrder,
+          search: debouncedSearchTerm
+        }),
+        classroomAPI.getAll()
+      ]);
 
       setExams(examsResp?.data || []);
       setTotalCount(examsResp?.pagination?.total || 0);

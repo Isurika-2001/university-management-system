@@ -51,6 +51,26 @@ async function upsertModules(req, res) {
     if (!courseId) return res.status(400).json({ success: false, message: 'courseId is required' });
     const modulesArray = Array.isArray(modules) ? modules : [];
 
+    // --- Pre-delete check for classrooms ---
+    const ModuleEntry = require('../models/module_entry');
+    const Classroom = require('../models/classroom');
+
+    // Find modules that would be removed
+    const existingModuleEntries = await ModuleEntry.find({ courseId }).lean();
+    const existingModuleNames = existingModuleEntries.map(m => m.name);
+    const modulesToRemoveNames = existingModuleNames.filter(name => !modulesArray.includes(name));
+
+    for (const moduleName of modulesToRemoveNames) {
+      const classroomExists = await Classroom.findOne({ courseId, moduleName: moduleName });
+      if (classroomExists) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Cannot remove module "${moduleName}" as it is currently associated with a classroom.` 
+        });
+      }
+    }
+    // --- End pre-delete check ---
+
     const result = await CourseModule.findOneAndUpdate(
       { courseId },
       { $set: { modules: modulesArray } },
@@ -58,7 +78,6 @@ async function upsertModules(req, res) {
     );
 
     // Ensure ModuleEntry documents exist for each module name for the course
-    const ModuleEntry = require('../models/module_entry');
     for (const mName of modulesArray) {
       try {
         await ModuleEntry.updateOne(
@@ -72,10 +91,12 @@ async function upsertModules(req, res) {
     }
 
     // Remove ModuleEntry documents that are no longer present in the provided modules list
-    try {
-      await ModuleEntry.deleteMany({ courseId, name: { $nin: modulesArray } });
-    } catch (delErr) {
-      logger.error('Error removing old ModuleEntry docs for course', courseId, delErr.message);
+    if (modulesToRemoveNames.length > 0) {
+        try {
+            await ModuleEntry.deleteMany({ courseId, name: { $in: modulesToRemoveNames } });
+        } catch (delErr) {
+            logger.error('Error removing old ModuleEntry docs for course', courseId, delErr.message);
+        }
     }
 
     res.status(200).json({ success: true, message: 'Modules saved', data: result });

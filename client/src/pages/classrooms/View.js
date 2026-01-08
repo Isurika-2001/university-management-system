@@ -143,11 +143,11 @@ const View = () => {
     if (result.isConfirmed) {
       try {
         await classroomAPI.delete(id);
-        setData((prev) => prev.filter((d) => d._id !== id));
+        fetchData();
         showSuccessSwal('Classroom deleted successfully');
       } catch (error) {
         console.error(error);
-        showErrorSwal('Error deleting classroom');
+        showErrorSwal(error.message || 'Error deleting classroom');
       }
     }
   };

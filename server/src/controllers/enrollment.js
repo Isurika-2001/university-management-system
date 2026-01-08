@@ -479,6 +479,18 @@ async function deleteEnrollment(req, res) {
       });
     }
 
+    // Also delete associated ClassroomStudent records (if the status of the classroom student is Pass or Fail, change to Dropped, if the current status is dropped leave it as is, otherwise delete the record)
+    const classroomStudents = await ClassroomStudent.find({ enrollmentId: enrollment._id });
+
+    for (const cs of classroomStudents) {
+      if (cs.status === STATUSES.PASS || cs.status === STATUSES.FAIL) {
+        cs.status = STATUSES.DROPPED;
+        await cs.save();
+      } else if (cs.status !== STATUSES.DROPPED) {
+        await ClassroomStudent.findByIdAndDelete(cs._id);
+      }
+    }
+
     await ActivityLogger.logActivity(req.user, 'DELETE', 'Enrollment', `Deleted enrollment ${enrollment.enrollment_no}`, requestInfo);
 
     res.json({
@@ -520,19 +532,19 @@ async function addBatchTransfer(req, res) {
       });
     }
 
-    // --- Update previous ClassroomStudent records to 'transferred' ---
+    // --- Update previous ClassroomStudent records to 'dropped' ---
     // Find all ClassroomStudent records for this enrollment that are active or on hold in the old batch/classroom
     await ClassroomStudent.updateMany(
       {
         enrollmentId: enrollment._id,
         status: { $in: [STATUSES.ACTIVE, STATUSES.HOLD] } // Only update active or held records
       },
-      { $set: { status: STATUSES.TRANSFERRED } }
+      { $set: { status: STATUSES.DROPPED } }
     );
-    logger.info(`ClassroomStudent records for enrollment ${enrollment._id} set to 'transferred'.`);
+    logger.info(`ClassroomStudent records for enrollment ${enrollment._id} set to 'dropped'.`);
 
 
-    // --- Create a new ClassroomStudent record for the transferred enrollment in the new classroom ---
+    // --- Create a new ClassroomStudent record for the dropped enrollment in the new classroom ---
     const newClassroomStudent = new ClassroomStudent({
       classroomId: newClassroomId,
       enrollmentId: enrollment._id,
@@ -551,7 +563,7 @@ async function addBatchTransfer(req, res) {
           batch: batchId,
           date: new Date(),
           reason,
-          classroomId: newClassroomId // Also store the classroom to which it was transferred
+          classroomId: newClassroomId // Also store the classroom to which it was dropped
         }
       }
     };

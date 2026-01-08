@@ -1,7 +1,18 @@
 import { api, apiRoutes } from './index';
 
 export const examAPI = {
-  listAll: () => api.get(apiRoutes.examRoute),
+  listAll: (
+    { page, limit, sortBy, sortOrder, search } = {
+      page: 0,
+      limit: 10,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      search: ''
+    }
+  ) => {
+    const query = `?page=${page}&limit=${limit}&sortBy=${sortBy}&sortOrder=${sortOrder}&search=${search}`;
+    return api.get(`${apiRoutes.examRoute}${query}`);
+  },
   create: (payload) => api.post(apiRoutes.examRoute, payload),
   listByClassroom: (classroomId) => api.get(`${apiRoutes.examRoute}classroom/${classroomId}`),
   get: (id) => api.get(`${apiRoutes.examRoute}${id}`),

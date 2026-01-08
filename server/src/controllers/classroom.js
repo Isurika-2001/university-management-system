@@ -173,7 +173,9 @@ async function getEligibleClassrooms(req, res) {
     const allClasses = await Classroom.find({
       courseId: enrollment.courseId._id,
       batchId: enrollment.batchId._id
-    }).lean();
+    })
+      .populate('batchId', 'name')
+      .lean();
 
     // Find all classrooms the student is already in for this enrollment
     const studentClassrooms = await ClassroomStudent.find({ enrollmentId }).lean();
@@ -259,6 +261,15 @@ async function updateStudentStatus(req, res) {
 async function deleteClassroom(req, res) {
   try {
     const { id } = req.params;
+
+    // Check if there are any students in the classroom
+    const studentCount = await ClassroomStudent.countDocuments({ classroomId: id });
+    if (studentCount > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cannot delete classroom with students. Please remove all students from the classroom before deleting.' 
+      });
+    }
 
     // Delete associated exam marks
     const exams = await Exam.find({ classroomId: id });

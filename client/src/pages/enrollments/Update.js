@@ -43,6 +43,7 @@ const UpdateForm = () => {
   const [selectedEnrollmentForClassroom, setSelectedEnrollmentForClassroom] = useState(null);
   const [eligibleClassrooms, setEligibleClassrooms] = useState([]);
   const [selectedClassroomForAdd, setSelectedClassroomForAdd] = useState('');
+  const [excludeBatchIdForIntakeFetch, setExcludeBatchIdForIntakeFetch] = useState(null);
 
   const { id } = useParams();
 
@@ -161,14 +162,18 @@ const UpdateForm = () => {
   }, [setAllCourseOptions, setCourseOptions]);
 
   const fetchIntakes = useCallback(
-    async (courseId) => {
+    async (courseId, excludeBatchId = null) => {
       if (!courseId) {
         setIntakeOptions([]);
         return;
       }
       try {
         const response = await batchesAPI.getByCourseId(courseId);
-        setIntakeOptions(response.data || response || []);
+        let intakes = response.data || response || [];
+        if (excludeBatchId) {
+          intakes = intakes.filter((intake) => intake._id !== excludeBatchId);
+        }
+        setIntakeOptions(intakes);
       } catch (error) {
         console.error('Error fetching intakes:', error);
         setIntakeOptions([]);
@@ -201,8 +206,8 @@ const UpdateForm = () => {
   }, [id, fetchData, fetchCourses, fetchEnrollments]);
 
   useEffect(() => {
-    fetchIntakes(selectedCourse);
-  }, [selectedCourse, fetchIntakes]);
+    fetchIntakes(selectedCourse, excludeBatchIdForIntakeFetch);
+  }, [selectedCourse, fetchIntakes, excludeBatchIdForIntakeFetch]);
 
   useEffect(() => {
     if (selectedCourse && selectedIntake) {
@@ -269,8 +274,9 @@ const UpdateForm = () => {
     setOpenTransferDialog(true);
 
     if (enrollment.courseId) {
-      setSelectedCourse(enrollment.courseId._id || enrollment.courseId); // Set selectedCourse for reuse
-      await fetchIntakes(enrollment.courseId);
+      const courseId = enrollment.courseId._id || enrollment.courseId;
+      setExcludeBatchIdForIntakeFetch(enrollment.batchId);
+      setSelectedCourse(courseId); // This will trigger the useEffect to fetch intakes
     }
   };
 
@@ -302,6 +308,7 @@ const UpdateForm = () => {
     setOpenTransferDialog(false);
     setSelectedEnrollment(null);
     setTransferData({ batchId: '', reason: '' });
+    setExcludeBatchIdForIntakeFetch(null);
   };
 
   const handleAddClassroom = async (enrollment) => {

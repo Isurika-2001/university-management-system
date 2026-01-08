@@ -116,18 +116,7 @@ const EnrollmentsView = () => {
       console.error('Error fetching data:', error.message);
       setLoading(false);
     }
-  }, [
-    page,
-    rowsPerPage,
-    debouncedSearchTerm,
-    sortBy,
-    sortOrder,
-    courseFilter,
-    batchFilter,
-    setData,
-    setTotalCount,
-    setLoading
-  ]);
+  }, [page, rowsPerPage, debouncedSearchTerm, sortBy, sortOrder, courseFilter, batchFilter, setData, setTotalCount, setLoading]);
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -177,7 +166,7 @@ const EnrollmentsView = () => {
   const handleDeleteEnrollment = async (id) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
-      text: "You won't be able to revert this!",
+      text: 'This enrollment will be dropped permanently!. This will remove all the classroom records of this enrollment.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
@@ -518,7 +507,7 @@ const EnrollmentsView = () => {
                       onClick={() => handleDeleteEnrollment(enrollment._id)}
                       disabled={isDeleting}
                     >
-                      Delete
+                      Drop
                     </Button>
                   </TableCell>
                 </TableRow>

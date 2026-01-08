@@ -10,9 +10,9 @@ async function getAllExams(req, res) {
   try {
     const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', search = '' } = req.query;
 
-    const pageNum = parseInt(page, 10);
-    const limitNum = parseInt(limit, 10);
-    const skip = (pageNum - 1) * limitNum;
+    const pageNum = parseInt(page, 10) || 0;
+    const limitNum = parseInt(limit, 10) || 10;
+    const skip = pageNum * limitNum;
 
     let filter = {};
     if (search) {

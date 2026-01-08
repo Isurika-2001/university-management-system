@@ -119,12 +119,12 @@ const View = () => {
       setIsSavingModules(true); // Set loading true
       await modulesAPI.upsert({ courseId: selectedCourse.courseId || selectedCourse.courseId || selectedCourse._id, modules: tempModules });
       await fetchData();
-      setOpenDialog(false);
       showSuccessSwal('Modules saved successfully');
     } catch (err) {
       console.error(err);
-      showErrorSwal('Error saving modules');
+      showErrorSwal(err.message || 'Error saving modules');
     } finally {
+      setOpenDialog(false);
       setIsSavingModules(false); // Set loading false
     }
   };

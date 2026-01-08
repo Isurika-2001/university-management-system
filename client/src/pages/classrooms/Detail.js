@@ -286,7 +286,7 @@ const Detail = () => {
                       {student.status !== STATUSES.HOLD &&
                         student.status !== STATUSES.PASS &&
                         student.status !== STATUSES.FAIL &&
-                        student.status !== STATUSES.TRANSFERRED && (
+                        student.status !== STATUSES.DROPPED && (
                           <Button
                             variant="outlined"
                             size="small"

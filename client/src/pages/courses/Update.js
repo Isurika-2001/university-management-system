@@ -184,8 +184,7 @@ const UpdateCourseForm = () => {
       try {
         const response = await fetch(`${apiRoutes.batchRoute}${id}`, {
           method: 'DELETE',
-          headers: {
-          }
+          headers: {}
         });
 
         const data = await response.json();
@@ -420,6 +419,12 @@ const UpdateCourseForm = () => {
                   </Box>
                 </Grid>
               ))}
+              {/* if no batches exist  */}
+              {batchData.length === 0 && (
+                <Typography variant="body2" color="textSecondary">
+                  No batches found for this course.
+                </Typography>
+              )}
             </Grid>
           </Grid>
         </MainCard>
