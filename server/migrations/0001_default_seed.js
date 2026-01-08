@@ -72,6 +72,34 @@ async function run() {
         enrollments: 'R',
         finance: 'CRUD',
         reports: 'R'
+      },
+      {
+        name: 'examinar',
+        displayName: 'Examinar',
+        user: 'R',
+        student: 'R',
+        course: 'R',
+        batch: 'R',
+        enrollments: 'R',
+        finance: 'R',
+        reports: 'R',
+        classrooms: 'R',
+        modules: 'R',
+        exams: 'CRUD'
+      },
+      {
+        name: 'counselor',
+        displayName: 'Counselor',
+        user: 'R',
+        student: 'CRUD',
+        course: 'R',
+        batch: 'R',
+        enrollments: 'CRUD',
+        finance: 'R',
+        reports: 'R',
+        classrooms: 'R',
+        modules: 'R',
+        exams: 'R'
       }
     ];
 

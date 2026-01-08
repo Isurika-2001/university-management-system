@@ -12,7 +12,8 @@ const USER_TYPE_DISPLAY_NAMES = {
   sup_admin: 'Super Admin',
   admin: 'Admin',
   counselor: 'Counselor',
-  student: 'Student'
+  student: 'Student',
+  examinar: 'Examinar'
   // Add more mappings as needed
 };
 

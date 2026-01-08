@@ -22,6 +22,7 @@ import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
+import { hasPermission } from 'utils/userTypeUtils';
 import { useParams } from 'react-router-dom';
 import { PATHWAY_LIST } from 'constants/pathways';
 
@@ -31,7 +32,7 @@ const UpdateCourseForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [initialValues, setInitialValues] = useState(null);
   const [, setTotalRows] = useState(0);
-  useAuthContext();
+  const { user } = useAuthContext();
   const { id: courseId } = useParams();
 
   const Toast = withReactContent(
@@ -413,9 +414,11 @@ const UpdateCourseForm = () => {
                     sx={{ backgroundColor: 'grey.50' }}
                   >
                     <Typography>{batch.name}</Typography>
-                    <Button onClick={() => handleDeleteBatch(batch._id)} variant="outlined" color="error" size="small">
-                      Delete
-                    </Button>
+                    {hasPermission(user, 'batch', 'D') && (
+                      <Button onClick={() => handleDeleteBatch(batch._id)} variant="outlined" color="error" size="small">
+                        Delete
+                      </Button>
+                    )}
                   </Box>
                 </Grid>
               ))}

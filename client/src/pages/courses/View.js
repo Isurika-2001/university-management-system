@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Table,
   TableContainer,
@@ -20,6 +20,7 @@ import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { useAuthContext } from 'context/useAuthContext';
+import { hasPermission } from 'utils/userTypeUtils';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { coursesAPI } from '../../api/courses';
@@ -37,7 +38,12 @@ const View = () => {
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false); // New state for delete loading
   const navigate = useNavigate();
-  useAuthContext();
+  const { user } = useAuthContext();
+
+  // Check if user has any action permissions
+  const hasAnyAction = useMemo(() => {
+    return hasPermission(user, 'course', 'U') || hasPermission(user, 'course', 'D');
+  }, [user]);
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -232,9 +238,11 @@ const View = () => {
       title={
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <span>Course List</span>
-          <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />} size="small">
-            Add Course
-          </Button>
+          {hasPermission(user, 'course', 'C') && (
+            <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />} size="small">
+              Add Course
+            </Button>
+          )}
         </Box>
       }
     >
@@ -282,7 +290,7 @@ const View = () => {
               <TableCell>Credits</TableCell>
               <TableCell>Duration</TableCell>
               <TableCell>Batch Types</TableCell>
-              <TableCell>Action</TableCell> {/* Add column for actions */}
+              {hasAnyAction && <TableCell>Action</TableCell>}
             </TableRow>
           </TableHead>
           {loading && <LinearProgress sx={{ width: '100%' }} />}
@@ -306,28 +314,34 @@ const View = () => {
                       {!course.weekdayBatch && !course.weekendBatch && <Chip label="Not specified" size="small" variant="outlined" />}
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outlined"
-                      style={{
-                        marginRight: '8px'
-                      }}
-                      color="warning"
-                      startIcon={<EditOutlined />}
-                      onClick={() => handleViewRow(course._id)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={isDeleting ? <CircularProgress size={16} color="inherit" /> : <DeleteOutlined />}
-                      onClick={() => handleDelete(course._id)}
-                      disabled={isDeleting}
-                    >
-                      Delete
-                    </Button>
-                  </TableCell>
+                  {hasAnyAction && (
+                    <TableCell>
+                      {hasPermission(user, 'course', 'U') && (
+                        <Button
+                          variant="outlined"
+                          style={{
+                            marginRight: '8px'
+                          }}
+                          color="warning"
+                          startIcon={<EditOutlined />}
+                          onClick={() => handleViewRow(course._id)}
+                        >
+                          Edit
+                        </Button>
+                      )}
+                      {hasPermission(user, 'course', 'D') && (
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          startIcon={isDeleting ? <CircularProgress size={16} color="inherit" /> : <DeleteOutlined />}
+                          onClick={() => handleDelete(course._id)}
+                          disabled={isDeleting}
+                        >
+                          Delete
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
           </TableBody>

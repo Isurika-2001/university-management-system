@@ -8,9 +8,12 @@ import withReactContent from 'sweetalert2-react-content';
 import dayjs from 'dayjs';
 import { batchesAPI } from '../../api/batches';
 import { coursesAPI } from '../../api/courses';
+import { useAuthContext } from 'context/useAuthContext';
+import { hasPermission } from 'utils/userTypeUtils';
 
 const View = () => {
   const navigate = useNavigate();
+  const { user } = useAuthContext();
 
   // Pagination and sorting state
   const [page, setPage] = useState(0);
@@ -168,6 +171,9 @@ const View = () => {
     }
   };
 
+  // Check if user has any action permissions
+  const hasAnyAction = hasPermission(user, 'batch', 'U') || hasPermission(user, 'batch', 'D');
+
   // Define columns for the DataTable
   const columns = [
     { key: 'name', label: 'Name' },
@@ -187,37 +193,41 @@ const View = () => {
       label: 'Registration Deadline',
       render: (value) => (value ? dayjs(value).format('YYYY-MM-DD') : '')
     },
-    {
+    ...(hasAnyAction ? [{
       key: 'actions',
       label: 'Action',
       render: (value, row) => (
         <>
-          <Button
-            variant="outlined"
-            color="warning"
-            startIcon={<EditOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleRowClick(row);
-            }}
-            sx={{ mr: 1 }}
-          >
-            Edit
-          </Button>
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteBatch(row._id);
-            }}
-            variant="outlined"
-            color="error"
-            startIcon={<DeleteOutlined />}
-          >
-            Delete
-          </Button>
+          {hasPermission(user, 'batch', 'U') && (
+            <Button
+              variant="outlined"
+              color="warning"
+              startIcon={<EditOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRowClick(row);
+              }}
+              sx={{ mr: 1 }}
+            >
+              Edit
+            </Button>
+          )}
+          {hasPermission(user, 'batch', 'D') && (
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteBatch(row._id);
+              }}
+              variant="outlined"
+              color="error"
+              startIcon={<DeleteOutlined />}
+            >
+              Delete
+            </Button>
+          )}
         </>
       )
-    }
+    }] : [])
   ];
 
   // Define filters
@@ -241,9 +251,11 @@ const View = () => {
       title={
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <span>Intake List</span>
-          <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />} size="small">
-            Add Intake
-          </Button>
+          {hasPermission(user, 'batch', 'C') && (
+            <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />} size="small">
+              Add Intake
+            </Button>
+          )}
         </Box>
       }
       data={data}

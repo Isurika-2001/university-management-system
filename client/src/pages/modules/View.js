@@ -27,8 +27,17 @@ import {
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useAuthContext } from 'context/useAuthContext';
+import { hasPermission } from 'utils/userTypeUtils';
 
 const View = () => {
+  const { user } = useAuthContext();
+  
+  // Check if user has any action permissions
+  const hasAnyAction = useMemo(() => {
+    return hasPermission(user, 'modules', 'U');
+  }, [user]);
+
   const [data, setData] = useState([]); // modules per course rows
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -146,7 +155,7 @@ const View = () => {
                 <TableCell>Course</TableCell>
                 <TableCell>Pathway</TableCell>
                 <TableCell>Modules</TableCell>
-                <TableCell>Action</TableCell>
+                {hasAnyAction && <TableCell>Action</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -165,11 +174,15 @@ const View = () => {
                       <Typography color="textSecondary">Empty</Typography>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <Button variant="outlined" size="small" onClick={() => handleOpenDialog(row)}>
-                      Manage
-                    </Button>
-                  </TableCell>
+                  {hasAnyAction && (
+                    <TableCell>
+                      {hasPermission(user, 'modules', 'U') && (
+                        <Button variant="outlined" size="small" onClick={() => handleOpenDialog(row)}>
+                          Manage
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -193,16 +206,20 @@ const View = () => {
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
-                    handleAddModule();
+                    if (hasPermission(user, 'modules', 'C')) {
+                      handleAddModule();
+                    }
                   }
                 }}
                 variant="outlined"
               />
             </Grid>
             <Grid item xs={1}>
-              <IconButton color="primary" onClick={handleAddModule} disabled={!moduleInput.trim()} sx={{ mt: 0.5 }}>
-                <PlusOutlined />
-              </IconButton>
+              {hasPermission(user, 'modules', 'C') && (
+                <IconButton color="primary" onClick={handleAddModule} disabled={!moduleInput.trim()} sx={{ mt: 0.5 }}>
+                  <PlusOutlined />
+                </IconButton>
+              )}
             </Grid>
           </Grid>
 

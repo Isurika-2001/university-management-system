@@ -17,8 +17,11 @@ import { batchesAPI } from '../../api/batches';
 import { classroomAPI } from '../../api/classrooms';
 import ClassroomHistory from '../classrooms/ClassroomHistory';
 import { PATHWAY_LIST } from '../../constants/pathways';
+import { useAuthContext } from 'context/useAuthContext';
+import { hasPermission } from 'utils/userTypeUtils';
 
 const UpdateForm = () => {
+  const { user } = useAuthContext();
   const [data, setData] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]);
@@ -410,9 +413,11 @@ const UpdateForm = () => {
           <Grid item xs={12}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <h3>Current Enrollments</h3>
-              <Button variant="contained" startIcon={<FileAddOutlined />} onClick={() => setOpen(true)}>
-                Add New Enrollment
-              </Button>
+              {hasPermission(user, 'enrollments', 'C') && (
+                <Button variant="contained" startIcon={<FileAddOutlined />} onClick={() => setOpen(true)}>
+                  Add New Enrollment
+                </Button>
+              )}
             </Box>
 
             <TableContainer component={Paper}>
@@ -448,7 +453,7 @@ const UpdateForm = () => {
                           <TableCell>
                             <Box sx={{ display: 'flex', gap: 1 }}>
                               {/* Add Classroom button - show only if no classroom is assigned */}
-                              {!enrollment.hasAssignedClassroom && (
+                              {!enrollment.hasAssignedClassroom && hasPermission(user, 'classrooms', 'C') && (
                                 <Button
                                   variant="outlined"
                                   color="primary"
@@ -471,16 +476,18 @@ const UpdateForm = () => {
                               >
                                 Transfer
                               </Button>
-                              <Button
-                                variant="outlined"
-                                color="error"
-                                size="small"
-                                onClick={() => handleDelete(enrollment._id)}
-                                disabled={submitting}
-                                startIcon={submitting ? <CircularProgress size={16} /> : <DeleteOutlined />}
-                              >
-                                Delete
-                              </Button>
+                              {hasPermission(user, 'enrollments', 'D') && (
+                                <Button
+                                  variant="outlined"
+                                  color="error"
+                                  size="small"
+                                  onClick={() => handleDelete(enrollment._id)}
+                                  disabled={submitting}
+                                  startIcon={submitting ? <CircularProgress size={16} /> : <DeleteOutlined />}
+                                >
+                                  Delete
+                                </Button>
+                              )}
                             </Box>
                           </TableCell>
                         </TableRow>

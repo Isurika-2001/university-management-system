@@ -12,8 +12,7 @@ const logger = require('../utils/logger');
 // Get all classrooms with student count
 async function getAllClassrooms(req, res) {
   try {
-    // Support filtering by batchId query parameter
-    const { batchId, courseId } = req.query;
+    const { batchId, courseId, search = '' } = req.query;
     const filter = {};
     
     if (batchId) {
@@ -23,15 +22,36 @@ async function getAllClassrooms(req, res) {
       filter.courseId = courseId;
     }
 
+    // Search filter - search in classroom name
+    if (search.trim() !== '') {
+      filter.name = { $regex: search.trim(), $options: 'i' };
+    }
+
     const classrooms = await Classroom.find(filter)
       .populate('courseId', 'name code')
       .populate('batchId', 'name')
       .populate('moduleId', 'name')
       .lean();
 
+    // If search is provided, also filter by course name or batch name
+    let filteredClassrooms = classrooms;
+    if (search.trim() !== '') {
+      const searchLower = search.trim().toLowerCase();
+      filteredClassrooms = classrooms.filter((classroom) => {
+        const courseName = (classroom.courseId?.name || '').toLowerCase();
+        const batchName = (classroom.batchId?.name || '').toLowerCase();
+        const classroomName = (classroom.name || '').toLowerCase();
+        return (
+          classroomName.includes(searchLower) ||
+          courseName.includes(searchLower) ||
+          batchName.includes(searchLower)
+        );
+      });
+    }
+
     // Get student count for each classroom
     const result = await Promise.all(
-      classrooms.map(async (classroom) => {
+      filteredClassrooms.map(async (classroom) => {
         const studentCount = await ClassroomStudent.countDocuments({ classroomId: classroom._id });
         return {
           ...classroom,

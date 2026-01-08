@@ -26,10 +26,13 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { classroomAPI } from 'api/classrooms';
 import { STATUSES, STATUS_LIST } from 'constants/statuses';
+import { useAuthContext } from 'context/useAuthContext';
+import { hasPermission } from 'utils/userTypeUtils';
 
 const Detail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthContext();
   const [classroom, setClassroom] = useState(null);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -310,7 +313,7 @@ const Detail = () => {
                           Continue
                         </Button>
                       )}
-                      {isEligibleForTransfer(student.status) ? (
+                      {isEligibleForTransfer(student.status) && hasPermission(user, 'classrooms', 'C') ? (
                         <Button
                           variant="outlined"
                           size="small"
@@ -323,21 +326,23 @@ const Detail = () => {
                         </Button>
                       ) : // nothing
                       null}
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<DeleteOutlined />}
-                        onClick={() =>
-                          handleRemoveFromClassroom(
-                            student._id,
-                            `${student.studentId?.firstName || ''} ${student.studentId?.lastName || ''}`.trim()
-                          )
-                        }
-                        color="error"
-                        disabled={isRemoving}
-                      >
-                        Remove
-                      </Button>
+                      {hasPermission(user, 'classrooms', 'D') && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<DeleteOutlined />}
+                          onClick={() =>
+                            handleRemoveFromClassroom(
+                              student._id,
+                              `${student.studentId?.firstName || ''} ${student.studentId?.lastName || ''}`.trim()
+                            )
+                          }
+                          color="error"
+                          disabled={isRemoving}
+                        >
+                          Remove
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

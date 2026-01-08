@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Table,
   TableContainer,
@@ -18,15 +18,17 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Select
+  Select,
+  Chip
 } from '@mui/material';
 import { FileAddOutlined, EditOutlined, DeleteOutlined, CheckOutlined } from '@ant-design/icons'; // Remove SearchOutlined
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { formatUserTypes, formatUserTypeName } from '../../utils/userTypeUtils';
+import { formatUserTypes, formatUserTypeName, hasPermission } from '../../utils/userTypeUtils';
 import { usersAPI } from '../../api/users';
+import { useAuthContext } from 'context/useAuthContext';
 
 const View = () => {
   const [page, setPage] = useState(0);
@@ -44,6 +46,12 @@ const View = () => {
   const [selectedUserType, setSelectedUserType] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const navigate = useNavigate();
+  const { user: currentUser } = useAuthContext();
+
+  // Check if user has any action permissions
+  const hasAnyAction = useMemo(() => {
+    return hasPermission(currentUser, 'user', 'U') || hasPermission(currentUser, 'user', 'D');
+  }, [currentUser]);
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -359,9 +367,11 @@ const View = () => {
       title={
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <span>User List</span>
-          <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />} size="small">
-            Add User
-          </Button>
+          {hasPermission(currentUser, 'user', 'C') && (
+            <Button onClick={handleClickAddNew} variant="contained" startIcon={<FileAddOutlined />} size="small">
+              Add User
+            </Button>
+          )}
         </Box>
       }
     >
@@ -399,7 +409,7 @@ const View = () => {
               </Select>
             </FormControl>
           </Box>
-          {selected.length > 0 && (
+          {selected.length > 0 && hasPermission(currentUser, 'user', 'D') && (
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button variant="outlined" color="secondary" onClick={() => setSelected([])} size="small">
                 Clear Selection
@@ -450,7 +460,7 @@ const View = () => {
                 </TableSortLabel>
               </TableCell>
               <TableCell>Status</TableCell>
-              <TableCell>Action</TableCell> {/* Add column for actions */}
+              {hasAnyAction && <TableCell>Action</TableCell>}
             </TableRow>
           </TableHead>
           {loading && <LinearProgress sx={{ width: '100%' }} />}
@@ -483,41 +493,53 @@ const View = () => {
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.user_type ? formatUserTypeName(user.user_type.name) : 'N/A'}</TableCell>
-                    <TableCell>{user.status === true ? 'Active' : 'Disabled'}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="outlined"
-                        style={{
-                          marginRight: '8px'
-                        }}
-                        color="warning"
-                        startIcon={<EditOutlined />}
-                        onClick={() => handleViewRow(user._id)}
-                      >
-                        Edit
-                      </Button>
-                      {user.status === true ? (
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          startIcon={deleting ? <CircularProgress size={16} /> : <DeleteOutlined />}
-                          onClick={() => handleDelete(user._id)}
-                          disabled={deleting}
-                        >
-                          {deleting ? 'Disabling...' : 'Disable'}
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outlined"
-                          color="success"
-                          startIcon={<CheckOutlined />}
-                          onClick={() => handleEnable(user._id)}
-                          disabled={deleting}
-                        >
-                          Enable
-                        </Button>
-                      )}
+                      <Chip
+                        label={user.status === true ? 'Active' : 'Disabled'}
+                        color={user.status === true ? 'success' : 'error'}
+                        size="small"
+                      />
                     </TableCell>
+                    {hasAnyAction && (
+                      <TableCell>
+                        {hasPermission(currentUser, 'user', 'U') && (
+                          <Button
+                            variant="outlined"
+                            style={{
+                              marginRight: '8px'
+                            }}
+                            color="warning"
+                            startIcon={<EditOutlined />}
+                            onClick={() => handleViewRow(user._id)}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                        {user.status === true ? (
+                          hasPermission(currentUser, 'user', 'D') && (
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              startIcon={deleting ? <CircularProgress size={16} /> : <DeleteOutlined />}
+                              onClick={() => handleDelete(user._id)}
+                              disabled={deleting}
+                            >
+                              {deleting ? 'Disabling...' : 'Disable'}
+                            </Button>
+                          )
+                        ) : (
+                          <Button
+                            variant="outlined"
+                            color="success"
+                            startIcon={<CheckOutlined />}
+                            onClick={() => handleEnable(user._id)}
+                            disabled={deleting}
+                          >
+                            Enable
+                          </Button>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
             )}
@@ -533,10 +555,6 @@ const View = () => {
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
-      {/* Debug info */}
-      <div style={{ padding: '10px', fontSize: '12px', color: '#666' }}>
-        Debug: Loading: {loading.toString()}, Data length: {data.length}, Filtered data length: {filteredData.length}
-      </div>
     </MainCard>
   );
 };
