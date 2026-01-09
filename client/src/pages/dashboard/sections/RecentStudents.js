@@ -256,6 +256,7 @@ const RecentStudents = () => {
                               </Box>
                             </Box>
                           }
+                          secondaryTypographyProps={{ component: 'div' }}
                         />
                       </ListItem>
                       {index < recentStudents.length - 1 && <Divider sx={{ my: 1, opacity: 0.3 }} />}

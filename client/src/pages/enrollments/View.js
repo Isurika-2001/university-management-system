@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Table,
   TableContainer,
@@ -23,6 +23,7 @@ import { UploadOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusO
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { useAuthContext } from 'context/useAuthContext';
+import { hasPermission } from 'utils/userTypeUtils';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { apiRoutes } from 'config';
@@ -50,6 +51,11 @@ const EnrollmentsView = () => {
 
   const navigate = useNavigate();
   const { user } = useAuthContext();
+
+  // Check if user has any action permissions
+  const hasAnyAction = useMemo(() => {
+    return hasPermission(user, 'enrollments', 'U') || hasPermission(user, 'enrollments', 'D');
+  }, [user]);
 
   // --- Memoized UI/Utility Functions ---
   const Toast = withReactContent(
@@ -97,9 +103,9 @@ const EnrollmentsView = () => {
       const response = await fetch(`${apiRoutes.enrollmentRoute}?${queryString}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       if (!response.ok) {
@@ -116,28 +122,16 @@ const EnrollmentsView = () => {
       console.error('Error fetching data:', error.message);
       setLoading(false);
     }
-  }, [
-    page,
-    rowsPerPage,
-    debouncedSearchTerm,
-    sortBy,
-    sortOrder,
-    courseFilter,
-    batchFilter,
-    user.token,
-    setData,
-    setTotalCount,
-    setLoading
-  ]);
+  }, [page, rowsPerPage, debouncedSearchTerm, sortBy, sortOrder, courseFilter, batchFilter, setData, setTotalCount, setLoading]);
 
   const fetchCourses = useCallback(async () => {
     try {
       const response = await fetch(apiRoutes.courseRoute, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       if (!response.ok) {
@@ -149,7 +143,7 @@ const EnrollmentsView = () => {
     } catch (error) {
       console.error('Error fetching courses:', error);
     }
-  }, [user.token, setCourses]);
+  }, [setCourses]);
 
   const fetchBatches = useCallback(
     async (courseId) => {
@@ -157,9 +151,9 @@ const EnrollmentsView = () => {
         const response = await fetch(`${apiRoutes.batchRoute}course/${courseId}`, {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`
-          }
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include' // Cookies are sent automatically
         });
 
         if (!response.ok) {
@@ -172,13 +166,13 @@ const EnrollmentsView = () => {
         console.error('Error fetching batches:', error);
       }
     },
-    [user.token, setBatches]
+    [setBatches]
   );
 
   const handleDeleteEnrollment = async (id) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
-      text: "You won't be able to revert this!",
+      text: 'This enrollment will be dropped permanently!. This will remove all the classroom records of this enrollment.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
@@ -215,9 +209,9 @@ const EnrollmentsView = () => {
       const response = await fetch(`${apiRoutes.enrollmentRoute}export?${params.toString()}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       if (!response.ok) throw new Error('Error exporting enrollments');
@@ -251,9 +245,9 @@ const EnrollmentsView = () => {
       const response = await fetch(`${apiRoutes.enrollmentRoute}export?${params.toString()}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       if (!response.ok) throw new Error('Error exporting enrollments');
@@ -285,10 +279,10 @@ const EnrollmentsView = () => {
   }, [searchTerm]);
 
   useEffect(() => {
-    if (user?.token) {
+    if (user) {
       fetchCourses();
     }
-  }, [fetchCourses, user?.token]);
+  }, [fetchCourses, user]);
 
   useEffect(() => {
     if (courseFilter) {
@@ -300,10 +294,10 @@ const EnrollmentsView = () => {
   }, [courseFilter, fetchBatches, setBatches, setBatchFilter]);
 
   useEffect(() => {
-    if (user?.token) {
+    if (user) {
       fetchData();
     }
-  }, [fetchData, user?.token]);
+  }, [fetchData, user]);
 
   // --- Other Handler Functions (regular) ---
   const handleSearch = (event) => {
@@ -374,9 +368,11 @@ const EnrollmentsView = () => {
         title={
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <span>Enrollments Management</span>
-            <Button onClick={() => navigate('/app/enrollments/add')} variant="contained" startIcon={<PlusOutlined />} size="small">
-              Add Enrollment
-            </Button>
+            {hasPermission(user, 'enrollments', 'C') && (
+              <Button onClick={() => navigate('/app/enrollments/add')} variant="contained" startIcon={<PlusOutlined />} size="small">
+                Add Enrollment
+              </Button>
+            )}
           </Box>
         }
       >
@@ -484,7 +480,7 @@ const EnrollmentsView = () => {
                 <TableCell>Course</TableCell>
                 <TableCell>Intake</TableCell>
                 <TableCell>Enrollment Date</TableCell>
-                <TableCell>Action</TableCell>
+                {hasAnyAction && <TableCell>Action</TableCell>}
               </TableRow>
             </TableHead>
             {loading && <LinearProgress sx={{ width: '100%' }} />}
@@ -502,26 +498,32 @@ const EnrollmentsView = () => {
                   <TableCell>{enrollment.course?.code}</TableCell>
                   <TableCell>{enrollment.batch?.name}</TableCell>
                   <TableCell>{enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate).toLocaleDateString() : 'N/A'}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outlined"
-                      style={{ marginRight: '8px' }}
-                      color="primary"
-                      startIcon={<EditOutlined />}
-                      onClick={() => navigate(`/app/enrollments/update/${enrollment.studentId}`)}
-                    >
-                      Manage
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={<DeleteOutlined />}
-                      onClick={() => handleDeleteEnrollment(enrollment._id)}
-                      disabled={isDeleting}
-                    >
-                      Delete
-                    </Button>
-                  </TableCell>
+                  {hasAnyAction && (
+                    <TableCell>
+                      {hasPermission(user, 'enrollments', 'U') && (
+                        <Button
+                          variant="outlined"
+                          style={{ marginRight: '8px' }}
+                          color="primary"
+                          startIcon={<EditOutlined />}
+                          onClick={() => navigate(`/app/enrollments/update/${enrollment.studentId}`)}
+                        >
+                          Manage
+                        </Button>
+                      )}
+                      {hasPermission(user, 'enrollments', 'D') && (
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          startIcon={<DeleteOutlined />}
+                          onClick={() => handleDeleteEnrollment(enrollment._id)}
+                          disabled={isDeleting}
+                        >
+                          Drop
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

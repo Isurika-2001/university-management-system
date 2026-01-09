@@ -17,8 +17,11 @@ import { batchesAPI } from '../../api/batches';
 import { classroomAPI } from '../../api/classrooms';
 import ClassroomHistory from '../classrooms/ClassroomHistory';
 import { PATHWAY_LIST } from '../../constants/pathways';
+import { useAuthContext } from 'context/useAuthContext';
+import { hasPermission } from 'utils/userTypeUtils';
 
 const UpdateForm = () => {
+  const { user } = useAuthContext();
   const [data, setData] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]);
@@ -43,6 +46,7 @@ const UpdateForm = () => {
   const [selectedEnrollmentForClassroom, setSelectedEnrollmentForClassroom] = useState(null);
   const [eligibleClassrooms, setEligibleClassrooms] = useState([]);
   const [selectedClassroomForAdd, setSelectedClassroomForAdd] = useState('');
+  const [excludeBatchIdForIntakeFetch, setExcludeBatchIdForIntakeFetch] = useState(null);
 
   const { id } = useParams();
 
@@ -161,14 +165,18 @@ const UpdateForm = () => {
   }, [setAllCourseOptions, setCourseOptions]);
 
   const fetchIntakes = useCallback(
-    async (courseId) => {
+    async (courseId, excludeBatchId = null) => {
       if (!courseId) {
         setIntakeOptions([]);
         return;
       }
       try {
         const response = await batchesAPI.getByCourseId(courseId);
-        setIntakeOptions(response.data || response || []);
+        let intakes = response.data || response || [];
+        if (excludeBatchId) {
+          intakes = intakes.filter((intake) => intake._id !== excludeBatchId);
+        }
+        setIntakeOptions(intakes);
       } catch (error) {
         console.error('Error fetching intakes:', error);
         setIntakeOptions([]);
@@ -201,8 +209,8 @@ const UpdateForm = () => {
   }, [id, fetchData, fetchCourses, fetchEnrollments]);
 
   useEffect(() => {
-    fetchIntakes(selectedCourse);
-  }, [selectedCourse, fetchIntakes]);
+    fetchIntakes(selectedCourse, excludeBatchIdForIntakeFetch);
+  }, [selectedCourse, fetchIntakes, excludeBatchIdForIntakeFetch]);
 
   useEffect(() => {
     if (selectedCourse && selectedIntake) {
@@ -269,8 +277,9 @@ const UpdateForm = () => {
     setOpenTransferDialog(true);
 
     if (enrollment.courseId) {
-      setSelectedCourse(enrollment.courseId._id || enrollment.courseId); // Set selectedCourse for reuse
-      await fetchIntakes(enrollment.courseId);
+      const courseId = enrollment.courseId._id || enrollment.courseId;
+      setExcludeBatchIdForIntakeFetch(enrollment.batchId);
+      setSelectedCourse(courseId); // This will trigger the useEffect to fetch intakes
     }
   };
 
@@ -302,6 +311,7 @@ const UpdateForm = () => {
     setOpenTransferDialog(false);
     setSelectedEnrollment(null);
     setTransferData({ batchId: '', reason: '' });
+    setExcludeBatchIdForIntakeFetch(null);
   };
 
   const handleAddClassroom = async (enrollment) => {
@@ -403,9 +413,11 @@ const UpdateForm = () => {
           <Grid item xs={12}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <h3>Current Enrollments</h3>
-              <Button variant="contained" startIcon={<FileAddOutlined />} onClick={() => setOpen(true)}>
-                Add New Enrollment
-              </Button>
+              {hasPermission(user, 'enrollments', 'C') && (
+                <Button variant="contained" startIcon={<FileAddOutlined />} onClick={() => setOpen(true)}>
+                  Add New Enrollment
+                </Button>
+              )}
             </Box>
 
             <TableContainer component={Paper}>
@@ -441,7 +453,7 @@ const UpdateForm = () => {
                           <TableCell>
                             <Box sx={{ display: 'flex', gap: 1 }}>
                               {/* Add Classroom button - show only if no classroom is assigned */}
-                              {!enrollment.hasAssignedClassroom && (
+                              {!enrollment.hasAssignedClassroom && hasPermission(user, 'classrooms', 'C') && (
                                 <Button
                                   variant="outlined"
                                   color="primary"
@@ -464,16 +476,18 @@ const UpdateForm = () => {
                               >
                                 Transfer
                               </Button>
-                              <Button
-                                variant="outlined"
-                                color="error"
-                                size="small"
-                                onClick={() => handleDelete(enrollment._id)}
-                                disabled={submitting}
-                                startIcon={submitting ? <CircularProgress size={16} /> : <DeleteOutlined />}
-                              >
-                                Delete
-                              </Button>
+                              {hasPermission(user, 'enrollments', 'D') && (
+                                <Button
+                                  variant="outlined"
+                                  color="error"
+                                  size="small"
+                                  onClick={() => handleDelete(enrollment._id)}
+                                  disabled={submitting}
+                                  startIcon={submitting ? <CircularProgress size={16} /> : <DeleteOutlined />}
+                                >
+                                  Delete
+                                </Button>
+                              )}
                             </Box>
                           </TableCell>
                         </TableRow>

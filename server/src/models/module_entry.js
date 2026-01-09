@@ -10,6 +10,25 @@ const moduleEntrySchema = new mongoose.Schema(
     name: {
       type: String,
       required: true
+    },
+    isSequential: {
+      type: Boolean,
+      default: false
+    },
+    sequenceNumber: {
+      type: Number,
+      default: null,
+      validate: {
+        validator: function(value) {
+          // If isSequential is true, sequenceNumber must be a positive integer
+          // If isSequential is false, sequenceNumber should be null
+          if (this.isSequential) {
+            return value !== null && Number.isInteger(value) && value > 0;
+          }
+          return value === null;
+        },
+        message: 'Sequence number must be a positive integer when isSequential is true'
+      }
     }
   },
   { timestamps: true }

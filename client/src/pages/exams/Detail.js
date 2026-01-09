@@ -27,7 +27,7 @@ import {
 } from '@mui/material';
 import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons';
 
-const EditableMarkRow = ({ student, take, examId, onMarkSave, getStudentName }) => {
+const TakeCells = ({ student, take, examId, onMarkSave }) => {
   const [mark, setMark] = useState(take?.mark ?? '');
   const isEditable = take?.mark == null;
 
@@ -53,9 +53,7 @@ const EditableMarkRow = ({ student, take, examId, onMarkSave, getStudentName }) 
   };
 
   return (
-    <TableRow>
-      <TableCell>{getStudentName(student)}</TableCell>
-      <TableCell>{student.enrollmentId?.enrollment_no || '-'}</TableCell>
+    <>
       <TableCell>{take.type}</TableCell>
       <TableCell>
         <input type="number" value={mark} disabled={!isEditable} onChange={(e) => setMark(e.target.value)} style={{ width: '80px' }} />
@@ -67,7 +65,7 @@ const EditableMarkRow = ({ student, take, examId, onMarkSave, getStudentName }) 
           </Button>
         )}
       </TableCell>
-    </TableRow>
+    </>
   );
 };
 
@@ -197,32 +195,29 @@ export default function ExamDetail() {
                   {students.map((student) => {
                     const sid = student.studentId?._id || student._id;
                     const studentMarks = marksByStudent[sid];
-                    const takes = studentMarks?.takes || [];
+                    let takes = [...(studentMarks?.takes || [])];
 
-                    if (takes.length === 0) {
-                      return (
-                        <EditableMarkRow
-                          key={`${sid}-fresh`}
-                          student={student}
-                          take={{ type: 'fresh', mark: null }}
-                          examId={selectedExam._id}
-                          onMarkSave={fetchExamData}
-                          getStudentName={getStudentName}
-                        />
-                      );
+                    const hasFreshTake = takes.some((take) => take.type === 'fresh');
+                    if (!hasFreshTake) {
+                      takes.unshift({ type: 'fresh', mark: null });
                     }
 
-                    const studentWithMarkInfo = { ...student, examMark: studentMarks.examMark };
+                    const studentWithMarkInfo = { ...student, examMark: studentMarks?.examMark };
 
                     return takes.map((take, index) => (
-                      <EditableMarkRow
-                        key={`${sid}-${index}`}
-                        student={studentWithMarkInfo}
-                        take={take}
-                        examId={selectedExam._id}
-                        onMarkSave={fetchExamData}
-                        getStudentName={getStudentName}
-                      />
+                      <TableRow key={`${sid}-${take.type}-${index}`}>
+                        {index === 0 && (
+                          <>
+                            <TableCell rowSpan={takes.length} sx={{ verticalAlign: 'top' }}>
+                              {getStudentName(student)}
+                            </TableCell>
+                            <TableCell rowSpan={takes.length} sx={{ verticalAlign: 'top' }}>
+                              {student.enrollmentId?.enrollment_no || '-'}
+                            </TableCell>
+                          </>
+                        )}
+                        <TakeCells take={take} examId={selectedExam._id} onMarkSave={fetchExamData} student={studentWithMarkInfo} />
+                      </TableRow>
                     ));
                   })}
                 </TableBody>

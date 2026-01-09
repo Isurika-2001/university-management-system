@@ -3,7 +3,7 @@ export const STATUSES = {
   HOLD: 'hold',
   PASS: 'pass',
   FAIL: 'fail',
-  TRANSFERRED: 'transferred'
+  DROPPED: 'dropped'
 };
 
 export const STATUS_LIST = [
@@ -11,7 +11,7 @@ export const STATUS_LIST = [
   { value: STATUSES.HOLD, label: 'Hold', color: 'warning' },
   { value: STATUSES.PASS, label: 'Pass', color: 'info' },
   { value: STATUSES.FAIL, label: 'Fail', color: 'error' },
-  { value: STATUSES.TRANSFERRED, label: 'Transferred', color: 'default' }
+  { value: STATUSES.DROPPED, label: 'Dropped', color: 'default' }
 ];
 
 export default { STATUSES, STATUS_LIST };

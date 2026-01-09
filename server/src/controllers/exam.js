@@ -8,11 +8,11 @@ const PASS_THRESHOLD = 40;
 
 async function getAllExams(req, res) {
   try {
-    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', search = '' } = req.query;
+    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', search = '', courseId, batchId } = req.query;
 
-    const pageNum = parseInt(page, 10);
-    const limitNum = parseInt(limit, 10);
-    const skip = (pageNum - 1) * limitNum;
+    const pageNum = parseInt(page, 10) || 0;
+    const limitNum = parseInt(limit, 10) || 10;
+    const skip = pageNum * limitNum;
 
     let filter = {};
     if (search) {
@@ -27,16 +27,39 @@ async function getAllExams(req, res) {
     const sort = {};
     sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-    const totalExams = await Exam.countDocuments(filter);
-    const exams = await Exam.find(filter)
-      .populate('classroomId')
-      .sort(sort)
-      .skip(skip)
-      .limit(limitNum);
+    // First, get all exams with populated classroom data
+    let exams = await Exam.find(filter)
+      .populate({
+        path: 'classroomId',
+        populate: [
+          { path: 'courseId', select: 'name code' },
+          { path: 'batchId', select: 'name' }
+        ]
+      })
+      .sort(sort);
+
+    // Filter by courseId if provided
+    if (courseId) {
+      exams = exams.filter(exam => {
+        const classroom = exam.classroomId;
+        return classroom && classroom.courseId && classroom.courseId._id.toString() === courseId;
+      });
+    }
+
+    // Filter by batchId if provided
+    if (batchId) {
+      exams = exams.filter(exam => {
+        const classroom = exam.classroomId;
+        return classroom && classroom.batchId && classroom.batchId._id.toString() === batchId;
+      });
+    }
+
+    const totalExams = exams.length;
+    const paginatedExams = exams.slice(skip, skip + limitNum);
 
     res.json({
       success: true,
-      data: exams,
+      data: paginatedExams,
       pagination: {
         total: totalExams,
         page: pageNum,

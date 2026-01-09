@@ -130,7 +130,7 @@ const AddStudent = () => {
   const [requiredDocuments, setRequiredDocuments] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [batchOptionsMap, setBatchOptionsMap] = useState({});
-  const { user } = useAuthContext();
+  useAuthContext();
 
   // --- Added based on error: setNextDisabled is not defined ---
   // By default, next button is enabled
@@ -165,6 +165,12 @@ const AddStudent = () => {
 
   // Function to check if a step is completed
   const checkStepCompletion = (stepIndex, values) => {
+    // Don't mark optional steps as complete until user has visited them
+    // Required steps (0, 1, 2) can be checked immediately
+    if (stepIndex >= 3 && activeStep < stepIndex) {
+      return false;
+    }
+    
     switch (stepIndex) {
       case 0: // Personal Details
         return !!(values.firstName && values.lastName && values.dob && values.nic && values.address && values.mobile && values.email);
@@ -213,14 +219,40 @@ const AddStudent = () => {
 
       case 4: {
         // Required Documents (Optional)
-        // Only completed if all required documents are selected
-        const required = requiredDocuments.filter((doc) => doc.isRequired);
-        if (required.length === 0) {
-          // No required docs means completed, but only if we've actually loaded the documents
-          // This prevents the step from being marked complete before documents are fetched
-          return requiredDocuments.length > 0;
+        // Only mark as complete if:
+        // 1. Documents have been loaded (requiredDocuments.length > 0)
+        // 2. AND user has visited this step (activeStep >= 4)
+        // 3. AND either no required documents exist OR all required documents are selected
+        
+        // If documents haven't been loaded yet, don't mark as complete
+        if (requiredDocuments.length === 0) {
+          return false;
         }
-        return required.every((doc) => values.requiredDocuments && values.requiredDocuments.includes(doc._id));
+        
+        // If user hasn't visited this step yet, don't mark as complete
+        if (activeStep < 4) {
+          return false;
+        }
+        
+        const required = requiredDocuments.filter((doc) => doc.isRequired);
+        
+        // If no required documents exist in the system, mark as complete (user visited and there are none)
+        if (required.length === 0) {
+          return true;
+        }
+        
+        // If there are required documents, check if ALL are selected
+        // values.requiredDocuments is an array of selected document IDs
+        if (!values.requiredDocuments || !Array.isArray(values.requiredDocuments)) {
+          return false;
+        }
+        
+        // Check that every required document ID is in the selected documents array
+        const allRequiredSelected = required.every((doc) => 
+          values.requiredDocuments.includes(doc._id)
+        );
+        
+        return allRequiredSelected;
       }
 
       case 5: // Emergency Contact (Optional)
@@ -320,7 +352,8 @@ const AddStudent = () => {
     try {
       const response = await fetch(apiRoutes.courseRoute, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` }
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include' // Cookies are sent automatically
       });
       const data = await response.json();
       if (!response.ok) return;
@@ -328,7 +361,7 @@ const AddStudent = () => {
     } catch (err) {
       console.error('Error fetching courses:', err);
     }
-  }, [user.token]);
+  }, []);
 
   const fetchBatches = useCallback(
     async (courseId) => {
@@ -339,7 +372,8 @@ const AddStudent = () => {
       try {
         const response = await fetch(apiRoutes.batchRoute + `course/${courseId}`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` }
+          headers: { 'Content-Type': 'application/json' },
+        credentials: 'include' // Cookies are sent automatically
         });
         const data = await response.json();
         if (!response.ok) return;
@@ -349,14 +383,15 @@ const AddStudent = () => {
         console.error('Error fetching batches:', err);
       }
     },
-    [user.token]
+    []
   );
 
   const fetchRequiredDocs = useCallback(async () => {
     try {
       const response = await fetch(apiRoutes.requiredDocumentRoute, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` }
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include' // Cookies are sent automatically
       });
       const data = await response.json();
       const documents = data?.data || data;
@@ -365,7 +400,7 @@ const AddStudent = () => {
       console.error('Error fetching required documents:', err);
       setRequiredDocuments([]);
     }
-  }, [user.token]);
+  }, []);
 
   useEffect(() => {
     fetchCourses();
@@ -476,7 +511,8 @@ const AddStudent = () => {
 
       const studentResponse = await fetch(apiRoutes.studentRoute, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Cookies are sent automatically,
         body: JSON.stringify(studentData)
       });
       const studentResponseData = await studentResponse.json();

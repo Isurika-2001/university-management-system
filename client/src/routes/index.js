@@ -52,8 +52,13 @@ const AntIcons = Loadable(lazy(() => import('pages/components-overview/AntIcons'
 // ==============================|| ROUTING RENDER ||============================== //
 
 export default function ThemeRoutes() {
-  const { user } = useAuthContext();
+  const { user, isLoading } = useAuthContext();
   const { permissions } = user || {};
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return null; // or a loading spinner component
+  }
 
   return (
     <Routes>

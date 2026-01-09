@@ -31,7 +31,8 @@ const ClassroomHistory = ({ enrollmentId }) => {
       try {
         const res = await fetch(`${apiRoutes.studentRoute}enrollment/${enrollmentId}/history`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` }
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include' // Cookies are sent automatically
         });
         const json = await res.json();
         if (!mounted) return;
@@ -48,7 +49,7 @@ const ClassroomHistory = ({ enrollmentId }) => {
     return () => {
       mounted = false;
     };
-  }, [enrollmentId, user.token]);
+  }, [enrollmentId, user]);
 
   if (!enrollmentId) return null;
 

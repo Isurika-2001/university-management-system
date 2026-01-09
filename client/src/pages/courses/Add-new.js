@@ -23,7 +23,7 @@ import { PATHWAY_LIST } from 'constants/pathways';
 
 const AddForm = () => {
   const [submitting, setSubmitting] = useState(false);
-  const { user } = useAuthContext();
+  useAuthContext();
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -87,9 +87,9 @@ const AddForm = () => {
       const response = await fetch(apiRoutes.courseRoute, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include', // Cookies are sent automatically
         body: JSON.stringify(values)
       });
 
