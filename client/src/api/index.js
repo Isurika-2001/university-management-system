@@ -1,30 +1,22 @@
 import { apiRoutes } from '../config';
 
-// Get user token from localStorage
-const getAuthToken = () => {
-  const user = localStorage.getItem('user');
-  return user ? JSON.parse(user).token : null;
-};
-
 // Handle unauthorized responses
 const handleUnauthorized = () => {
-  localStorage.removeItem('user');
   window.location.href = '/';
 };
 
 // Base API request function with error handling
+// Cookies are automatically sent with requests, no need to manually add Authorization header
 const apiRequest = async (url, options = {}) => {
-  const token = getAuthToken();
-
   const defaultHeaders = {
     'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
     ...options.headers
   };
 
   const config = {
     ...options,
-    headers: defaultHeaders
+    headers: defaultHeaders,
+    credentials: 'include' // Important: Include cookies in cross-origin requests
   };
 
   try {
@@ -32,7 +24,11 @@ const apiRequest = async (url, options = {}) => {
 
     // Handle unauthorized responses
     if (response.status === 401) {
-      handleUnauthorized();
+      // Don't redirect immediately for /me endpoint - let AuthContext handle it
+      const isMeEndpoint = url.includes('/me');
+      if (!isMeEndpoint) {
+        handleUnauthorized();
+      }
       throw new Error('Unauthorized access. Please login again.');
     }
 

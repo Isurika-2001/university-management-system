@@ -4,7 +4,7 @@ const STATUSES = {
   HOLD: 'hold',
   PASS: 'pass',
   FAIL: 'fail',
-  TRANSFERRED: 'transferred' // Added
+  DROPPED: 'dropped'
 };
 
 const STATUS_LIST = [
@@ -12,7 +12,7 @@ const STATUS_LIST = [
   { value: STATUSES.HOLD, label: 'Hold', color: 'warning' },
   { value: STATUSES.PASS, label: 'Pass', color: 'info' },
   { value: STATUSES.FAIL, label: 'Fail', color: 'error' },
-  { value: STATUSES.TRANSFERRED, label: 'Transferred', color: 'grey' } // Added
+  { value: STATUSES.DROPPED, label: 'Dropped', color: 'grey' }
 ];
 
 module.exports = { STATUSES, STATUS_LIST };

@@ -22,6 +22,7 @@ import { apiRoutes } from 'config';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuthContext } from 'context/useAuthContext';
+import { hasPermission } from 'utils/userTypeUtils';
 import { useParams } from 'react-router-dom';
 import { PATHWAY_LIST } from 'constants/pathways';
 
@@ -80,8 +81,9 @@ const UpdateCourseForm = () => {
       try {
         const res = await fetch(`${apiRoutes.courseRoute}${courseId}`, {
           headers: {
-            Authorization: `Bearer ${user.token}`
-          }
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include' // Cookies are sent automatically
         });
         const data = await res.json();
         if (res.ok && data?.data) {
@@ -107,7 +109,7 @@ const UpdateCourseForm = () => {
     };
 
     if (courseId) fetchCourse();
-  }, [courseId, user.token, showErrorSwal]);
+  }, [courseId, showErrorSwal]);
 
   const fetchBatchData = useCallback(async () => {
     setLoading(true);
@@ -118,8 +120,9 @@ const UpdateCourseForm = () => {
 
       const response = await fetch(`${apiRoutes.batchRoute}?${params.toString()}`, {
         headers: {
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       if (!response.ok) throw new Error('Failed to fetch batches');
@@ -133,7 +136,7 @@ const UpdateCourseForm = () => {
     } finally {
       setLoading(false);
     }
-  }, [courseId, user.token]);
+  }, [courseId]);
 
   useEffect(() => {
     fetchBatchData();
@@ -145,9 +148,9 @@ const UpdateCourseForm = () => {
       const response = await fetch(`${apiRoutes.courseRoute}${courseId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include', // Cookies are sent automatically
         body: JSON.stringify(values)
       });
 
@@ -182,9 +185,7 @@ const UpdateCourseForm = () => {
       try {
         const response = await fetch(`${apiRoutes.batchRoute}${id}`, {
           method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${user.token}`
-          }
+          headers: {}
         });
 
         const data = await response.json();
@@ -413,12 +414,20 @@ const UpdateCourseForm = () => {
                     sx={{ backgroundColor: 'grey.50' }}
                   >
                     <Typography>{batch.name}</Typography>
-                    <Button onClick={() => handleDeleteBatch(batch._id)} variant="outlined" color="error" size="small">
-                      Delete
-                    </Button>
+                    {hasPermission(user, 'batch', 'D') && (
+                      <Button onClick={() => handleDeleteBatch(batch._id)} variant="outlined" color="error" size="small">
+                        Delete
+                      </Button>
+                    )}
                   </Box>
                 </Grid>
               ))}
+              {/* if no batches exist  */}
+              {batchData.length === 0 && (
+                <Typography variant="body2" color="textSecondary">
+                  No batches found for this course.
+                </Typography>
+              )}
             </Grid>
           </Grid>
         </MainCard>

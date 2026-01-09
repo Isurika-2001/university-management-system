@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Table,
   TableContainer,
@@ -20,7 +20,7 @@ import { UploadOutlined, DownloadOutlined, EditOutlined, FileAddOutlined, ArrowU
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { useAuthContext } from 'context/useAuthContext';
-
+import { hasPermission } from 'utils/userTypeUtils';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import ImportSummaryModal from './Import-summary-modal';
@@ -49,6 +49,11 @@ const View = () => {
 
   const navigate = useNavigate();
   const { user } = useAuthContext();
+
+  // Check if user has any action permissions
+  const hasAnyAction = useMemo(() => {
+    return hasPermission(user, 'student', 'U');
+  }, [user]);
 
   const Toast = withReactContent(
     Swal.mixin({
@@ -192,8 +197,9 @@ const View = () => {
       const response = await fetch(`${apiRoutes.studentRoute}export?${params.toString()}`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       console.log('Response status:', response.status);
@@ -237,8 +243,9 @@ const View = () => {
       const response = await fetch(`${apiRoutes.studentRoute}export?${params.toString()}`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${user.token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include' // Cookies are sent automatically
       });
 
       console.log('Response status:', response.status);
@@ -290,8 +297,9 @@ const View = () => {
         const response = await fetch(`${apiRoutes.studentRoute}import`, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${user.token}`
+            // Don't set Content-Type for FormData, browser will set it with boundary
           },
+          credentials: 'include', // Cookies are sent automatically
           body: formData
         });
 
@@ -328,9 +336,11 @@ const View = () => {
         title={
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <span>Student List</span>
-            <Button onClick={handleClick} variant="contained" startIcon={<FileAddOutlined />} size="small">
-              Add Student
-            </Button>
+            {hasPermission(user, 'student', 'C') && (
+              <Button onClick={handleClick} variant="contained" startIcon={<FileAddOutlined />} size="small">
+                Add Student
+              </Button>
+            )}
           </Box>
         }
       >
@@ -376,7 +386,7 @@ const View = () => {
               onClick={importFromExcel}
               startIcon={isUploading ? <CircularProgress size={16} /> : <DownloadOutlined />}
               size="small"
-              style={{ display: 'none' }}
+              // style={{ display: 'none' }}
             >
               Import
             </Button>
@@ -476,7 +486,7 @@ const View = () => {
                 </TableCell>
                 <TableCell>Registration Date</TableCell>
                 <TableCell>Status</TableCell>
-                <TableCell>Action</TableCell>
+                {hasAnyAction && <TableCell>Action</TableCell>}
               </TableRow>
             </TableHead>
             {loading && <LinearProgress sx={{ width: '100%' }} />}
@@ -529,17 +539,21 @@ const View = () => {
                       )}
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outlined"
-                      style={{ marginRight: '8px' }}
-                      color="warning"
-                      startIcon={<EditOutlined />}
-                      onClick={() => handleViewRow(student._id)}
-                    >
-                      Edit
-                    </Button>
-                  </TableCell>
+                  {hasAnyAction && (
+                    <TableCell>
+                      {hasPermission(user, 'student', 'U') && (
+                        <Button
+                          variant="outlined"
+                          style={{ marginRight: '8px' }}
+                          color="warning"
+                          startIcon={<EditOutlined />}
+                          onClick={() => handleViewRow(student._id)}
+                        >
+                          Edit
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

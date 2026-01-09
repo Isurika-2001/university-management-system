@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Table,
   TableContainer,
@@ -23,8 +23,17 @@ import MainCard from 'components/MainCard';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { requiredDocumentsAPI } from '../../api/requiredDocuments';
+import { useAuthContext } from 'context/useAuthContext';
+import { hasPermission } from 'utils/userTypeUtils';
 
 const RequiredDocumentsView = () => {
+  const { user } = useAuthContext();
+  
+  // Check if user has any action permissions
+  const hasAnyAction = useMemo(() => {
+    return hasPermission(user, 'requiredDocument', 'U') || hasPermission(user, 'requiredDocument', 'D');
+  }, [user]);
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
@@ -183,9 +192,11 @@ const RequiredDocumentsView = () => {
             <TextField label="Search" variant="outlined" onChange={handleSearch} value={searchTerm} sx={{ width: 300 }} />
           </Box>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-            <Button onClick={() => navigate('/app/required-documents/add')} variant="contained" startIcon={<PlusOutlined />}>
-              Add Document
-            </Button>
+            {hasPermission(user, 'requiredDocument', 'C') && (
+              <Button onClick={() => navigate('/app/required-documents/add')} variant="contained" startIcon={<PlusOutlined />}>
+                Add Document
+              </Button>
+            )}
           </Box>
         </Box>
 
@@ -220,7 +231,7 @@ const RequiredDocumentsView = () => {
                 <TableCell>Type</TableCell>
                 <TableCell>Required</TableCell>
                 <TableCell>Created Date</TableCell>
-                <TableCell>Action</TableCell>
+                {hasAnyAction && <TableCell>Action</TableCell>}
               </TableRow>
             </TableHead>
             {loading && <LinearProgress sx={{ width: '100%' }} />}
@@ -251,20 +262,26 @@ const RequiredDocumentsView = () => {
                       />
                     </TableCell>
                     <TableCell>{document.createdAt ? new Date(document.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outlined"
-                        style={{ marginRight: '8px' }}
-                        color="primary"
-                        startIcon={<EditOutlined />}
-                        onClick={() => navigate(`/app/required-documents/update/${document._id}`)}
-                      >
-                        Edit
-                      </Button>
-                      <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={() => handleDelete(document._id)}>
-                        Delete
-                      </Button>
-                    </TableCell>
+                    {hasAnyAction && (
+                      <TableCell>
+                        {hasPermission(user, 'requiredDocument', 'U') && (
+                          <Button
+                            variant="outlined"
+                            style={{ marginRight: '8px' }}
+                            color="primary"
+                            startIcon={<EditOutlined />}
+                            onClick={() => navigate(`/app/required-documents/update/${document._id}`)}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                        {hasPermission(user, 'requiredDocument', 'D') && (
+                          <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={() => handleDelete(document._id)}>
+                            Delete
+                          </Button>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
             </TableBody>

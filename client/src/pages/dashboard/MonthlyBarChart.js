@@ -59,7 +59,8 @@ const MonthlyBarChart = ({ onTotalChange }) => {
     async function fetchRegistrations() {
       try {
         const res = await fetch(apiRoutes.statRoute + 'enrollments', {
-          headers: { Authorization: `Bearer ${user.token}` }
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include' // Cookies are sent automatically
         });
         const json = await res.json();
 
@@ -92,8 +93,8 @@ const MonthlyBarChart = ({ onTotalChange }) => {
       }
     }
 
-    if (user?.token) fetchRegistrations();
-  }, [user?.token, secondary, onTotalChange]);
+    if (user) fetchRegistrations();
+  }, [user, secondary, onTotalChange]);
 
   return (
     <div id="chart">

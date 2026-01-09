@@ -43,14 +43,15 @@ const StepCourseDetails = ({
   }, [selectedCourse, batchOptionsMap, batchOptions]);
 
   // Fetch classrooms for selected batch
-  const fetchClassrooms = useCallback(async (batchId) => {
+  const fetchClassrooms = useCallback(async (batchId, courseId) => {
     if (!batchId) {
       setClassrooms([]);
       return;
     }
     setLoadingClassrooms(true);
     try {
-      const response = await classroomAPI.getAll({ batchId });
+      // Pass courseId and forEnrollment=true to enable sequential module filtering (for new enrollments, no enrollmentId)
+      const response = await classroomAPI.getAll({ batchId, courseId, forEnrollment: true });
       const classroomList = Array.isArray(response) ? response : response?.data || [];
       setClassrooms(classroomList);
       console.log('Fetched classrooms for batch:', batchId, classroomList);
@@ -88,8 +89,8 @@ const StepCourseDetails = ({
 
   // Fetch classrooms when batch changes
   useEffect(() => {
-    if (selectedBatch) {
-      fetchClassrooms(selectedBatch);
+    if (selectedBatch && selectedCourse) {
+      fetchClassrooms(selectedBatch, selectedCourse);
       // Reset classroom selection when batch changes
       setFieldValue('enrollments', [
         {
@@ -103,7 +104,7 @@ const StepCourseDetails = ({
         }
       ]);
     }
-  }, [selectedBatch, selectedPathway, selectedCourse]);
+  }, [selectedBatch, selectedPathway, selectedCourse, fetchClassrooms]);
 
   const handlePathwayChange = (pathway) => {
     // Reset course, batch, and classroom when pathway changes
@@ -152,8 +153,10 @@ const StepCourseDetails = ({
         classroomName: ''
       }
     ]);
-    // Fetch classrooms for this batch
-    fetchClassrooms(batchId);
+    // Fetch classrooms for this batch and course (courseId needed for sequential filtering)
+    if (selectedCourse) {
+      fetchClassrooms(batchId, selectedCourse);
+    }
   };
 
   const handleClassroomChange = (classroomId) => {

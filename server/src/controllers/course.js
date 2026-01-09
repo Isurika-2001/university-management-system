@@ -6,7 +6,15 @@ const logger = require('../utils/logger');
 // Function to get all courses
 async function getAllCourses(req, res) {
   try {
-    const courses = await Course.find();
+    const { pathway } = req.query;
+    const query = {};
+    
+    // If pathway is provided, filter by pathway
+    if (pathway) {
+      query.pathway = pathway;
+    }
+    
+    const courses = await Course.find(query);
     res.status(200).json(courses);
   } catch (error) {
     logger.error('Error in getAllCourses:', error);

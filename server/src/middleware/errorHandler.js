@@ -37,10 +37,13 @@ const errorHandler = (err, req, res, _next) => {
     error = { message, statusCode: 401 };
   }
 
+  // Don't leak error details in production
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
   res.status(error.statusCode || 500).json({
     success: false,
-    error: error.message || 'Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    error: isDevelopment ? (error.message || 'Server Error') : 'An error occurred. Please try again later.',
+    ...(isDevelopment && { stack: err.stack })
   });
 };
 

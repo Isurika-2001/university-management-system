@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { examAPI } from 'api/exams';
 import { classroomAPI } from 'api/classrooms';
+import { coursesAPI } from 'api/courses';
+import { batchesAPI } from 'api/batches';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -23,16 +25,21 @@ import {
   MenuItem,
   FormControl,
   FormLabel,
+  InputLabel,
   Alert,
   TablePagination,
   TableSortLabel,
-  TextField
+  TextField,
+  Typography,
+  IconButton
 } from '@mui/material';
-import { PlusOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons'; // Add sort icons
+import { PlusOutlined, ArrowUpOutlined, ArrowDownOutlined, UpOutlined, DownOutlined } from '@ant-design/icons'; // Add sort icons
 
 export default function ExamsView() {
   const [exams, setExams] = useState([]);
   const [classrooms, setClassrooms] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -49,6 +56,9 @@ export default function ExamsView() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState('');
+  const [expandedCourses, setExpandedCourses] = useState(new Set()); // Track which course categories are expanded
 
   // Debounce searchTerm
   useEffect(() => {
@@ -62,11 +72,24 @@ export default function ExamsView() {
     try {
       setLoading(true);
 
-      const [examsResp, classroomsResp] = await Promise.all([examAPI.listAll(), classroomAPI.getAll()]);
+      const [examsResp, classroomsResp, coursesResp] = await Promise.all([
+        examAPI.listAll({
+          page,
+          limit: rowsPerPage,
+          sortBy,
+          sortOrder,
+          search: debouncedSearchTerm,
+          courseId: selectedCourse || undefined,
+          batchId: selectedBatch || undefined
+        }),
+        classroomAPI.getAll(),
+        coursesAPI.getAll()
+      ]);
 
       setExams(examsResp?.data || []);
       setTotalCount(examsResp?.pagination?.total || 0);
       setClassrooms(classroomsResp?.data || []);
+      setCourses(coursesResp?.data || coursesResp || []);
       setError(null);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -74,7 +97,26 @@ export default function ExamsView() {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage, sortBy, sortOrder, debouncedSearchTerm]); // Dependencies for fetchData
+  }, [page, rowsPerPage, sortBy, sortOrder, debouncedSearchTerm, selectedCourse, selectedBatch]); // Dependencies for fetchData
+
+  // Fetch batches when course is selected
+  useEffect(() => {
+    const fetchBatchesForCourse = async () => {
+      if (selectedCourse) {
+        try {
+          const batchesResp = await batchesAPI.getByCourseId(selectedCourse);
+          setBatches(batchesResp?.data || batchesResp || []);
+        } catch (err) {
+          console.error('Error fetching batches:', err);
+          setBatches([]);
+        }
+      } else {
+        setBatches([]);
+        setSelectedBatch('');
+      }
+    };
+    fetchBatchesForCourse();
+  }, [selectedCourse]);
 
   useEffect(() => {
     fetchData();
@@ -99,6 +141,63 @@ export default function ExamsView() {
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  const handleCourseChange = (event) => {
+    setSelectedCourse(event.target.value);
+    setSelectedBatch('');
+    setPage(0);
+  };
+
+  const handleBatchChange = (event) => {
+    setSelectedBatch(event.target.value);
+    setPage(0);
+  };
+
+  const toggleCourseExpansion = (courseId) => {
+    setExpandedCourses((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(courseId)) {
+        newSet.delete(courseId);
+      } else {
+        newSet.add(courseId);
+      }
+      return newSet;
+    });
+  };
+
+  // Expand all courses by default on initial load
+  useEffect(() => {
+    if (exams.length > 0 && expandedCourses.size === 0) {
+      const grouped = groupExamsByCourse(exams);
+      const allCourseIds = new Set(grouped.map((g) => g.courseId));
+      setExpandedCourses(allCourseIds);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exams.length]); // Only run when exams are first loaded
+
+  // Group exams by course
+  const groupExamsByCourse = (examsList) => {
+    const grouped = {};
+    examsList.forEach((exam) => {
+      // Check if classroomId is populated (from backend) or needs to be found in classrooms array
+      const classroom = exam.classroomId?.courseId
+        ? exam.classroomId
+        : classrooms.find((c) => c._id === exam.classroomId || c._id === exam.classroomId?._id);
+
+      const courseId = classroom?.courseId?._id?.toString() || classroom?.courseId?.toString() || 'unknown';
+      const courseName = classroom?.courseId?.name || 'Unknown Course';
+
+      if (!grouped[courseId]) {
+        grouped[courseId] = {
+          courseId,
+          courseName,
+          exams: []
+        };
+      }
+      grouped[courseId].exams.push(exam);
+    });
+    return Object.values(grouped).sort((a, b) => a.courseName.localeCompare(b.courseName));
   };
 
   const renderSortIcon = (column) => {
@@ -177,8 +276,32 @@ export default function ExamsView() {
             </Alert>
           )}
 
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
             <TextField label="Search" variant="outlined" onChange={handleSearch} value={searchTerm} sx={{ minWidth: 300, maxWidth: 400 }} />
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Filter by Course</InputLabel>
+              <Select value={selectedCourse} onChange={handleCourseChange} label="Filter by Course">
+                <MenuItem value="">All Courses</MenuItem>
+                {courses.map((course) => (
+                  <MenuItem key={course._id} value={course._id}>
+                    {course.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {selectedCourse && (
+              <FormControl sx={{ minWidth: 200 }}>
+                <InputLabel>Filter by Intake</InputLabel>
+                <Select value={selectedBatch} onChange={handleBatchChange} label="Filter by Intake">
+                  <MenuItem value="">All Intakes</MenuItem>
+                  {batches.map((batch) => (
+                    <MenuItem key={batch._id} value={batch._id}>
+                      {batch.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
           </Box>
 
           <TableContainer>
@@ -197,37 +320,74 @@ export default function ExamsView() {
                   <TableCell sx={{ fontWeight: 'bold' }}>Classroom</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Course</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Batch</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>No of Students</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }} align="right">
                     Action
                   </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {exams.map((exam) => {
-                  const classroom = classrooms.find((c) => c._id === exam.classroomId || c._id === exam.classroomId?._id);
-                  return (
-                    <TableRow key={exam._id}>
-                      <TableCell>{exam.name}</TableCell>
-                      <TableCell>{classroom?.name || '-'}</TableCell>
-                      <TableCell>{classroom?.courseId?.name || '-'}</TableCell>
-                      <TableCell>{classroom?.batchId?.name || '-'}</TableCell>
-                      <TableCell align="right">
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          size="small"
-                          onClick={() => navigate(`/app/exams/${exam.classroomId?._id || exam.classroomId}`)}
+                {(() => {
+                  const groupedExams = groupExamsByCourse(exams);
+                  return groupedExams.map((group) => {
+                    const isExpanded = expandedCourses.has(group.courseId);
+                    return (
+                      <React.Fragment key={group.courseId}>
+                        <TableRow
+                          sx={{ backgroundColor: '#e3f2fd', cursor: 'pointer' }}
+                          onClick={() => toggleCourseExpansion(group.courseId)}
                         >
-                          Mark
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                          <TableCell colSpan={6} sx={{ fontWeight: 'bold', py: 1.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleCourseExpansion(group.courseId);
+                                }}
+                              >
+                                {isExpanded ? <UpOutlined /> : <DownOutlined />}
+                              </IconButton>
+                              <Typography variant="subtitle1">
+                                {group.courseName} ({group.exams.length} exam{group.exams.length !== 1 ? 's' : ''})
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                        {group.exams.map((exam) => {
+                          // Check if classroomId is populated (from backend) or needs to be found in classrooms array
+                          const examClassroomId = exam.classroomId?._id || exam.classroomId;
+                          // Always try to get from classrooms array first (has studentCount), fallback to exam.classroomId
+                          const classroomFromArray = classrooms.find((c) => c._id === examClassroomId);
+                          const classroom = classroomFromArray || exam.classroomId;
+                          return (
+                            <TableRow key={exam._id} sx={{ display: isExpanded ? 'table-row' : 'none' }}>
+                              <TableCell>{exam.name}</TableCell>
+                              <TableCell>{classroom?.name || '-'}</TableCell>
+                              <TableCell>{classroom?.courseId?.name || '-'}</TableCell>
+                              <TableCell>{classroom?.batchId?.name || '-'}</TableCell>
+                              <TableCell>{classroom?.studentCount ?? '-'}</TableCell>
+                              <TableCell align="right">
+                                <Button
+                                  variant="contained"
+                                  color="primary"
+                                  size="small"
+                                  onClick={() => navigate(`/app/exams/${examClassroomId}`)}
+                                >
+                                  Mark
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  });
+                })()}
               </TableBody>
             </Table>
           </TableContainer>
-          {exams.length === 0 && (
+          {exams.length === 0 && !loading && (
             <Box sx={{ p: 2, textAlign: 'center', color: '#999' }}>No exams found. Click &quot;Add Exam&quot; to create one.</Box>
           )}
 

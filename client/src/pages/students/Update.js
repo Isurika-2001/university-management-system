@@ -352,7 +352,8 @@ const UpdateStudent = () => {
       setLoading(true);
       const response = await fetch(`${apiRoutes.studentRoute}${id}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` }
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include' // Cookies are sent automatically
       });
       const data = await response.json();
       if (!response.ok) {
@@ -370,13 +371,14 @@ const UpdateStudent = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, user.token, showErrorSwal]); // navigate is not needed here as we are not navigating away
+  }, [id, showErrorSwal]); // navigate is not needed here as we are not navigating away
 
   const fetchRequiredDocs = useCallback(async () => {
     try {
       const response = await fetch(apiRoutes.requiredDocumentRoute, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` }
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include' // Cookies are sent automatically
       });
       const data = await response.json();
       const documents = data?.data || data;
@@ -386,14 +388,14 @@ const UpdateStudent = () => {
       setRequiredDocuments([]);
       showErrorSwal('Error fetching required documents');
     }
-  }, [user.token, setRequiredDocuments, showErrorSwal]);
+  }, [setRequiredDocuments, showErrorSwal]);
 
   useEffect(() => {
-    if (user?.token) {
+    if (user) {
       fetchStudent();
       fetchRequiredDocs();
     }
-  }, [fetchStudent, fetchRequiredDocs, user?.token]);
+  }, [fetchStudent, fetchRequiredDocs, user]);
 
   // Update step completion when student data is loaded
   useEffect(() => {
@@ -622,7 +624,8 @@ const UpdateStudent = () => {
 
       const studentResponse = await fetch(`${apiRoutes.studentRoute}${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Cookies are sent automatically
         body: JSON.stringify(studentPayload)
       });
       const studentResponseData = await studentResponse.json();

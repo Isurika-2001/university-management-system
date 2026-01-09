@@ -85,8 +85,9 @@ async function createUser(req, res) {
       });
     }
 
-    // Hash the password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash the password before saving (use config value for consistency)
+    const config = require('../config');
+    const hashedPassword = await bcrypt.hash(password, config.bcryptRounds);
 
     // Assign the user_type _id and hashed password to the user before saving
     const user = new User({
@@ -122,12 +123,12 @@ async function createUser(req, res) {
       data: responseData,
     });
   } catch (error) {
-    logger.error(error); // log for debugging
+    logger.error('Error creating user:', error);
 
     res.status(500).json({
       success: false,
       message: 'Error creating user',
-      error: error.message,
+      ...(process.env.NODE_ENV === 'development' && { error: error.message })
     });
   }
 }
@@ -147,6 +148,32 @@ async function createUser(req, res) {
 async function login(req, res) {
   try {
     const { email, password } = req.body;
+    
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+    
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+    
+    // Limit password length to prevent DoS
+    if (password.length > 128) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password is too long'
+      });
+    }
+    
     const requestInfo = getRequestInfo(req);
 
     // Find user by email and populate user_type
@@ -237,10 +264,19 @@ async function login(req, res) {
     // Log successful login
     await ActivityLogger.logLogin(user, requestInfo.ipAddress, requestInfo.userAgent);
 
-    // Respond with expected structure (including jwtVersion for client awareness)
+    // Set HttpOnly cookie with JWT token
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: isProduction, // Only send over HTTPS in production
+      sameSite: isProduction ? 'none' : 'lax', // Required for cross-origin in production
+      maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+      path: '/'
+    });
+
+    // Respond with user data (without token)
     res.status(200).json({
       message: 'Login successful',
-      token,
       permissions, // at root level
       userId: _id,
       userName,
@@ -249,11 +285,11 @@ async function login(req, res) {
       jwtVersion
     });
   } catch (error) {
-    logger.error(error);
+    logger.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal Server Error',
-      error: error.message,
+      ...(process.env.NODE_ENV === 'development' && { error: error.message })
     });
   }
 }
@@ -421,6 +457,17 @@ async function updatePassword(req, res) {
       });
     }
 
+    // Validate password strength
+    const { validatePasswordStrength } = require('../utils/passwordValidation');
+    const passwordValidation = validatePasswordStrength(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: passwordValidation.message,
+        error: 'Weak password'
+      });
+    }
+
     // Check if user exists
     const user = await User.findById(id);
     if (!user) {
@@ -431,8 +478,9 @@ async function updatePassword(req, res) {
       });
     }
 
-    // Hash the password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash the password before saving (use config value for consistency)
+    const config = require('../config');
+    const hashedPassword = await bcrypt.hash(password, config.bcryptRounds);
 
     // Update password
     user.password = hashedPassword;
@@ -490,6 +538,90 @@ async function enableUser(req, res) {
   }
 }
 
+/**
+ * Get current authenticated user's information
+ * This endpoint is used to fetch user data on app load
+ */
+async function getCurrentUser(req, res) {
+  try {
+    // User is already attached to req by authenticate middleware
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated',
+      });
+    }
+
+    // Populate user_type if not already populated
+    if (!user.user_type || typeof user.user_type === 'string') {
+      await user.populate('user_type');
+    }
+
+    // Construct permissions object from userType document
+    const userType = user.user_type;
+    const permissions = userType ? {
+      user: userType.user,
+      student: userType.student,
+      course: userType.course,
+      batch: userType.batch,
+      enrollments: userType.enrollments,
+      finance: userType.finance,
+      reports: userType.reports,
+      requiredDocument: userType.requiredDocument,
+      classrooms: userType.classrooms,
+      modules: userType.modules,
+      exams: userType.exams
+    } : {};
+
+    // Return user data in the same format as login response
+    res.status(200).json({
+      success: true,
+      permissions,
+      userId: user._id,
+      userName: user.name,
+      userEmail: user.email,
+      userType: userType,
+      jwtVersion: getJwtVersion()
+    });
+  } catch (error) {
+    logger.error('Error fetching current user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal Server Error',
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * Logout endpoint - clears the authentication cookie
+ */
+async function logout(req, res) {
+  try {
+    // Clear the token cookie
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Logout successful'
+    });
+  } catch (error) {
+    logger.error('Error during logout:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal Server Error',
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   getUsers,
   createUser,
@@ -498,5 +630,7 @@ module.exports = {
   editUser,
   disableUser,
   updatePassword,
-  enableUser
+  enableUser,
+  getCurrentUser,
+  logout
 };

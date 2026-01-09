@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
 import { useLogin } from '../../../hooks/useLogin';
 import useScriptRef from 'hooks/useScriptRef';
 import Swal from 'sweetalert2';
@@ -13,7 +12,6 @@ import {
   FormControlLabel,
   FormHelperText,
   Grid,
-  Link,
   IconButton,
   InputAdornment,
   InputLabel,
@@ -187,9 +185,6 @@ const AuthLogin = () => {
                     }
                     label={<Typography variant="h6">Keep me sign in</Typography>}
                   />
-                  <Link variant="h6" component={RouterLink} to="" color="text.primary">
-                    Forgot Password?
-                  </Link>
                 </Stack>
               </Grid>
               {errors.submit && (

@@ -6,7 +6,7 @@ const ClassroomStudent = require('../models/classroom_student');
 const RequiredDocument = require('../models/required_document');
 const ActivityLogger = require('../utils/activityLogger');
 const { getRequestInfo } = require('../middleware/requestInfo');
-const xlsx = require('xlsx');
+const ExcelJS = require('exceljs');
 const logger = require('../utils/logger');
 
 // utility calling
@@ -91,7 +91,16 @@ async function getAllStudents(req, res) {
     let filter = {};
 
     if (search.trim() !== '') {
-      const searchRegex = new RegExp(search, 'i'); // case-insensitive regex
+      // Use safe regex creation to prevent RegExp injection
+      const { createSafeRegex } = require('../utils/regexUtils');
+      const searchRegex = createSafeRegex(search);
+      
+      if (!searchRegex) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid search term'
+        });
+      }
 
       filter = {
         $or: [
@@ -712,7 +721,16 @@ async function exportStudents(req, res) {
     let filter = {};
 
     if (search.trim() !== '') {
-      const searchRegex = new RegExp(search, 'i'); // case-insensitive regex
+      // Use safe regex creation to prevent RegExp injection
+      const { createSafeRegex } = require('../utils/regexUtils');
+      const searchRegex = createSafeRegex(search);
+      
+      if (!searchRegex) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid search term'
+        });
+      }
 
       filter = {
         $or: [
@@ -893,13 +911,60 @@ async function importStudentsFromExcel(req, res) {
 
     logger.info('Processing Excel file:', req.file.originalname);
 
-    // Read the Excel file
-    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
+    // Read the Excel file using ExcelJS (more secure than xlsx)
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(req.file.buffer);
+    
+    // Get the first worksheet
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) {
+      return res.status(400).json({
+        success: false,
+        message: 'Excel file must contain at least one worksheet'
+      });
+    }
 
-    // Convert to JSON
-    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    // Convert to JSON array (header: 1 means array of arrays)
+    const data = [];
+    
+    // Find the actual used range
+    const rowCount = worksheet.rowCount;
+    let maxColumnCount = 0;
+    
+    // First pass: find maximum column count
+    worksheet.eachRow((row) => {
+      const lastColumn = row.actualCellCount || row.cellCount || 0;
+      if (lastColumn > maxColumnCount) {
+        maxColumnCount = lastColumn;
+      }
+    });
+    
+    // Second pass: extract data with proper column handling
+    worksheet.eachRow((row, rowNumber) => {
+      const rowData = [];
+      // Process all columns up to maxColumnCount to handle empty cells
+      for (let colNumber = 1; colNumber <= maxColumnCount; colNumber++) {
+        const cell = row.getCell(colNumber);
+        let value = '';
+        
+        if (cell.value !== null && cell.value !== undefined) {
+          value = cell.value;
+          // Handle rich text objects
+          if (typeof value === 'object' && value.text) {
+            value = value.text;
+          }
+          // Handle date objects
+          if (value instanceof Date) {
+            value = value.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+          }
+          // Convert to string for consistency
+          value = String(value);
+        }
+        
+        rowData.push(value);
+      }
+      data.push(rowData);
+    });
 
     if (data.length < 2) {
       return res.status(400).json({

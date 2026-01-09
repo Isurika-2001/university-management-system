@@ -39,9 +39,9 @@ const EnrollmentSummary = () => {
         const response = await fetch(apiRoutes.statRoute + 'enrollment', {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`
-          }
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include' // Cookies are sent automatically
         });
 
         if (!response.ok) {
@@ -83,8 +83,10 @@ const EnrollmentSummary = () => {
         setLoading(false);
       }
     }
-    fetchData();
-  }, [logout, user.token]);
+    if (user) {
+      fetchData();
+    }
+  }, []);
 
   const metricCards = [
     {

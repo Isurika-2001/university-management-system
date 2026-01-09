@@ -6,14 +6,19 @@ export const authAPI = {
     return api.post(apiRoutes.authRoute + 'login', credentials);
   },
 
-  // Register user
-  register: async (userData) => {
-    return api.post(apiRoutes.authRoute + 'register', userData);
+  // Get current user data (used on app load)
+  getMe: async () => {
+    return api.get(apiRoutes.userRoute + 'me');
   },
 
   // Logout user
   logout: async () => {
-    return api.post(apiRoutes.authRoute + 'logout');
+    return api.post(apiRoutes.userRoute + 'logout');
+  },
+
+  // Register user
+  register: async (userData) => {
+    return api.post(apiRoutes.authRoute + 'register', userData);
   },
 
   // Refresh token

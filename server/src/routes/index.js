@@ -21,7 +21,11 @@ const activityLogRoutes = require('./activity_log');
 // Public auth routes
 router.use('/auth', authRoutes);
 
-// Protected routes
+// User routes - /me endpoint needs to be accessible but protected
+// Mount user routes before global authenticate so /me can use its own authenticate
+router.use('/user', userRoutes);
+
+// Protected routes (all other routes)
 router.use(authenticate);
 router.use('/student', studentRoutes);
 router.use('/course', courseRoutes);
@@ -29,7 +33,6 @@ router.use('/batch', batchRoutes);
 router.use('/enrollment', enrollmentRoutes);
 router.use('/required-document', requiredDocumentRoutes);
 router.use('/user-type', userTypeRoutes);
-router.use('/user', userRoutes);
 router.use('/module', moduleRoutes);
 router.use('/classroom', classroomRoutes);
 router.use('/exam', examRoutes);
