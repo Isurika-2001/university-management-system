@@ -67,49 +67,6 @@ const AddEnrollment = () => {
     });
   };
 
-  // Debounce search term
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [searchTerm]);
-
-  // Fetch students when debounced search term changes
-  useEffect(() => {
-    if (debouncedSearchTerm.trim() !== '') {
-      searchStudents(debouncedSearchTerm);
-    } else {
-      // Only fetch all students if we don't have any loaded yet
-      if (studentOptions.length === 0) {
-        fetchStudents();
-      }
-    }
-  }, [debouncedSearchTerm, searchStudents, fetchStudents, studentOptions.length]);
-
-  useEffect(() => {
-    fetchCourses();
-    fetchStudents(); // Load initial students
-  }, [fetchCourses, fetchStudents]);
-
-  useEffect(() => {
-    if (selectedPathway) {
-      fetchCourses(selectedPathway);
-    }
-  }, [selectedPathway, fetchCourses]);
-
-  useEffect(() => {
-    if (selectedCourse) {
-      fetchBatches(selectedCourse);
-    }
-  }, [selectedCourse, fetchBatches]);
-
-  useEffect(() => {
-    if (selectedCourse && selectedBatch) {
-      fetchClassrooms(selectedCourse, selectedBatch);
-    }
-  }, [selectedCourse, selectedBatch, fetchClassrooms]);
-
   // Fetch student options
   const fetchStudents = useCallback(async () => {
     try {
@@ -135,7 +92,7 @@ const AddEnrollment = () => {
       console.error('Error fetching students:', error);
       return [];
     }
-  }, [setStudentOptions]);
+  }, []);
 
   // Search students with debounced search
   const searchStudents = useCallback(
@@ -166,7 +123,7 @@ const AddEnrollment = () => {
         setSearchingStudents(false);
       }
     },
-    [setSearchingStudents, setStudentOptions]
+    []
   );
 
   // Fetch course options
@@ -181,7 +138,8 @@ const AddEnrollment = () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-          }
+          },
+          credentials: 'include' // Include cookies for authentication
         });
 
         const data = await response.json();
@@ -199,7 +157,7 @@ const AddEnrollment = () => {
         return [];
       }
     },
-    [setCourseOptions]
+    []
   );
 
   // Fetch batch options
@@ -215,7 +173,8 @@ const AddEnrollment = () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-          }
+          },
+          credentials: 'include' // Include cookies for authentication
         });
 
         const data = await response.json();
@@ -234,7 +193,7 @@ const AddEnrollment = () => {
         return [];
       }
     },
-    [setBatchOptions]
+    []
   );
 
   // Fetch classroom options
@@ -246,11 +205,12 @@ const AddEnrollment = () => {
       }
 
       try {
-        const response = await fetch(`${apiRoutes.classroomRoute}course/${courseId}/batch/${batchId}`, {
+        const response = await fetch(`${apiRoutes.classroomRoute}course/${courseId}/batch/${batchId}?forEnrollment=true`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-          }
+          },
+          credentials: 'include' // Include cookies for authentication
         });
 
         const data = await response.json();
@@ -269,8 +229,61 @@ const AddEnrollment = () => {
         return [];
       }
     },
-    [setClassroomOptions]
+    []
   );
+
+  // Debounce search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // Fetch students when debounced search term changes
+  useEffect(() => {
+    if (debouncedSearchTerm.trim() !== '') {
+      searchStudents(debouncedSearchTerm);
+    } else {
+      // Only fetch all students if we don't have any loaded yet
+      if (studentOptions.length === 0) {
+        fetchStudents();
+      }
+    }
+  }, [debouncedSearchTerm, searchStudents, fetchStudents, studentOptions.length]);
+
+  useEffect(() => {
+    fetchCourses();
+    fetchStudents(); // Load initial students
+  }, [fetchCourses, fetchStudents]);
+
+  useEffect(() => {
+    if (selectedPathway) {
+      setCourseOptions([]); // Clear courses when pathway changes
+      setSelectedCourse(''); // Reset selected course
+      setBatchOptions([]); // Clear batches
+      setClassroomOptions([]); // Clear classrooms
+      fetchCourses(selectedPathway);
+    } else {
+      // If no pathway selected, clear courses
+      setCourseOptions([]);
+      setSelectedCourse('');
+      setBatchOptions([]);
+      setClassroomOptions([]);
+    }
+  }, [selectedPathway, fetchCourses]);
+
+  useEffect(() => {
+    if (selectedCourse) {
+      fetchBatches(selectedCourse);
+    }
+  }, [selectedCourse, fetchBatches]);
+
+  useEffect(() => {
+    if (selectedCourse && selectedBatch) {
+      fetchClassrooms(selectedCourse, selectedBatch);
+    }
+  }, [selectedCourse, selectedBatch, fetchClassrooms]);
 
   const initialValues = {
     studentId: '',

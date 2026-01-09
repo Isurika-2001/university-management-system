@@ -32,12 +32,13 @@ async function run() {
         $set: {
           classrooms: 'CRUD',
           modules: 'CRUD',
-          exams: 'CRUD'
+          exams: 'CRUD',
+          requiredDocument: 'CRUD'
         }
       }
     );
 
-    logger.info('✅ Ensured System Administrator permissions (classrooms, modules, exams)');
+    logger.info('✅ Ensured System Administrator permissions (classrooms, modules, exams, requiredDocument)');
 
   } catch (err) {
     logger.error('❌ Permission migration failed:', err);

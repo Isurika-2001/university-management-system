@@ -50,8 +50,8 @@ const StepCourseDetails = ({
     }
     setLoadingClassrooms(true);
     try {
-      // Pass courseId to enable sequential module filtering (for new enrollments, no enrollmentId)
-      const response = await classroomAPI.getAll({ batchId, courseId });
+      // Pass courseId and forEnrollment=true to enable sequential module filtering (for new enrollments, no enrollmentId)
+      const response = await classroomAPI.getAll({ batchId, courseId, forEnrollment: true });
       const classroomList = Array.isArray(response) ? response : response?.data || [];
       setClassrooms(classroomList);
       console.log('Fetched classrooms for batch:', batchId, classroomList);

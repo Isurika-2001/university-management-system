@@ -2,16 +2,26 @@ import { api, apiRoutes } from './index';
 
 export const examAPI = {
   listAll: (
-    { page, limit, sortBy, sortOrder, search } = {
+    { page, limit, sortBy, sortOrder, search, courseId, batchId } = {
       page: 0,
       limit: 10,
       sortBy: 'createdAt',
       sortOrder: 'desc',
-      search: ''
+      search: '',
+      courseId: undefined,
+      batchId: undefined
     }
   ) => {
-    const query = `?page=${page}&limit=${limit}&sortBy=${sortBy}&sortOrder=${sortOrder}&search=${search}`;
-    return api.get(`${apiRoutes.examRoute}${query}`);
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      sortBy,
+      sortOrder,
+      search: search || ''
+    });
+    if (courseId) params.append('courseId', courseId);
+    if (batchId) params.append('batchId', batchId);
+    return api.get(`${apiRoutes.examRoute}?${params.toString()}`);
   },
   create: (payload) => api.post(apiRoutes.examRoute, payload),
   listByClassroom: (classroomId) => api.get(`${apiRoutes.examRoute}classroom/${classroomId}`),

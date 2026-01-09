@@ -16,9 +16,11 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
+  InputLabel,
+  Typography,
+  IconButton
 } from '@mui/material';
-import { FileAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { FileAddOutlined, EditOutlined, DeleteOutlined, UpOutlined, DownOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import Swal from 'sweetalert2';
@@ -41,6 +43,7 @@ const View = () => {
   const [selectedIntake, setSelectedIntake] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [expandedCourses, setExpandedCourses] = useState(new Set()); // Track which course categories are expanded
   const navigate = useNavigate();
   const { user } = useAuthContext();
 
@@ -78,7 +81,7 @@ const View = () => {
     try {
       setLoading(true);
       const params = {};
-      
+
       if (debouncedSearchTerm.trim() !== '') {
         params.search = debouncedSearchTerm.trim();
       }
@@ -239,6 +242,47 @@ const View = () => {
     }
   };
 
+  const toggleCourseExpansion = (courseId) => {
+    setExpandedCourses((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(courseId)) {
+        newSet.delete(courseId);
+      } else {
+        newSet.add(courseId);
+      }
+      return newSet;
+    });
+  };
+
+  // Group classrooms by course
+  const groupClassroomsByCourse = (classroomsList) => {
+    const grouped = {};
+    classroomsList.forEach((classroom) => {
+      const courseId = classroom?.courseId?._id?.toString() || classroom?.courseId?.toString() || 'unknown';
+      const courseName = classroom?.courseId?.name || 'Unknown Course';
+
+      if (!grouped[courseId]) {
+        grouped[courseId] = {
+          courseId,
+          courseName,
+          classrooms: []
+        };
+      }
+      grouped[courseId].classrooms.push(classroom);
+    });
+    return Object.values(grouped).sort((a, b) => a.courseName.localeCompare(b.courseName));
+  };
+
+  // Expand all courses by default on initial load
+  useEffect(() => {
+    if (data.length > 0 && expandedCourses.size === 0) {
+      const grouped = groupClassroomsByCourse(data);
+      const allCourseIds = new Set(grouped.map((g) => g.courseId));
+      setExpandedCourses(allCourseIds);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.length]); // Only run when data is first loaded
+
   return (
     <MainCard
       title={
@@ -253,19 +297,10 @@ const View = () => {
       }
     >
       <Box sx={{ marginBottom: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-        <TextField 
-          label="Search" 
-          variant="outlined" 
-          onChange={handleSearch} 
-          sx={{ minWidth: 300, maxWidth: 400 }} 
-        />
+        <TextField label="Search" variant="outlined" onChange={handleSearch} sx={{ minWidth: 300, maxWidth: 400 }} />
         <FormControl variant="outlined" sx={{ minWidth: 200 }}>
           <InputLabel>Course Filter</InputLabel>
-          <Select
-            value={selectedCourse}
-            onChange={handleCourseFilterChange}
-            label="Course Filter"
-          >
+          <Select value={selectedCourse} onChange={handleCourseFilterChange} label="Course Filter">
             <MenuItem value="">
               <em>All Courses</em>
             </MenuItem>
@@ -276,23 +311,21 @@ const View = () => {
             ))}
           </Select>
         </FormControl>
-        <FormControl variant="outlined" sx={{ minWidth: 200 }} disabled={!selectedCourse}>
-          <InputLabel>Intake Filter</InputLabel>
-          <Select
-            value={selectedIntake}
-            onChange={handleIntakeFilterChange}
-            label="Intake Filter"
-          >
-            <MenuItem value="">
-              <em>All Intakes</em>
-            </MenuItem>
-            {intakes.map((intake) => (
-              <MenuItem key={intake._id} value={intake._id}>
-                {intake.name}
+        {selectedCourse && (
+          <FormControl variant="outlined" sx={{ minWidth: 200 }}>
+            <InputLabel>Intake Filter</InputLabel>
+            <Select value={selectedIntake} onChange={handleIntakeFilterChange} label="Intake Filter">
+              <MenuItem value="">
+                <em>All Intakes</em>
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              {intakes.map((intake) => (
+                <MenuItem key={intake._id} value={intake._id}>
+                  {intake.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
       </Box>
       <TableContainer component={Paper}>
         <Table>
@@ -314,51 +347,83 @@ const View = () => {
           </TableHead>
           {loading && <LinearProgress sx={{ width: '100%' }} />}
           <TableBody>
-            {data
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((classroom) => (
-                <TableRow key={classroom._id} selected={isSelected(classroom._id)}>
-                  <TableCell padding="checkbox">
-                    <Checkbox checked={isSelected(classroom._id)} onChange={(e) => handleCheckboxClick(e, classroom._id)} />
-                  </TableCell>
-                  <TableCell>{classroom.name}</TableCell>
-                  <TableCell>{classroom.courseId?.name || 'N/A'}</TableCell>
-                  <TableCell>{classroom.batchId?.name || 'N/A'}</TableCell>
-                  <TableCell>{classroom.studentCount || 0}</TableCell>
-                  {hasAnyAction && (
-                    <TableCell>
-                      {hasPermission(user, 'classrooms', 'U') && (
-                        <Button
-                          variant="outlined"
-                          style={{ marginRight: '8px' }}
-                          color="warning"
-                          startIcon={<EditOutlined />}
-                          size="small"
-                          onClick={() => handleManage(classroom._id)}
-                        >
-                          Manage
-                        </Button>
-                      )}
-                      {hasPermission(user, 'classrooms', 'D') && (
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          startIcon={<DeleteOutlined />}
-                          size="small"
-                          onClick={() => handleDelete(classroom._id)}
-                        >
-                          Delete
-                        </Button>
-                      )}
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
+            {(() => {
+              const groupedClassrooms = groupClassroomsByCourse(data);
+
+              // Show all groups with collapsible functionality
+              return groupedClassrooms.map((group) => {
+                const isExpanded = expandedCourses.has(group.courseId);
+                return (
+                  <React.Fragment key={group.courseId}>
+                    <TableRow sx={{ backgroundColor: '#e3f2fd', cursor: 'pointer' }} onClick={() => toggleCourseExpansion(group.courseId)}>
+                      <TableCell colSpan={hasAnyAction ? 6 : 5} sx={{ fontWeight: 'bold', py: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleCourseExpansion(group.courseId);
+                            }}
+                          >
+                            {isExpanded ? <UpOutlined /> : <DownOutlined />}
+                          </IconButton>
+                          <Typography variant="subtitle1">
+                            {group.courseName} ({group.classrooms.length} classroom{group.classrooms.length !== 1 ? 's' : ''})
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                    {group.classrooms.map((classroom) => (
+                      <TableRow
+                        key={classroom._id}
+                        selected={isSelected(classroom._id)}
+                        sx={{ display: isExpanded ? 'table-row' : 'none' }}
+                      >
+                        <TableCell padding="checkbox">
+                          <Checkbox checked={isSelected(classroom._id)} onChange={(e) => handleCheckboxClick(e, classroom._id)} />
+                        </TableCell>
+                        <TableCell>{classroom.name}</TableCell>
+                        <TableCell>{classroom.courseId?.name || 'N/A'}</TableCell>
+                        <TableCell>{classroom.batchId?.name || 'N/A'}</TableCell>
+                        <TableCell>{classroom.studentCount || 0}</TableCell>
+                        {hasAnyAction && (
+                          <TableCell>
+                            {hasPermission(user, 'classrooms', 'U') && (
+                              <Button
+                                variant="outlined"
+                                style={{ marginRight: '8px' }}
+                                color="warning"
+                                startIcon={<EditOutlined />}
+                                size="small"
+                                onClick={() => handleManage(classroom._id)}
+                              >
+                                Manage
+                              </Button>
+                            )}
+                            {hasPermission(user, 'classrooms', 'D') && (
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                startIcon={<DeleteOutlined />}
+                                size="small"
+                                onClick={() => handleDelete(classroom._id)}
+                              >
+                                Delete
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </React.Fragment>
+                );
+              });
+            })()}
           </TableBody>
         </Table>
       </TableContainer>
       <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
+        rowsPerPageOptions={[5, 10, 25, 50, 100]}
         component="div"
         count={data.length}
         rowsPerPage={rowsPerPage}

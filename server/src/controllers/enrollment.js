@@ -374,13 +374,47 @@ async function createEnrollment(req, res) {
     }
     const formattedEnrollmentNo = await getAndFormatCourseEnrollmentNumber(course.code, batch.name);
 
+    // Extract classroomId before creating enrollment (Enrollment model doesn't have this field)
+    const { classroomId, ...enrollmentFields } = enrollmentData;
+
+    // Parse enrollmentDate if provided, otherwise use current date
+    const enrollmentDate = enrollmentData.enrollmentDate 
+      ? new Date(enrollmentData.enrollmentDate) 
+      : new Date();
+
     const enrollment = new Enrollment({
-      ...enrollmentData,
+      ...enrollmentFields,
       registration_no: student.registration_no,
       enrollment_no: formattedEnrollmentNo,
-      enrollmentDate: new Date(),
+      enrollmentDate: enrollmentDate,
     });
     await enrollment.save();
+
+    // If a classroomId was provided, create a ClassroomStudent entry linking the student/enrollment to the classroom
+    if (classroomId) {
+      try {
+        const existing = await ClassroomStudent.findOne({ 
+          classroomId: classroomId, 
+          enrollmentId: enrollment._id 
+        });
+        if (!existing) {
+          const classroomStudent = await ClassroomStudent.create({ 
+            classroomId: classroomId, 
+            enrollmentId: enrollment._id, 
+            studentId: enrollmentData.studentId,
+            status: STATUSES.ACTIVE
+          });
+          logger.info('ClassroomStudent created for enrollment', enrollment._id.toString(), 'classroomStudent:', classroomStudent._id.toString());
+        } else {
+          logger.info('ClassroomStudent already exists for enrollment', enrollment._id.toString());
+        }
+      } catch (err) {
+        logger.error('Error creating ClassroomStudent for enrollment', enrollment._id.toString(), 'error:', err.message, err);
+        // Do not throw — classroom assignment failure should not block enrollment creation
+      }
+    } else {
+      logger.info('No classroomId provided for enrollment', enrollment._id.toString());
+    }
 
     // Check completion status after adding the new enrollment
     const completionStatus = await getStudentCompletionStatus(student);

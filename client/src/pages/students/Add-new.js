@@ -221,23 +221,38 @@ const AddStudent = () => {
         // Required Documents (Optional)
         // Only mark as complete if:
         // 1. Documents have been loaded (requiredDocuments.length > 0)
-        // 2. AND either no required documents exist OR all required documents are selected
-        // 3. AND the user has visited this step (activeStep >= 4)
+        // 2. AND user has visited this step (activeStep >= 4)
+        // 3. AND either no required documents exist OR all required documents are selected
         
         // If documents haven't been loaded yet, don't mark as complete
         if (requiredDocuments.length === 0) {
           return false;
         }
         
-        const required = requiredDocuments.filter((doc) => doc.isRequired);
-        
-        // If no required documents exist, mark as complete only if user has visited the step
-        if (required.length === 0) {
-          return activeStep >= 4; // Only complete if user has visited this step
+        // If user hasn't visited this step yet, don't mark as complete
+        if (activeStep < 4) {
+          return false;
         }
         
-        // If there are required documents, check if all are selected
-        return required.every((doc) => values.requiredDocuments && values.requiredDocuments.includes(doc._id));
+        const required = requiredDocuments.filter((doc) => doc.isRequired);
+        
+        // If no required documents exist in the system, mark as complete (user visited and there are none)
+        if (required.length === 0) {
+          return true;
+        }
+        
+        // If there are required documents, check if ALL are selected
+        // values.requiredDocuments is an array of selected document IDs
+        if (!values.requiredDocuments || !Array.isArray(values.requiredDocuments)) {
+          return false;
+        }
+        
+        // Check that every required document ID is in the selected documents array
+        const allRequiredSelected = required.every((doc) => 
+          values.requiredDocuments.includes(doc._id)
+        );
+        
+        return allRequiredSelected;
       }
 
       case 5: // Emergency Contact (Optional)

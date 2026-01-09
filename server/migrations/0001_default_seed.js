@@ -38,7 +38,8 @@ async function run() {
         batch: 'CRUD',
         enrollments: 'CRUD',
         finance: 'CRUD',
-        reports: 'CRUD'
+        reports: 'CRUD',
+        requiredDocument: 'CRUD'
       },
       {
         name: 'academic_administrator',

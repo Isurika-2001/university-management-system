@@ -50,27 +50,55 @@ async function getAllClassrooms(req, res) {
       });
     }
 
-    // Filter based on sequential modules if courseId and enrollmentId are provided
-    // Skip this filtering if no enrollmentId (e.g., when admin is creating classrooms)
-    if (courseId && enrollmentId && filteredClassrooms.length > 0) {
+    // Filter based on sequential modules if courseId is provided
+    // Only filter when forEnrollment=true (student enrollment) or enrollmentId is provided (existing enrollment)
+    // Don't filter when admin is viewing/creating classrooms
+    const { forEnrollment } = req.query;
+    const shouldFilterForEnrollment = forEnrollment === 'true' || enrollmentId;
+    
+    if (courseId && shouldFilterForEnrollment && filteredClassrooms.length > 0) {
       const allModules = await ModuleEntry.find({ courseId }).lean();
       const hasSequentialModules = allModules.some(m => m.isSequential);
       
       if (hasSequentialModules) {
-        // Filter modules based on enrollment status
-        const filteredModules = await filterModulesBySequentialCompletion(
-          allModules,
-          enrollmentId,
-          courseId
-        );
-        
-        const allowedModuleIds = new Set(filteredModules.map(m => m._id.toString()));
-        
-        // Filter classrooms to only include those with allowed modules
-        filteredClassrooms = filteredClassrooms.filter(c => {
-          if (!c.moduleId || !c.moduleId._id) return false;
-          return allowedModuleIds.has(c.moduleId._id.toString());
-        });
+        if (enrollmentId) {
+          // For existing enrollments: filter based on completion status
+          const filteredModules = await filterModulesBySequentialCompletion(
+            allModules,
+            enrollmentId,
+            courseId
+          );
+          
+          const allowedModuleIds = new Set(filteredModules.map(m => m._id.toString()));
+          
+          // Filter classrooms to only include those with allowed modules
+          filteredClassrooms = filteredClassrooms.filter(c => {
+            if (!c.moduleId || !c.moduleId._id) return false;
+            return allowedModuleIds.has(c.moduleId._id.toString());
+          });
+        } else {
+          // For new enrollments (no enrollmentId, but forEnrollment=true): show only module #1
+          // This applies when registering new students or creating new enrollments
+          const firstSequentialModule = allModules.find(m => m.isSequential && m.sequenceNumber === 1);
+          
+          if (firstSequentialModule) {
+            // Only show classrooms with the first sequential module
+            const firstModuleId = firstSequentialModule._id.toString();
+            filteredClassrooms = filteredClassrooms.filter(c => {
+              if (!c.moduleId || !c.moduleId._id) return false;
+              return c.moduleId._id.toString() === firstModuleId;
+            });
+          } else {
+            // If no sequential module #1 exists, show all non-sequential modules
+            const nonSequentialModuleIds = new Set(
+              allModules.filter(m => !m.isSequential).map(m => m._id.toString())
+            );
+            filteredClassrooms = filteredClassrooms.filter(c => {
+              if (!c.moduleId || !c.moduleId._id) return false;
+              return nonSequentialModuleIds.has(c.moduleId._id.toString());
+            });
+          }
+        }
       }
     }
 
@@ -376,11 +404,60 @@ async function deleteClassroom(req, res) {
 async function getClassroomsByCourseAndBatch(req, res) {
   try {
     const { courseId, batchId } = req.params;
-    const classrooms = await Classroom.find({ courseId, batchId })
+    const { enrollmentId, forEnrollment } = req.query; // Optional: for existing enrollments
+    
+    let classrooms = await Classroom.find({ courseId, batchId })
       .populate('courseId', 'name code')
       .populate('batchId', 'name')
-      .populate('moduleId', 'name')
+      .populate('moduleId')
       .lean();
+    
+    // Filter based on sequential modules if course has sequential modules
+    // Only filter when forEnrollment=true (student enrollment) or enrollmentId is provided
+    const shouldFilterForEnrollment = forEnrollment === 'true' || enrollmentId;
+    const allModules = await ModuleEntry.find({ courseId }).lean();
+    const hasSequentialModules = allModules.some(m => m.isSequential);
+    
+    if (hasSequentialModules && shouldFilterForEnrollment) {
+      if (enrollmentId) {
+        // For existing enrollments: filter based on completion status
+        const filteredModules = await filterModulesBySequentialCompletion(
+          allModules,
+          enrollmentId,
+          courseId
+        );
+        
+        const allowedModuleIds = new Set(filteredModules.map(m => m._id.toString()));
+        
+        // Filter classrooms to only include those with allowed modules
+        classrooms = classrooms.filter(c => {
+          if (!c.moduleId || !c.moduleId._id) return false;
+          return allowedModuleIds.has(c.moduleId._id.toString());
+        });
+      } else {
+        // For new enrollments (no enrollmentId): show only module #1
+        const firstSequentialModule = allModules.find(m => m.isSequential && m.sequenceNumber === 1);
+        
+        if (firstSequentialModule) {
+          // Only show classrooms with the first sequential module
+          const firstModuleId = firstSequentialModule._id.toString();
+          classrooms = classrooms.filter(c => {
+            if (!c.moduleId || !c.moduleId._id) return false;
+            return c.moduleId._id.toString() === firstModuleId;
+          });
+        } else {
+          // If no sequential module #1 exists, show all non-sequential modules
+          const nonSequentialModuleIds = new Set(
+            allModules.filter(m => !m.isSequential).map(m => m._id.toString())
+          );
+          classrooms = classrooms.filter(c => {
+            if (!c.moduleId || !c.moduleId._id) return false;
+            return nonSequentialModuleIds.has(c.moduleId._id.toString());
+          });
+        }
+      }
+    }
+    
     res.status(200).json(classrooms);
   } catch (error) {
     logger.error(error);
