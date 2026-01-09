@@ -21,8 +21,8 @@ export const classroomAPI = {
   },
 
   // Get eligible classrooms for a student
-  getEligibleClassrooms: async (enrollmentId, classroomId) => {
-    return api.get(`${apiRoutes.classroomRoute}eligible/${enrollmentId}/${classroomId}`);
+  getEligibleClassrooms: async (enrollmentId) => {
+    return api.get(`${apiRoutes.classroomRoute}eligible/${enrollmentId}`);
   },
 
   // Add student to classroom

@@ -7,12 +7,13 @@ const Exam = require('../models/exam');
 const ExamMark = require('../models/exam_mark');
 const ModuleEntry = require('../models/module_entry');
 const { STATUSES } = require('../config/statuses');
+const { filterModulesBySequentialCompletion } = require('../utils/moduleFilter');
 const logger = require('../utils/logger');
 
 // Get all classrooms with student count
 async function getAllClassrooms(req, res) {
   try {
-    const { batchId, courseId, search = '' } = req.query;
+    const { batchId, courseId, search = '', enrollmentId } = req.query;
     const filter = {};
     
     if (batchId) {
@@ -30,7 +31,7 @@ async function getAllClassrooms(req, res) {
     const classrooms = await Classroom.find(filter)
       .populate('courseId', 'name code')
       .populate('batchId', 'name')
-      .populate('moduleId', 'name')
+      .populate('moduleId')
       .lean();
 
     // If search is provided, also filter by course name or batch name
@@ -47,6 +48,30 @@ async function getAllClassrooms(req, res) {
           batchName.includes(searchLower)
         );
       });
+    }
+
+    // Filter based on sequential modules if courseId and enrollmentId are provided
+    // Skip this filtering if no enrollmentId (e.g., when admin is creating classrooms)
+    if (courseId && enrollmentId && filteredClassrooms.length > 0) {
+      const allModules = await ModuleEntry.find({ courseId }).lean();
+      const hasSequentialModules = allModules.some(m => m.isSequential);
+      
+      if (hasSequentialModules) {
+        // Filter modules based on enrollment status
+        const filteredModules = await filterModulesBySequentialCompletion(
+          allModules,
+          enrollmentId,
+          courseId
+        );
+        
+        const allowedModuleIds = new Set(filteredModules.map(m => m._id.toString()));
+        
+        // Filter classrooms to only include those with allowed modules
+        filteredClassrooms = filteredClassrooms.filter(c => {
+          if (!c.moduleId || !c.moduleId._id) return false;
+          return allowedModuleIds.has(c.moduleId._id.toString());
+        });
+      }
     }
 
     // Get student count for each classroom
@@ -90,15 +115,30 @@ async function createClassroom(req, res) {
       return res.status(404).json({ success: false, message: 'Module not found' });
     }
 
+    // Check if a classroom already exists for this course, batch, and module combination
+    // (regardless of month - one module can only have one classroom per course/intake)
+    const existingClassroom = await Classroom.findOne({
+      courseId,
+      batchId,
+      moduleId: moduleEntry._id
+    });
+    
+    if (existingClassroom) {
+      return res.status(403).json({ 
+        success: false, 
+        message: `A classroom for module "${moduleEntry.name}" already exists for this course and intake. Each module can only have one classroom per intake.` 
+      });
+    }
+
     // Generate name: COURSECODE-INTAKENAME-MONTH (replace spaces with hyphens)
     const code = (course.code || '').toString().trim();
     const intakeLabel = (batch.name || '').toString().trim().replace(/\s+/g, '-');
     const monthLabel = month.toString().trim();
     const name = `${code}-${intakeLabel}-${monthLabel}`;
 
-    // Check if classroom name already exists
-    const existing = await Classroom.findOne({ name });
-    if (existing) {
+    // Also check if classroom name already exists (for backward compatibility)
+    const existingByName = await Classroom.findOne({ name });
+    if (existingByName) {
       return res.status(403).json({ success: false, message: 'Classroom with same course/intake/month already exists' });
     }
 
@@ -195,6 +235,7 @@ async function getEligibleClassrooms(req, res) {
       batchId: enrollment.batchId._id
     })
       .populate('batchId', 'name')
+      .populate('moduleId')
       .lean();
 
     // Find all classrooms the student is already in for this enrollment
@@ -202,7 +243,26 @@ async function getEligibleClassrooms(req, res) {
     const studentClassroomIds = studentClassrooms.map((c) => c.classroomId.toString());
 
     // Filter out the classrooms the student is already in
-    const eligibleClassrooms = allClasses.filter((c) => !studentClassroomIds.includes(c._id.toString()));
+    let eligibleClassrooms = allClasses.filter((c) => !studentClassroomIds.includes(c._id.toString()));
+
+    // Filter based on sequential module completion
+    // Get all modules for this course
+    const allModules = await ModuleEntry.find({ courseId: enrollment.courseId._id }).lean();
+    
+    // Filter modules based on sequential completion
+    const filteredModules = await filterModulesBySequentialCompletion(
+      allModules,
+      enrollmentId,
+      enrollment.courseId._id.toString()
+    );
+    
+    const allowedModuleIds = new Set(filteredModules.map(m => m._id.toString()));
+    
+    // Filter classrooms to only include those with allowed modules
+    eligibleClassrooms = eligibleClassrooms.filter(c => {
+      if (!c.moduleId) return false;
+      return allowedModuleIds.has(c.moduleId._id.toString());
+    });
 
     res.status(200).json({ success: true, data: eligibleClassrooms });
   } catch (error) {

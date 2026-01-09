@@ -8,9 +8,12 @@ async function getAllModules(req, res) {
 
     // If a specific courseId is requested, return modules array for that course
     if (courseId) {
-      // Return individual ModuleEntry documents for the course (with ids, names and courseId)
+      // Return individual ModuleEntry documents for the course (with ids, names, courseId, and sequential info)
       const ModuleEntry = require('../models/module_entry');
-      const entries = await ModuleEntry.find({ courseId }).select('_id name courseId').lean();
+      const entries = await ModuleEntry.find({ courseId })
+        .select('_id name courseId isSequential sequenceNumber')
+        .sort({ isSequential: -1, sequenceNumber: 1, name: 1 })
+        .lean();
 
       // If ModuleEntry docs exist, return them. Otherwise fall back to CourseModule (legacy list of names)
       if (entries && entries.length > 0) {
@@ -20,7 +23,13 @@ async function getAllModules(req, res) {
       // Fallback: check CourseModule document for this course and return module names as objects
       const cm = await CourseModule.findOne({ courseId }).lean();
       if (cm && Array.isArray(cm.modules)) {
-        const fallback = cm.modules.map((name, _idx) => ({ _id: null, name, courseId }));
+        const fallback = cm.modules.map((name, _idx) => ({ 
+          _id: null, 
+          name, 
+          courseId,
+          isSequential: false,
+          sequenceNumber: null
+        }));
         return res.status(200).json({ success: true, data: fallback });
       }
 
@@ -58,7 +67,8 @@ async function upsertModules(req, res) {
     // Find modules that would be removed
     const existingModuleEntries = await ModuleEntry.find({ courseId }).lean();
     const existingModuleNames = existingModuleEntries.map(m => m.name);
-    const modulesToRemoveNames = existingModuleNames.filter(name => !modulesArray.includes(name));
+    const incomingModuleNames = modulesArray.map(m => typeof m === 'string' ? m : m.name);
+    const modulesToRemoveNames = existingModuleNames.filter(name => !incomingModuleNames.includes(name));
 
     for (const moduleName of modulesToRemoveNames) {
       const classroomExists = await Classroom.findOne({ courseId, moduleName: moduleName });
@@ -71,22 +81,37 @@ async function upsertModules(req, res) {
     }
     // --- End pre-delete check ---
 
+    // Update CourseModule with module names (for backward compatibility)
+    const moduleNames = modulesArray.map(m => typeof m === 'string' ? m : m.name);
     const result = await CourseModule.findOneAndUpdate(
       { courseId },
-      { $set: { modules: modulesArray } },
+      { $set: { modules: moduleNames } },
       { upsert: true, new: true }
     );
 
-    // Ensure ModuleEntry documents exist for each module name for the course
-    for (const mName of modulesArray) {
+    // Upsert ModuleEntry documents with sequential information
+    for (const moduleData of modulesArray) {
       try {
+        const moduleName = typeof moduleData === 'string' ? moduleData : moduleData.name;
+        const isSequential = typeof moduleData === 'object' ? (moduleData.isSequential || false) : false;
+        const sequenceNumber = typeof moduleData === 'object' && isSequential 
+          ? (moduleData.sequenceNumber || null) 
+          : null;
+
         await ModuleEntry.updateOne(
-          { courseId, name: mName },
-          { $set: { courseId, name: mName } },
+          { courseId, name: moduleName },
+          { 
+            $set: { 
+              courseId, 
+              name: moduleName,
+              isSequential,
+              sequenceNumber
+            } 
+          },
           { upsert: true }
         );
       } catch (innerErr) {
-        logger.error('Error ensuring ModuleEntry', mName, innerErr.message);
+        logger.error('Error ensuring ModuleEntry', moduleData, innerErr.message);
       }
     }
 

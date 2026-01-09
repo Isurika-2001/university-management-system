@@ -165,6 +165,12 @@ const AddStudent = () => {
 
   // Function to check if a step is completed
   const checkStepCompletion = (stepIndex, values) => {
+    // Don't mark optional steps as complete until user has visited them
+    // Required steps (0, 1, 2) can be checked immediately
+    if (stepIndex >= 3 && activeStep < stepIndex) {
+      return false;
+    }
+    
     switch (stepIndex) {
       case 0: // Personal Details
         return !!(values.firstName && values.lastName && values.dob && values.nic && values.address && values.mobile && values.email);
@@ -213,13 +219,24 @@ const AddStudent = () => {
 
       case 4: {
         // Required Documents (Optional)
-        // Only completed if all required documents are selected
-        const required = requiredDocuments.filter((doc) => doc.isRequired);
-        if (required.length === 0) {
-          // No required docs means completed, but only if we've actually loaded the documents
-          // This prevents the step from being marked complete before documents are fetched
-          return requiredDocuments.length > 0;
+        // Only mark as complete if:
+        // 1. Documents have been loaded (requiredDocuments.length > 0)
+        // 2. AND either no required documents exist OR all required documents are selected
+        // 3. AND the user has visited this step (activeStep >= 4)
+        
+        // If documents haven't been loaded yet, don't mark as complete
+        if (requiredDocuments.length === 0) {
+          return false;
         }
+        
+        const required = requiredDocuments.filter((doc) => doc.isRequired);
+        
+        // If no required documents exist, mark as complete only if user has visited the step
+        if (required.length === 0) {
+          return activeStep >= 4; // Only complete if user has visited this step
+        }
+        
+        // If there are required documents, check if all are selected
         return required.every((doc) => values.requiredDocuments && values.requiredDocuments.includes(doc._id));
       }
 

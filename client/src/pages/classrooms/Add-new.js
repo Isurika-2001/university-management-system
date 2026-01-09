@@ -19,6 +19,7 @@ const AddForm = () => {
   const [courses, setCourses] = useState([]);
   const [batches, setBatches] = useState([]);
   const [modules, setModules] = useState([]);
+  const [existingClassrooms, setExistingClassrooms] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [classroomName, setClassroomName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -57,8 +58,10 @@ const AddForm = () => {
   const handleCourseChange = async (courseId, setFieldValue) => {
     setFieldValue('courseId', courseId);
     setFieldValue('batchId', '');
+    setFieldValue('moduleId', '');
     setFieldValue('month', '');
     setClassroomName('');
+    setExistingClassrooms([]);
 
     const course = courses.find((c) => c._id === courseId);
     setSelectedCourse(course);
@@ -72,18 +75,49 @@ const AddForm = () => {
     setModules(moduleList);
   };
 
-  const handleBatchChange = (batchId, values, setFieldValue) => {
-    setFieldValue('batchId', batchId);
-
-    const batch = batches.find((b) => b._id === batchId);
-    setClassroomName(generateClassroomName(selectedCourse, batch, values.month));
+  // Function to refresh existing classrooms (can be called after module/month changes)
+  const refreshExistingClassrooms = async (courseId, batchId) => {
+    if (courseId && batchId) {
+      try {
+        const classroomsRes = await classroomAPI.getAll({ courseId, batchId });
+        // API returns { success: true, data: [...] }
+        const classroomsList = classroomsRes?.data || (Array.isArray(classroomsRes) ? classroomsRes : []);
+        setExistingClassrooms(classroomsList);
+        console.log('Fetched existing classrooms:', classroomsList.length, classroomsList);
+      } catch (error) {
+        console.error('Error refreshing existing classrooms:', error);
+        setExistingClassrooms([]);
+      }
+    }
   };
 
-  const handleMonthChange = (month, values, setFieldValue) => {
+  const handleBatchChange = async (batchId, values, setFieldValue) => {
+    setFieldValue('batchId', batchId);
+    setFieldValue('moduleId', '');
+    setFieldValue('month', '');
+    setClassroomName('');
+
+    // Fetch existing classrooms for this course and batch to filter out modules and months
+    await refreshExistingClassrooms(values.courseId, batchId);
+  };
+
+  const handleMonthChange = async (month, values, setFieldValue) => {
     setFieldValue('month', month);
 
     const batch = batches.find((b) => b._id === values.batchId);
-    setClassroomName(generateClassroomName(selectedCourse, batch, month));
+    if (selectedCourse && batch && month) {
+      setClassroomName(generateClassroomName(selectedCourse, batch, month));
+    }
+    
+    // Refresh existing classrooms to ensure we have the latest data
+    await refreshExistingClassrooms(values.courseId, values.batchId);
+  };
+  
+  const handleModuleChange = async (moduleId, values, setFieldValue) => {
+    setFieldValue('moduleId', moduleId);
+    
+    // Refresh existing classrooms to ensure we have the latest data
+    await refreshExistingClassrooms(values.courseId, values.batchId);
   };
 
   /* ---------- Form ---------- */
@@ -116,6 +150,17 @@ const AddForm = () => {
       };
 
       await classroomAPI.create(payload);
+
+      // Refresh existing classrooms list after successful creation
+      if (values.courseId && values.batchId) {
+        try {
+          const classroomsRes = await classroomAPI.getAll({ courseId: values.courseId, batchId: values.batchId });
+          const classroomsList = Array.isArray(classroomsRes) ? classroomsRes : classroomsRes?.data || [];
+          setExistingClassrooms(classroomsList);
+        } catch (error) {
+          console.error('Error refreshing classrooms:', error);
+        }
+      }
 
       Toast.fire({ icon: 'success', title: 'Classroom created successfully' });
       navigate('/app/classrooms');
@@ -187,54 +232,112 @@ const AddForm = () => {
               {/* MODULE */}
               <Grid item xs={12} sm={6}>
                 <Field name="moduleId">
-                  {({ field }) => (
-                    <Select sx={{ mb: 3, minHeight: '3.5rem' }} {...field} fullWidth displayEmpty>
-                      <MenuItem value="">Select Module</MenuItem>
-                      {modules.map((m) => (
-                        <MenuItem key={m._id} value={m._id}>
-                          {m.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  )}
+                  {({ field }) => {
+                    // Get module IDs that already have classrooms for this course and batch
+                    const usedModuleIds = new Set(
+                      existingClassrooms
+                        .filter(c => c.moduleId && (c.moduleId._id || c.moduleId))
+                        .map(c => (c.moduleId._id || c.moduleId).toString())
+                    );
+                    
+                    // Filter out modules that already have classrooms
+                    const availableModules = modules.filter(m => !usedModuleIds.has(m._id.toString()));
+                    
+                    return (
+                      <Select 
+                        sx={{ mb: 3, minHeight: '3.5rem' }} 
+                        {...field} 
+                        fullWidth 
+                        displayEmpty
+                        onChange={(e) => {
+                          field.onChange(e);
+                          handleModuleChange(e.target.value, values, setFieldValue);
+                        }}
+                      >
+                        <MenuItem value="">Select Module</MenuItem>
+                        {availableModules.length > 0 ? (
+                          availableModules.map((m) => {
+                            const label = m.isSequential && m.sequenceNumber 
+                              ? `${m.name} (#${m.sequenceNumber})` 
+                              : m.name;
+                            return (
+                              <MenuItem key={m._id} value={m._id}>
+                                {label}
+                              </MenuItem>
+                            );
+                          })
+                        ) : (
+                          <MenuItem value="" disabled>
+                            {modules.length === 0 
+                              ? 'No modules available' 
+                              : 'All modules already have classrooms for this intake'}
+                          </MenuItem>
+                        )}
+                      </Select>
+                    );
+                  }}
                 </Field>
                 <ErrorMessage name="moduleId" component="div" style={{ color: 'red' }} />
+                {existingClassrooms.length > 0 && (
+                  <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block' }}>
+                    {existingClassrooms.length} classroom(s) already exist for this course and intake
+                  </Typography>
+                )}
               </Grid>
 
               {/* MONTH */}
               <Grid item xs={12} sm={6}>
                 <Field name="month">
-                  {({ field }) => (
-                    <Select
-                      sx={{ mb: 3, minHeight: '3.5rem' }}
-                      {...field}
-                      fullWidth
-                      displayEmpty
-                      onChange={(e) => handleMonthChange(e.target.value, values, setFieldValue)}
-                    >
-                      <MenuItem value="" disabled>
-                        Select Month
-                      </MenuItem>
-                      {[
-                        'January',
-                        'February',
-                        'March',
-                        'April',
-                        'May',
-                        'June',
-                        'July',
-                        'August',
-                        'September',
-                        'October',
-                        'November',
-                        'December'
-                      ].map((m) => (
-                        <MenuItem key={m} value={m}>
-                          {m}
+                  {({ field }) => {
+                    // Get months that already have classrooms for this course and batch
+                    const usedMonths = new Set(
+                      existingClassrooms
+                        .filter(c => c.month)
+                        .map(c => c.month)
+                    );
+                    
+                    // Filter out months that already have classrooms
+                    const allMonths = [
+                      'January',
+                      'February',
+                      'March',
+                      'April',
+                      'May',
+                      'June',
+                      'July',
+                      'August',
+                      'September',
+                      'October',
+                      'November',
+                      'December'
+                    ];
+                    const availableMonths = allMonths.filter(month => !usedMonths.has(month));
+                    
+                    return (
+                      <Select
+                        sx={{ mb: 3, minHeight: '3.5rem' }}
+                        {...field}
+                        fullWidth
+                        displayEmpty
+                        onChange={(e) => handleMonthChange(e.target.value, values, setFieldValue)}
+                      >
+                        <MenuItem value="" disabled>
+                          Select Month
                         </MenuItem>
-                      ))}
-                    </Select>
-                  )}
+                        {availableMonths.length > 0 ? (
+                          availableMonths.map((m) => (
+                            <MenuItem key={m} value={m}>
+                              {m}
+                            </MenuItem>
+                          ))
+                        ) : (
+                          <MenuItem value="" disabled>
+                            All months already have classrooms for this course and intake
+                          </MenuItem>
+                        )}
+                      </Select>
+                    );
+                  }}
                 </Field>
                 <ErrorMessage name="month" component="div" style={{ color: 'red' }} />
               </Grid>

@@ -164,7 +164,7 @@ const Detail = () => {
 
   const handleAddToNew = async (student) => {
     try {
-      const response = await classroomAPI.getEligibleClassrooms(student.enrollmentId._id, id);
+      const response = await classroomAPI.getEligibleClassrooms(student.enrollmentId._id);
       if (response?.data && response.data.length > 0) {
         setEligibleClassrooms(response.data);
         setSelectedStudent(student);
